@@ -328,23 +328,40 @@ bool kk_window_busy(const kk_window *w)
     return w->shm_pending;
 }
 
-void kk_window_present(kk_window *w, const kk_rect *r)
+static bool clip_to_window(const kk_window *w, kk_rect r, kk_rect *out)
 {
-    int x0 = r->x < 0 ? 0 : r->x;
-    int y0 = r->y < 0 ? 0 : r->y;
-    int x1 = r->x + r->w > w->width ? w->width : r->x + r->w;
-    int y1 = r->y + r->h > w->height ? w->height : r->y + r->h;
-    if (x1 <= x0 || y1 <= y0)
+    int x0 = r.x < 0 ? 0 : r.x;
+    int y0 = r.y < 0 ? 0 : r.y;
+    int x1 = r.x + r.w > w->width ? w->width : r.x + r.w;
+    int y1 = r.y + r.h > w->height ? w->height : r.y + r.h;
+    *out = (kk_rect){x0, y0, x1 - x0, y1 - y0};
+    return x1 > x0 && y1 > y0;
+}
+
+void kk_window_present(kk_window *w, const kk_rect *r, int n)
+{
+    kk_rect c;
+    int last = -1;
+    for (int i = 0; i < n; i++)
+        if (clip_to_window(w, r[i], &c))
+            last = i;
+    if (last < 0)
         return;
 
     cairo_surface_flush(w->surface);
-    if (w->use_shm) {
-        XShmPutImage(w->dpy, w->win, w->gc, w->image, x0, y0, x0, y0,
-                     (unsigned)(x1 - x0), (unsigned)(y1 - y0), True);
-        w->shm_pending = true;
-    } else {
-        XPutImage(w->dpy, w->win, w->gc, w->image, x0, y0, x0, y0,
-                  (unsigned)(x1 - x0), (unsigned)(y1 - y0));
+    for (int i = 0; i <= last; i++) {
+        if (!clip_to_window(w, r[i], &c))
+            continue;
+        if (w->use_shm) {
+            /* Only the last put asks for a ShmCompletion: requests are
+             * processed in order, so it covers the earlier ones too. */
+            XShmPutImage(w->dpy, w->win, w->gc, w->image, c.x, c.y, c.x, c.y,
+                         (unsigned)c.w, (unsigned)c.h, i == last);
+        } else {
+            XPutImage(w->dpy, w->win, w->gc, w->image, c.x, c.y, c.x, c.y,
+                      (unsigned)c.w, (unsigned)c.h);
+        }
     }
+    w->shm_pending = w->use_shm;
     XFlush(w->dpy);
 }

@@ -49,7 +49,7 @@ kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 | libcurl (multi) | HTTPS do YouTube/Odysee, integrado ao `poll()` |
 | OpenSSL | TLS do IRC da Twitch e do websocket da Odysee |
 | cJSON (embutido) | JSON do SA e das APIs |
-| miniz (embutido) | ler os zips do SA/workshop |
+| miniz (embutido, ainda não incluído) | ler os zips do SA/workshop |
 | GTK2 | só o `kikarinhas-config` |
 
 Build com Makefile + `config.mk` + pkg-config, no mesmo esquema do kisnitch.
@@ -68,12 +68,12 @@ dados do próprio usuário para interoperar, e não distribuímos as artes):
   com `avatars/`, `gear/`, `sounds/`, `backgrounds/` e
   `streamavatars_json.txt` (UTF-8 **com BOM**), que agrega `avatarData`,
   `gear`, `backgroundLevel`, `userData`, `soundData` e configurações.
-- **Spritesheet**: grade de células `width`×`height`. Cada **linha** é uma
-  animação, na ordem do JSON (`idle`, `walk`, `sit`, `stand`, `jump`,
-  `custom1..N`), contando só as que têm `frameData` não vazio; cada
-  **coluna** é um quadro. Conferido em applejack (96×96, PNG 960×768 →
-  10×8, 8 animações) e littlewalker (32×32, PNG 192×160 → 6×5).
-  *Hipótese a validar em todos os avatares instalados (fase 1).*
+- **Spritesheet**: grade de células `width`×`height`. Cada **linha** é a
+  posição fixa da animação (`idle`=0, `walk`=1, `sit`=2, `stand`=3,
+  `jump`=4, `customN`=4+N); slots vazios mantêm a linha deles. Cada
+  **coluna** é um quadro (`frameData` dá quantos). Pode haver pixels ou
+  linhas sobrando. Validado nos 194 avatares instalados (`--check`).
+  Todos olham para a direita.
 - **Animação**: `framesPerSecond`, `animationLoops`, `loopCount`,
   `holdLastFrame`, `returnsToIdle`, `targetsUser`, `targetDistance`,
   `customName` (ex.: `custom1` = "dance").
@@ -196,9 +196,21 @@ data/         avatar padrão original, exemplo de .ini
    contorno, gradientes) vai para uma superfície de cache e só é copiado
    a cada quadro; redesenhar tudo custava ~10x mais.
    *Falta validar no OBS pelo usuário*, inclusive com a janela coberta.
-1. **Motor de sprites e importador do SA**: ler `streamavatars_json.txt` e
-   zips; script em `tools/` que valida a regra linha=animação em todos os
-   avatares instalados; um avatar andando com idle/walk/sit/jump.
+1. **Motor de sprites e importador do SA** *(feita, exceto zips)*: leitura
+   de `streamavatars_json.txt` com busca da pasta nas bibliotecas do Steam;
+   `--check` valida todas as folhas (194/194 ok); avatares com idle, walk,
+   sit/stand, pulo com gravidade e animações custom como emote; nome
+   embaixo; dano parcial por retângulos. Medido com 30 avatares em
+   1920x1080 a 30 fps: ~3,3% de CPU e ~45 MB de RSS. Lições:
+   - a linha da folha é a posição fixa do slot, não a ordem dos slots
+     preenchidos (gastly, muk, grimer e haru urara só batem assim);
+   - todos os avatares olham para a direita;
+   - pixel art fica no tamanho original e é ampliada com nearest ao
+     desenhar (4x menos memória que pré-escalar; +0,5% de CPU); folhas
+     com `bilinearFilter` são pré-escaladas;
+   - `malloc_trim` depois do parse devolve ~17 MB do JSON.
+   Pendente: pacotes .zip (premade/workshop) e plaquinhas de nome que se
+   sobrepõem quando avatares ficam juntos.
 2. **YouTube**: conector InnerTube; um avatar por pessoa, nome, balão,
    sumiço por inatividade, limite com fila. Testes com respostas gravadas.
 3. **Interações**: comandos, tempos de espera, gear, paletas, persistência

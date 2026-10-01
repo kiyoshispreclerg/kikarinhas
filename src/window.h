@@ -8,14 +8,12 @@
 #include <X11/extensions/XShm.h>
 #include <cairo.h>
 
+#include "util.h"
+
 typedef enum {
     KK_MODE_OBS,     /* normal managed window, captured by OBS (Xcomposite) */
     KK_MODE_DESKTOP, /* fullscreen override-redirect overlay, click-through */
 } kk_mode;
-
-typedef struct {
-    int x, y, w, h;
-} kk_rect;
 
 typedef struct {
     Display *dpy;
@@ -61,7 +59,7 @@ void kk_window_dispatch(kk_window *w, kk_window_events *ev);
 /* True while the server still reads the back buffer of the last present. */
 bool kk_window_busy(const kk_window *w);
 
-/* Sends rectangle r of the back buffer (clipped to the window). */
-void kk_window_present(kk_window *w, const kk_rect *r);
+/* Sends rectangles r[0..n) of the back buffer (clipped to the window). */
+void kk_window_present(kk_window *w, const kk_rect *r, int n);
 
 #endif

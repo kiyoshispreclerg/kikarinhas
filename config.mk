@@ -13,6 +13,8 @@ PKG_CONFIG ?= pkg-config
 STDFLAGS  = -std=c11 -D_XOPEN_SOURCE=700
 WARNFLAGS = -Wall -Wextra -Werror -Wpedantic -Wshadow -Wformat=2 \
             -Wstrict-prototypes -Wmissing-prototypes -Wvla
+# Vendored third-party code is built with the base warnings only.
+VENDOR_WARNFLAGS = -Wall -Wextra -Werror
 
 OPTFLAGS ?= -O2 -g
 
@@ -21,7 +23,7 @@ PKGS       = x11 xext cairo pangocairo
 PKG_CFLAGS = $(shell $(PKG_CONFIG) --cflags $(PKGS) | sed 's/-I/-isystem /g')
 PKG_LIBS   = $(shell $(PKG_CONFIG) --libs $(PKGS))
 
-CPPFLAGS += -Isrc -DKK_VERSION='"$(VERSION)"'
+CPPFLAGS += -Isrc -Ivendor/cjson -DKK_VERSION='"$(VERSION)"'
 LDLIBS   += $(PKG_LIBS) -lm
 
 # `make asan` sets SANITIZE=1.
