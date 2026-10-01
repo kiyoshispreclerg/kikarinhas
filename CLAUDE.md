@@ -35,6 +35,12 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
   (`xwd -id`, `import` e `scrot` falham neste X).
 - Socket em teste: caminho curto (`$XDG_RUNTIME_DIR/kk-*.sock`); o do
   scratchpad passa dos 108 bytes de um socket unix.
+- `pkill`/`pgrep` sem `-f` casam pelo `comm` (`/proc/PID/comm`), truncado em
+  15 bytes: `kikarinhas-config` vira `kikarinhas-conf`, não
+  `kikarinhas-confi` como o prefixo do nome sugere.
+- Mudar `VERSION` (ou outro `-D` de `config.mk`) não força recompilação:
+  `make` não enxerga flags do compilador como dependência, só arquivos. Dá
+  `make clean` antes de conferir o valor novo.
 - Fixtures de teste são sintéticas (nomes e ids inventados), no formato real.
   Não grave dados de pessoas reais do chat no repositório.
 - O SA do usuário está em `~/Steam/Library/steamapps/compatdata/665300/...`

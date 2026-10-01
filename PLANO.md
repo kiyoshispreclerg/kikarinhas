@@ -315,6 +315,13 @@ data/         avatar padrão original, exemplo de .ini
      `show_bubbles` só evita criar balão (`render_bubble` devolve NULL): um
      balão já aberto quando a opção é desligada termina sozinho, não some
      na hora.
+   - **Versão**: `config.mk` em 0.1.0; `-V`/`--version` também no
+     `kikarinhas-config` (antes só o `kikarinhas` tinha). O rodapé do
+     configurador ganhou um rótulo fixo (separado da linha de status, que
+     muda a cada ação) com a versão do kikarinhas do outro lado do socket,
+     atualizado a cada `ping`: no abrir da janela, depois de "Salvar e
+     aplicar" e sempre que a aba Espectadores atualiza (que já fala com o
+     socket). A barra de título leva a própria versão do configurador.
    Lições:
    - nivelar pela intensidade com porta de silêncio, e não pelo pico, é o
      que iguala sons curtos e longos; o teto é o pico (nunca estoura);

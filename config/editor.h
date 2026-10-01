@@ -23,7 +23,7 @@ typedef struct {
     char *loaded_custom[256]; /* custom commands in the file when loaded */
     int n_loaded_custom;
 
-    GtkWidget *window, *status;
+    GtkWidget *window, *status, *version_label;
     /* [window] */
     GtkWidget *mode, *width, *height, *fps;
     /* [avatars] */
@@ -75,6 +75,11 @@ const char *editor_sa_dir(editor *e, char *buf, size_t size);
 bool editor_socket(editor *e, char *out, size_t size);
 /* Sends one request line to the running kikarinhas; false if none answers. */
 bool editor_request(editor *e, const char *line, char *reply, size_t size);
+/* Pings the running kikarinhas and updates the footer's version label
+ * (e->version_label). Harmless to call often; other tabs that already talk
+ * to the socket (e.g. Espectadores' "Atualizar") call it too, so the label
+ * stays current without a timer. */
+void editor_refresh_kikarinhas_version(editor *e);
 
 /* The "Sons" tab (sounds.c). */
 GtkWidget *sounds_page(editor *e, const kk_config *cfg);

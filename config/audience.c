@@ -93,6 +93,7 @@ static void refresh(editor *e)
     char reply[256], path[KK_PATH_MAX];
     /* The running kikarinhas may hold up to 30 s of news. */
     bool running = editor_request(e, "{\"type\":\"save\"}", reply, sizeof reply);
+    editor_refresh_kikarinhas_version(e);
     users_path(e, path, sizeof path);
     gtk_list_store_clear(t->store);
     kk_users *u = path[0] ? kk_users_open(path) : NULL;

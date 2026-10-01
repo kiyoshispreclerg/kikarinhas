@@ -767,6 +767,24 @@ bool editor_request(editor *e, const char *line, char *reply, size_t size)
            kk_control_request(sock, line, reply, size, 3000) == 0;
 }
 
+void editor_refresh_kikarinhas_version(editor *e)
+{
+    char reply[256], text[160];
+    if (!editor_request(e, "{\"type\":\"ping\"}", reply, sizeof reply)) {
+        snprintf(text, sizeof text, "kikarinhas: não está rodando");
+    } else {
+        cJSON *r = cJSON_Parse(reply);
+        const char *v =
+            cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(r, "version"));
+        if (v)
+            snprintf(text, sizeof text, "kikarinhas rodando: v%s", v);
+        else
+            snprintf(text, sizeof text, "kikarinhas rodando");
+        cJSON_Delete(r);
+    }
+    gtk_label_set_text(GTK_LABEL(e->version_label), text);
+}
+
 const char *editor_sa_dir(editor *e, char *buf, size_t size)
 {
     const char *s = text_of(e->sa_dir);
@@ -790,8 +808,10 @@ static void on_apply(GtkButton *b, gpointer ud)
     }
     if (!editor_request(e, "{\"type\":\"reload\"}", reply, sizeof reply)) {
         status(e, "Salvo. O kikarinhas não está aberto (%s); vale quando ele abrir.", sock);
+        editor_refresh_kikarinhas_version(e);
         return;
     }
+    editor_refresh_kikarinhas_version(e);
     cJSON *r = cJSON_Parse(reply);
     const cJSON *warnings = cJSON_GetObjectItemCaseSensitive(r, "warnings");
     int n = cJSON_GetArraySize(warnings);
@@ -811,7 +831,9 @@ static void on_apply(GtkButton *b, gpointer ud)
 static void build(editor *e, const kk_config *cfg)
 {
     e->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(e->window), "Kikarinhas — configuração");
+    char title[64];
+    snprintf(title, sizeof title, "Kikarinhas v%s — configuração", KK_VERSION);
+    gtk_window_set_title(GTK_WINDOW(e->window), title);
     gtk_window_set_default_size(GTK_WINDOW(e->window), 860, 560);
     g_signal_connect(e->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -894,10 +916,19 @@ static void build(editor *e, const kk_config *cfg)
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
                              gtk_label_new("Espectadores"));
 
+    GtkWidget *footer = gtk_hbox_new(FALSE, 12);
     e->status = gtk_label_new(NULL);
     gtk_misc_set_alignment(GTK_MISC(e->status), 0, 0.5);
     gtk_label_set_ellipsize(GTK_LABEL(e->status), PANGO_ELLIPSIZE_END);
-    gtk_box_pack_start(GTK_BOX(vbox), e->status, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(footer), e->status, TRUE, TRUE, 0);
+    /* Persistent (unlike e->status, which carries the last action's
+     * message): which kikarinhas, if any, is listening on the socket. */
+    e->version_label = gtk_label_new(NULL);
+    gtk_misc_set_alignment(GTK_MISC(e->version_label), 1, 0.5);
+    gtk_widget_set_sensitive(e->version_label, FALSE);
+    gtk_box_pack_start(GTK_BOX(footer), e->version_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), footer, FALSE, FALSE, 0);
+    editor_refresh_kikarinhas_version(e);
 
     GtkWidget *buttons = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_END);
@@ -921,8 +952,13 @@ int main(int argc, char **argv)
     setlocale(LC_NUMERIC, "C");
 
     editor e = {0};
+    if (argc == 2 && (strcmp(argv[1], "-V") == 0 || strcmp(argv[1], "--version") == 0)) {
+        printf("kikarinhas-config %s\n", KK_VERSION);
+        return 0;
+    }
     if (argc > 2 || (argc == 2 && argv[1][0] == '-')) {
         fprintf(stderr, "Uso: kikarinhas-config [ARQUIVO]\n"
+                        "      kikarinhas-config -V, --version\n"
                         "Edita ~/.config/kikarinhas/kikarinhas.ini (ou ARQUIVO).\n");
         return 2;
     }
