@@ -19,7 +19,8 @@
  *
  *   [window]   mode = obs|desktop, size = 1280x720, fps = 30
  *   [avatars]  scale, ground = auto|N, count = auto|N, show = a, b
- *              default, sa_dir
+ *              default, sa_dir, show_names = yes|no,
+ *              name_position = below|above, show_bubbles = yes|no
  *   [chat]     youtube, demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
  *   [commands] shortcuts = yes|no, shortcut_cooldown = 5
@@ -73,6 +74,9 @@ typedef struct {
     int n_show;
     char *default_avatar; /* NULL = one per person */
     char *sa_dir;         /* NULL = search the Steam libraries */
+    bool show_names;       /* name tag under (or over) each avatar */
+    bool name_above;       /* false: below the feet; true: above the head */
+    bool show_bubbles;     /* speech bubble with the chat message */
     /* [chat] */
     char *youtube;
     bool demo;

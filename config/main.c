@@ -119,6 +119,26 @@ static void on_auto_toggled(GtkToggleButton *b, gpointer spinner)
     gtk_widget_set_sensitive(GTK_WIDGET(spinner), !gtk_toggle_button_get_active(b));
 }
 
+/* A check box next to a widget it enables (the opposite of on_auto_toggled). */
+static void on_enable_toggled(GtkToggleButton *b, gpointer widget)
+{
+    gtk_widget_set_sensitive(GTK_WIDGET(widget), gtk_toggle_button_get_active(b));
+}
+
+/* A check box labelled label, next to widget, which it enables/disables.
+ * *out_check gets the check box itself, to read back later. */
+static GtkWidget *check_with(GtkWidget **out_check, const char *label, bool on,
+                             GtkWidget *widget)
+{
+    GtkWidget *box = gtk_hbox_new(FALSE, 6);
+    *out_check = check(label, on);
+    gtk_box_pack_start(GTK_BOX(box), *out_check, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), widget, FALSE, FALSE, 0);
+    g_signal_connect(*out_check, "toggled", G_CALLBACK(on_enable_toggled), widget);
+    on_enable_toggled(GTK_TOGGLE_BUTTON(*out_check), widget);
+    return box;
+}
+
 static GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo,
                             double hi, int value)
 {
@@ -631,6 +651,11 @@ static void collect(editor *e)
     put(e, "avatars", "show", text_of(e->show), NULL);
     put(e, "avatars", "default", text_of(e->default_avatar), NULL);
     put(e, "avatars", "sa_dir", text_of(e->sa_dir), NULL);
+    put_bool(e, "avatars", "show_names", e->show_names, d.show_names);
+    put(e, "avatars", "name_position",
+        gtk_combo_box_get_active(GTK_COMBO_BOX(e->name_position)) == 1 ? "above" : "below",
+        d.name_above ? "above" : "below");
+    put_bool(e, "avatars", "show_bubbles", e->show_bubbles, d.show_bubbles);
     /* [chat] */
     put(e, "chat", "youtube", text_of(e->youtube), NULL);
     put_bool(e, "chat", "demo", e->demo, d.demo);
@@ -833,6 +858,16 @@ static void build(editor *e, const kk_config *cfg)
     e->sa_dir = row(t, "Pasta do Stream Avatars",
                     entry(raw_or(e, "avatars", "sa_dir", cfg->sa_dir)),
                     "A pasta \"data\"; vazio: procura nas bibliotecas do Steam.");
+
+    e->name_position = gtk_combo_box_text_new();
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), "embaixo");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), "em cima");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(e->name_position), cfg->name_above ? 1 : 0);
+    row(t, "Nome do avatar",
+        check_with(&e->show_names, "Mostrar nomes", cfg->show_names, e->name_position),
+        "Em cima ou embaixo do avatar.");
+    e->show_bubbles = row(t, "Mensagens",
+                          check("Mostrar balão com a mensagem", cfg->show_bubbles), NULL);
 
     t = page(nb, "Chat");
     e->youtube = row(t, "YouTube", entry(cfg->youtube),

@@ -445,14 +445,24 @@ static void sprite_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
          (int)lround(a->lift);
 }
 
+/* Below the feet (default), or above the head when v->name_above. Either
+ * way, stacked by row so neighbours' tags don't overlap. */
 static void tag_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
 {
     *x = (int)lround(a->x) - a->tag_w / 2;
-    *y = v->ground_y + TAG_GAP + a->tag_row * (a->tag_h - 2) -
-         (int)lround(a->lift);
+    if (v->name_above) {
+        int sx, sy;
+        sprite_origin(a, v, &sx, &sy);
+        *y = sy + a->sheet->head_pad - TAG_GAP - a->tag_h -
+             a->tag_row * (a->tag_h - 2);
+    } else {
+        *y = v->ground_y + TAG_GAP + a->tag_row * (a->tag_h - 2) -
+             (int)lround(a->lift);
+    }
 }
 
-/* Above the head, kept inside the window. */
+/* Above the head, kept inside the window; above the name tag too, when one
+ * is shown there. */
 static void bubble_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
 {
     int sx, sy;
@@ -462,7 +472,10 @@ static void bubble_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
         *x = v->width - a->bubble_w;
     if (*x < 0)
         *x = 0;
-    *y = sy + a->sheet->head_pad - a->bubble_h;
+    int above_tag = v->show_names && v->name_above
+                        ? TAG_GAP + a->tag_h + a->tag_row * (a->tag_h - 2)
+                        : 0;
+    *y = sy + a->sheet->head_pad - above_tag - a->bubble_h;
     if (*y < 0)
         *y = 0;
 }
@@ -523,12 +536,14 @@ static void draw_gear(const kk_avatar *a, cairo_t *cr, const kk_view *v,
 
 kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
 {
-    int sx, sy, tx, ty;
+    int sx, sy;
     sprite_origin(a, v, &sx, &sy);
-    tag_origin(a, v, &tx, &ty);
-    kk_rect r = kk_rect_union(
-        (kk_rect){sx, sy, a->sheet->cell_w, a->sheet->cell_h},
-        (kk_rect){tx, ty, a->tag_w, a->tag_h});
+    kk_rect r = {sx, sy, a->sheet->cell_w, a->sheet->cell_h};
+    if (v->show_names) {
+        int tx, ty;
+        tag_origin(a, v, &tx, &ty);
+        r = kk_rect_union(r, (kk_rect){tx, ty, a->tag_w, a->tag_h});
+    }
     for (int i = 0; i < a->n_gear; i++) {
         kk_rect g;
         int row, col;
@@ -553,15 +568,18 @@ bool kk_avatar_changed(const kk_avatar *a, const kk_view *v)
 
 void kk_avatar_draw_body(const kk_avatar *a, cairo_t *cr, const kk_view *v)
 {
-    int sx, sy, tx, ty;
+    int sx, sy;
     sprite_origin(a, v, &sx, &sy);
-    tag_origin(a, v, &tx, &ty);
 
     draw_gear(a, cr, v, true);
     kk_sheet_draw(a->sheet, cr, a->anim.row, a->anim.frame, a->left, sx, sy);
     draw_gear(a, cr, v, false);
-    cairo_set_source_surface(cr, a->tag, tx, ty);
-    cairo_paint(cr);
+    if (v->show_names) {
+        int tx, ty;
+        tag_origin(a, v, &tx, &ty);
+        cairo_set_source_surface(cr, a->tag, tx, ty);
+        cairo_paint(cr);
+    }
 }
 
 void kk_avatar_draw_bubble(const kk_avatar *a, cairo_t *cr, const kk_view *v)

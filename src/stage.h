@@ -19,12 +19,15 @@
 
 typedef struct {
     double scale;
-    int ground_margin; /* < 0: room for two rows of name tags */
+    int ground_margin; /* < 0: room for two rows of name tags (or 4px, see show_names) */
     int max_avatars;   /* chatters on screen at once */
     double despawn;    /* seconds of silence before a chatter leaves */
     const kk_sa_avatar *default_avatar; /* NULL: one per person, by hash */
     kk_users *users; /* saved choices; may be NULL */
     uint64_t seed;
+    bool show_names;   /* name tag under (or over) each avatar */
+    bool name_above;   /* false: below the feet; true: above the head */
+    bool show_bubbles; /* speech bubble with the chat message */
 } kk_stage_config;
 
 /* A sheet recoloured with one of its avatar's palettes. */

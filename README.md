@@ -81,14 +81,20 @@ Tudo o que as opções fazem também pode ficar em
 `~/.config/kikarinhas/kikarinhas.ini`; as opções da linha de comando valem
 por cima do arquivo. O [data/kikarinhas.ini](data/kikarinhas.ini) explica
 cada chave. O jeito mais fácil de editar é o `kikarinhas-config` (GTK2):
-abas Janela, Avatares, Chat e Comandos, e o botão **Salvar e aplicar**. Ele
-mantém os comentários do arquivo e só grava o que for diferente do padrão.
+abas Janela, Avatares, Chat, Comandos, Sons e Espectadores, e o botão
+**Salvar e aplicar**. Ele mantém os comentários do arquivo e só grava o que
+for diferente do padrão.
+
+Na aba Avatares, `show_names`/`name_position` (embaixo ou em cima do
+avatar) e `show_bubbles` ligam ou desligam o nome e o balão com a mensagem
+de cada um.
 
 Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
 --reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
-tempo de sumiço, fps, chat de mentira, `verbose` e o alvo do YouTube mudam
-na hora. Tamanho, modo, escala, chão, avatares fixos, pasta do Stream Avatars,
-arquivo de pessoas e socket só mudam reiniciando, e o log avisa.
+tempo de sumiço, fps, chat de mentira, `verbose`, o alvo do YouTube,
+nomes/posição e balões mudam na hora. Tamanho, modo, escala, chão, avatares
+fixos, pasta do Stream Avatars, arquivo de pessoas e socket só mudam
+reiniciando, e o log avisa.
 Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
 
 Os comandos do chat são configurados em seções `[command.NOME]`:

@@ -380,7 +380,8 @@ static void list_avatars(const kk_sa_library *lib)
 static int check_avatars(const kk_sa_library *lib)
 {
     kk_stage st;
-    kk_stage_config cfg = {.scale = 1.0, .max_avatars = 1, .despawn = 1, .seed = 1};
+    kk_stage_config cfg = {.scale = 1.0, .max_avatars = 1, .despawn = 1, .seed = 1,
+                           .show_names = true, .show_bubbles = true};
     if (kk_stage_init(&st, lib, &cfg) < 0)
         return 1;
     int bad = 0, warn = 0;
@@ -677,6 +678,9 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.max_avatars = cfg.max_avatars;
     a->stage->cfg.despawn = cfg.despawn;
     a->stage->cfg.default_avatar = find_default_avatar(a, &cfg, &warn);
+    a->stage->cfg.show_names = cfg.show_names;
+    a->stage->cfg.name_above = cfg.name_above;
+    a->stage->cfg.show_bubbles = cfg.show_bubbles;
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
 
@@ -1002,6 +1006,9 @@ int main(int argc, char **argv)
         .despawn = a.cfg.despawn,
         .default_avatar = find_default_avatar(&a, &a.cfg, &warn),
         .seed = x.seed,
+        .show_names = a.cfg.show_names,
+        .name_above = a.cfg.name_above,
+        .show_bubbles = a.cfg.show_bubbles,
     };
     kk_stage stage;
     a.http = kk_http_new();

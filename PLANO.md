@@ -305,6 +305,16 @@ data/         avatar padrão original, exemplo de .ini
      (busca, ordenação, troca de avatar pelo socket ou, com o programa
      fechado, direto no arquivo). Separado em `config/main.c`, `sounds.c` e
      `audience.c`.
+   - **Nome e balão opcionais**: `[avatars] show_names`, `name_position`
+     (`below`/`above`) e `show_bubbles` no `.ini`, e os mesmos três campos
+     na aba Avatares do configurador (a caixa de posição só habilita com
+     "Mostrar nomes" marcado). Viram campos de `kk_view` (`avatar.h`), lidos
+     a cada quadro, então aplicam na hora por `--reload`/SIGHUP/"Salvar e
+     aplicar", sem respawnar ninguém; `name_position = above` também poupa
+     o espaço de `ground_margin` que só existe para caber o nome embaixo.
+     `show_bubbles` só evita criar balão (`render_bubble` devolve NULL): um
+     balão já aberto quando a opção é desligada termina sozinho, não some
+     na hora.
    Lições:
    - nivelar pela intensidade com porta de silêncio, e não pelo pico, é o
      que iguala sons curtos e longos; o teto é o pico (nunca estoura);

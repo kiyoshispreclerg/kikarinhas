@@ -48,10 +48,13 @@ typedef struct {
     bool done;
 } kk_anim;
 
-/* Where the avatars live: ground line and window width. */
+/* Where the avatars live: ground line and window width, plus what the
+ * stage decides to show (configurable). */
 typedef struct {
     int ground_y;
     int width;
+    bool show_names;
+    bool name_above; /* false: below the feet (default); true: above the head */
 } kk_view;
 
 typedef struct {

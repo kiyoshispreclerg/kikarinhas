@@ -28,7 +28,7 @@ typedef struct {
     GtkWidget *mode, *width, *height, *fps;
     /* [avatars] */
     GtkWidget *scale, *ground_auto, *ground, *count_auto, *count, *show,
-        *default_avatar, *sa_dir;
+        *default_avatar, *sa_dir, *show_names, *name_position, *show_bubbles;
     /* [chat] */
     GtkWidget *youtube, *demo, *max, *despawn, *verbose, *users;
     /* [control] */

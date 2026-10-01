@@ -239,6 +239,8 @@ void kk_config_defaults(kk_config *c)
         .sound_volume = 100,
         .sound_voices = 8,
         .sound_commands = true,
+        .show_names = true,
+        .show_bubbles = true,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -573,6 +575,17 @@ static void apply_avatars(kk_config *c, const warner *w)
         get_str(w, &c->default_avatar);
     else if (key_is(w, "sa_dir"))
         get_path(w, &c->sa_dir);
+    else if (key_is(w, "show_names"))
+        get_bool(w, &c->show_names);
+    else if (key_is(w, "name_position")) {
+        if (strcasecmp(w->value, "below") == 0)
+            c->name_above = false;
+        else if (strcasecmp(w->value, "above") == 0)
+            c->name_above = true;
+        else
+            bad_value(w, "below ou above");
+    } else if (key_is(w, "show_bubbles"))
+        get_bool(w, &c->show_bubbles);
     else
         unknown_key(w);
 }

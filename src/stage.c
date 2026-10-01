@@ -87,6 +87,8 @@ static void bubble_path(cairo_t *cr, double w, double h)
  * amount on top in bold and a gold body, new members a green one. */
 static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
 {
+    if (!s->cfg.show_bubbles)
+        return NULL;
     PangoLayout *layout = pango_layout_new(s->pango);
     pango_layout_set_font_description(layout, s->bubble_font);
     pango_layout_set_width(layout, BUBBLE_WIDTH * PANGO_SCALE);
@@ -185,11 +187,15 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
     s->bubble_font = pango_font_description_from_string(BUBBLE_FONT);
 
     if (s->cfg.ground_margin < 0) {
-        /* CJK fallback fonts are taller than Latin ones: measure both. */
-        cairo_surface_t *probe = render_tag(s, "Ág日本語", (rgb){1, 1, 1});
-        int h = cairo_image_surface_get_height(probe);
-        s->cfg.ground_margin = TAG_ROWS * (h - 2) + 4;
-        cairo_surface_destroy(probe);
+        if (s->cfg.show_names && !s->cfg.name_above) {
+            /* CJK fallback fonts are taller than Latin ones: measure both. */
+            cairo_surface_t *probe = render_tag(s, "Ág日本語", (rgb){1, 1, 1});
+            int h = cairo_image_surface_get_height(probe);
+            s->cfg.ground_margin = TAG_ROWS * (h - 2) + 4;
+            cairo_surface_destroy(probe);
+        } else {
+            s->cfg.ground_margin = 4;
+        }
     }
     return 0;
 }
@@ -234,7 +240,9 @@ void kk_stage_resize(kk_stage *s, int width, int height)
 static kk_view view(const kk_stage *s)
 {
     return (kk_view){.ground_y = s->height - s->cfg.ground_margin,
-                     .width = s->width};
+                     .width = s->width,
+                     .show_names = s->cfg.show_names,
+                     .name_above = s->cfg.name_above};
 }
 
 static int max_frames(const kk_sa_avatar *a)
