@@ -1,0 +1,7 @@
+build/
+*.o
+*.a
+*.d
+/kikarinhas
+/kikarinhas-config
+/kikarinhas-web
