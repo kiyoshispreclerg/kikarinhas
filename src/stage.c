@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 
 #include "log.h"
 
@@ -492,6 +493,9 @@ kk_avatar *kk_stage_chatter(kk_stage *s, const kk_chat_msg *m)
 {
     char key[256];
     snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
+    /* The fake chat is not an audience worth remembering. */
+    if (s->cfg.users && strcmp(m->platform, "demo") != 0)
+        kk_users_seen(s->cfg.users, key, m->name, (long long)time(NULL));
 
     for (int i = 0; i < s->count; i++)
         if (s->avatars[i].user_id && strcmp(s->avatars[i].user_id, key) == 0) {

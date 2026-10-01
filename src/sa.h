@@ -142,11 +142,26 @@ typedef struct {
     const char *palette; /* NULL if none */
     const char *gear[16]; /* "set/piece" */
     int n_gear;
+    const char *name;     /* displayName; NULL if none */
+    long long first, last; /* Unix times; 0 if unknown */
 } kk_sa_user;
 
 typedef void (*kk_sa_user_cb)(void *ud, const kk_sa_user *u);
 int kk_sa_read_users(const char *data_dir, kk_sa_user_cb cb, void *ud);
 /* Same from an already parsed document. Returns how many users. */
 int kk_sa_parse_users(const cJSON *root, kk_sa_user_cb cb, void *ud);
+
+/* Sound board of Stream Avatars ("soundData"), for an import. */
+typedef struct {
+    const char *name; /* the key, as used in chat */
+    const char *file; /* full path; NULL if no file was found */
+    int volume;       /* percent: middle of the volume..volumeMax range */
+} kk_sa_sound;
+
+typedef void (*kk_sa_sound_cb)(void *ud, const kk_sa_sound *s);
+/* sounds_dir: where "<soundName>.ogg|wav|mp3" are. Returns how many. */
+int kk_sa_parse_sounds(const cJSON *root, const char *sounds_dir,
+                       kk_sa_sound_cb cb, void *ud);
+int kk_sa_read_sounds(const char *data_dir, kk_sa_sound_cb cb, void *ud);
 
 #endif

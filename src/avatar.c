@@ -128,7 +128,7 @@ static bool emote_ok(const kk_sa_anim *an)
         return true;
     char lower[64];
     size_t i = 0;
-    for (; an->custom_name[i] && i < sizeof lower - 1; i++)
+    for (; i < sizeof lower - 1 && an->custom_name[i]; i++)
         lower[i] = (char)tolower((unsigned char)an->custom_name[i]);
     lower[i] = '\0';
     for (size_t k = 0; k < sizeof skip / sizeof skip[0]; k++)

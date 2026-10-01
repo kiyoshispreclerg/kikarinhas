@@ -13,6 +13,7 @@
 #include "util.h"
 
 #define CMD_PREFIX "command."
+#define SOUND_PREFIX "sound."
 #define MAX_NAME 64
 
 static const char *const ACTIONS[] = {
@@ -160,6 +161,36 @@ static bool command_copy(kk_config_command *dst, const kk_config_command *src)
     return ok;
 }
 
+static void sound_free(kk_config_sound *s)
+{
+    free(s->name);
+    free(s->file);
+    for (int i = 0; i < s->n_aliases; i++)
+        free(s->aliases[i]);
+}
+
+static kk_config_sound *add_sound(kk_config *c)
+{
+    kk_config_sound *ns = realloc(c->sounds, (size_t)(c->n_sounds + 1) * sizeof *ns);
+    if (!ns)
+        return NULL;
+    c->sounds = ns;
+    kk_config_sound *s = &ns[c->n_sounds++];
+    memset(s, 0, sizeof *s);
+    s->volume = 100;
+    return s;
+}
+
+static bool sound_copy(kk_config_sound *dst, const kk_config_sound *src)
+{
+    *dst = (kk_config_sound){.n_aliases = src->n_aliases, .volume = src->volume};
+    bool ok = kk_config_set_str(&dst->name, src->name) &&
+              kk_config_set_str(&dst->file, src->file);
+    for (int i = 0; i < src->n_aliases; i++)
+        ok = kk_config_set_str(&dst->aliases[i], src->aliases[i]) && ok;
+    return ok;
+}
+
 static kk_config_command *add_command(kk_config *c)
 {
     kk_config_command *nc =
@@ -184,6 +215,10 @@ void kk_config_free(kk_config *c)
     for (int i = 0; i < c->n_commands; i++)
         command_free(&c->commands[i]);
     free(c->commands);
+    free(c->sound_device);
+    for (int i = 0; i < c->n_sounds; i++)
+        sound_free(&c->sounds[i]);
+    free(c->sounds);
     memset(c, 0, sizeof *c);
 }
 
@@ -200,6 +235,10 @@ void kk_config_defaults(kk_config *c)
         .despawn = 300.0,
         .shortcuts = true,
         .shortcut_cd = 5.0,
+        .sound_enabled = true,
+        .sound_volume = 100,
+        .sound_voices = 8,
+        .sound_commands = true,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -217,6 +256,9 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
         dst->socket = NULL;
     dst->commands = NULL;
     dst->n_commands = 0;
+    dst->sound_device = NULL;
+    dst->sounds = NULL;
+    dst->n_sounds = 0;
     bool ok = true;
     memset(dst->show, 0, sizeof dst->show);
     for (int i = 0; i < src->n_show; i++)
@@ -230,6 +272,11 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
         kk_config_command *k = add_command(dst);
         ok = k && command_copy(k, &src->commands[i]);
     }
+    ok = ok && kk_config_set_str(&dst->sound_device, src->sound_device);
+    for (int i = 0; i < src->n_sounds && ok; i++) {
+        kk_config_sound *s = add_sound(dst);
+        ok = s && sound_copy(s, &src->sounds[i]);
+    }
     return ok;
 }
 
@@ -239,6 +286,51 @@ kk_config_command *kk_config_find_command(kk_config *c, const char *name)
         if (strcmp(c->commands[i].name, name) == 0)
             return &c->commands[i];
     return NULL;
+}
+
+static bool word_eq(const char *a, const char *b)
+{
+    if (*a == '!')
+        a++;
+    return strcasecmp(a, b) == 0;
+}
+
+const kk_config_sound *kk_config_find_sound(const kk_config *c, const char *word)
+{
+    for (int i = 0; i < c->n_sounds; i++) {
+        const kk_config_sound *s = &c->sounds[i];
+        if (word_eq(word, s->name))
+            return s;
+        for (int k = 0; k < s->n_aliases; k++)
+            if (word_eq(word, s->aliases[k]))
+                return s;
+    }
+    return NULL;
+}
+
+static kk_config_sound *find_sound_by_name(kk_config *c, const char *name)
+{
+    for (int i = 0; i < c->n_sounds; i++)
+        if (strcmp(c->sounds[i].name, name) == 0)
+            return &c->sounds[i];
+    return NULL;
+}
+
+bool kk_config_sound_name(char *out, size_t size, const char *file)
+{
+    const char *base = strrchr(file, '/');
+    base = base ? base + 1 : file;
+    const char *dot = strrchr(base, '.');
+    size_t n = dot && dot != base ? (size_t)(dot - base) : strlen(base);
+    size_t o = 0;
+    for (size_t i = 0; i < n && o + 1 < size && o + 1 < MAX_NAME; i++) {
+        unsigned char ch = (unsigned char)base[i];
+        if (isspace(ch) || ch == '!' || ch == ',' || ch == '[' || ch == ']' || ch == '=')
+            ch = '_';
+        out[o++] = (char)tolower(ch);
+    }
+    out[o] = '\0';
+    return o > 0;
 }
 
 static void remove_command(kk_config *c, int i)
@@ -339,6 +431,27 @@ static bool set_aliases(kk_config_command *k, const char *list)
         free(k->aliases[i]);
     k->n_aliases = 0;
     return each_item(list, add_alias, k);
+}
+
+static bool add_sound_alias(void *ud, const char *item)
+{
+    kk_config_sound *s = ud;
+    char word[MAX_NAME];
+    if (s->n_aliases == KK_CONFIG_MAX_ALIASES || !normalize_word(word, sizeof word, item))
+        return false;
+    s->aliases[s->n_aliases] = NULL;
+    if (!kk_config_set_str(&s->aliases[s->n_aliases], word))
+        return false;
+    s->n_aliases++;
+    return true;
+}
+
+static bool set_sound_aliases(kk_config_sound *s, const char *list)
+{
+    for (int i = 0; i < s->n_aliases; i++)
+        free(s->aliases[i]);
+    s->n_aliases = 0;
+    return each_item(list, add_sound_alias, s);
 }
 
 /* ---- applying a file ----------------------------------------------------- */
@@ -505,6 +618,38 @@ static void apply_commands(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void apply_soundboard(kk_config *c, const warner *w)
+{
+    if (key_is(w, "enabled"))
+        get_bool(w, &c->sound_enabled);
+    else if (key_is(w, "volume"))
+        get_int(w, &c->sound_volume, 0, 400, false);
+    else if (key_is(w, "device"))
+        get_str(w, &c->sound_device);
+    else if (key_is(w, "voices"))
+        get_int(w, &c->sound_voices, 1, 64, false);
+    else if (key_is(w, "commands"))
+        get_bool(w, &c->sound_commands);
+    else
+        unknown_key(w);
+}
+
+static void apply_sound(kk_config *c, const warner *w, const char *name)
+{
+    kk_config_sound *s = find_sound_by_name(c, name);
+    if (!s && (!(s = add_sound(c)) || !kk_config_set_str(&s->name, name)))
+        return;
+    if (key_is(w, "file"))
+        get_path(w, &s->file);
+    else if (key_is(w, "aliases")) {
+        if (!set_sound_aliases(s, w->value))
+            bad_value(w, "até 8 palavras separadas por vírgula");
+    } else if (key_is(w, "volume"))
+        get_int(w, &s->volume, 0, 400, false);
+    else
+        unknown_key(w);
+}
+
 static bool is_action(const char *s)
 {
     for (int i = 0; ACTIONS[i]; i++)
@@ -564,6 +709,14 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_control(c, &w);
         } else if (strcasecmp(s, "commands") == 0) {
             apply_commands(c, &w);
+        } else if (strcasecmp(s, "soundboard") == 0) {
+            apply_soundboard(c, &w);
+        } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {
+            char name[MAX_NAME];
+            if (normalize_word(name, sizeof name, s + strlen(SOUND_PREFIX)))
+                apply_sound(c, &w, name);
+            else
+                warnf(&w, "[%s]: nome de som inválido", s);
         } else if (strncasecmp(s, CMD_PREFIX, strlen(CMD_PREFIX)) == 0) {
             char name[MAX_NAME];
             if (normalize_word(name, sizeof name, s + strlen(CMD_PREFIX)))
@@ -594,6 +747,15 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             warnf(&w, "[%s]: comando novo sem \"action\"; ignorado", section);
             remove_command(c, i);
         }
+    for (int i = c->n_sounds - 1; i >= 0; i--)
+        if (!c->sounds[i].file) {
+            w.line = 0;
+            warnf(&w, "[" SOUND_PREFIX "%s]: som sem \"file\"; ignorado", c->sounds[i].name);
+            sound_free(&c->sounds[i]);
+            memmove(&c->sounds[i], &c->sounds[i + 1],
+                    (size_t)(c->n_sounds - i - 1) * sizeof *c->sounds);
+            c->n_sounds--;
+        }
 }
 
 static void warn_line(void *ud, int line, const char *msg)
@@ -618,6 +780,16 @@ int kk_config_load(kk_config *c, const char *path, bool *found,
         return -1;
     kk_config_apply(c, ini, warn, ud);
     kk_ini_free(ini);
+
+    /* Sound files may be given relative to the config file. */
+    const char *slash = strrchr(path, '/');
+    for (int i = 0; slash && i < c->n_sounds; i++) {
+        char full[KK_PATH_MAX];
+        if (c->sounds[i].file[0] != '/' &&
+            kk_pathf(full, sizeof full, "%.*s/%s", (int)(slash - path), path,
+                     c->sounds[i].file))
+            kk_config_set_str(&c->sounds[i].file, full);
+    }
     return 0;
 }
 

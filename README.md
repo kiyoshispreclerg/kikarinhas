@@ -5,12 +5,13 @@ bonequinho que passeia, pula e reage numa janela transparente que o OBS
 captura. Parecido com o Stream Avatars e o Desktop Ponies, mas nativo para
 Linux (X11) e leve: C, Cairo e Pango.
 
-> **Fase 4.** Lê o chat público de uma live do YouTube (sem login nem chave):
-> cada pessoa que fala ganha um avatar do Stream Avatars, que pula e mostra
-> a mensagem num balão. Pelo chat, cada um escolhe avatar, cor e acessórios
-> (guardados para a próxima live) e manda o avatar dançar, sentar, abraçar
-> ou atacar. Tudo se configura num `.ini` (ou no `kikarinhas-config`), inclusive
-> os comandos, e outros programas mandam mensagens por um socket unix. Veja o
+> **Fases 4 e 7 (em parte).** Lê o chat público de uma live do YouTube (sem
+> login nem chave): cada pessoa que fala ganha um avatar do Stream Avatars,
+> que pula e mostra a mensagem num balão. Pelo chat, cada um escolhe avatar,
+> cor e acessórios (guardados para a próxima live), manda o avatar dançar,
+> sentar, abraçar ou atacar, e toca sons da mesa de som. Tudo se configura
+> num `.ini` ou no `kikarinhas-config`, que também lista os espectadores.
+> Outros programas mandam mensagens por um socket unix. Veja o
 > [PLANO.md](PLANO.md).
 
 ## Compilar
@@ -19,7 +20,7 @@ Dependências (Debian/Ubuntu):
 
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
-    libcairo2-dev libpango1.0-dev libcurl4-openssl-dev
+    libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev
 sudo apt install libgtk2.0-dev   # opcional: só para o kikarinhas-config
 ```
 
@@ -114,6 +115,50 @@ action = avatar
 data = pikachu
 ```
 
+### Mesa de som
+
+Cada som é uma seção `[sound.NOME]` com o arquivo (wav, ogg ou mp3), apelidos
+e um volume próprio, de 0 a 400%:
+
+```ini
+# volume geral
+[soundboard]
+volume = 100
+
+[sound.buzina]
+file = ~/sons/buzina.ogg
+aliases = buz, corneta
+volume = 80
+```
+
+No chat: `!som buzina`, `!som buz` ou só `!buzina`. A espera do `!som` vale
+para todos os sons juntos: quem tocou um espera para tocar outro. O som sai
+pelo ALSA (com PipeWire ou PulseAudio, pelo plugin deles) como "ALSA plug-in
+[kikarinhas]", então o OBS captura como áudio da área de trabalho, ou você
+direciona esse fluxo para onde quiser. Os decodificadores vêm junto (nada
+para instalar além do `libasound2`).
+
+Na aba **Sons** do `kikarinhas-config`:
+- **Adicionar…** escolhe arquivos; o nome do comando sai do nome do arquivo.
+- **Importar do Stream Avatars** traz a mesa de som de lá, com os volumes.
+- Clique duas vezes numa linha para ouvir com o volume dela.
+- **Nivelar** mede cada som (a intensidade das partes não silenciosas) e
+  acerta o volume para todos soarem parecidos, sem estourar. Ouça e ajuste
+  se precisar.
+
+### Espectadores
+
+O arquivo de pessoas guarda, de quem já falou no chat, o nome, a primeira
+vez, a vez mais recente e as escolhas. A aba **Espectadores** do
+`kikarinhas-config` lista todo mundo (com busca e ordenação) e troca o
+avatar de alguém: com o kikarinhas aberto, a troca vale na hora; fechado,
+fica gravada para a próxima vez.
+
+Quem veio do Stream Avatars antes desta versão não tem nome nem datas no
+arquivo: com o kikarinhas **fechado**, rode uma vez
+`kikarinhas --import-sa-users`. Ele completa nome e datas (o `displayName`,
+`firstTimeSpawned` e `lastTimeUsed` de lá) sem mudar nenhuma escolha.
+
 ### Socket de controle e bridges
 
 O kikarinhas escuta em `$XDG_RUNTIME_DIR/kikarinhas.sock` (só o seu usuário
@@ -125,7 +170,12 @@ echo '{"type":"message","platform":"twitch","user_id":"123","name":"Fulana","tex
     | socat - UNIX-CONNECT:$S        # {"ok":true}
 echo reload | socat - UNIX-CONNECT:$S
 echo ping   | socat - UNIX-CONNECT:$S
+echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop para parar
 ```
+
+Outros pedidos: `save` grava o arquivo de pessoas agora, e
+`{"type":"set_avatar","user":"youtube:UC...","avatar":"pikachu"}` troca o
+avatar de alguém (é o que a aba Espectadores usa).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
 `text`, `kind` (`text`, `paid` ou `member`), `amount` e `badges` (`owner`,
@@ -146,7 +196,7 @@ conhece pode virar uma bridge em qualquer linguagem.
 | `!emote NOME` | `!anim` | qualquer animação extra do avatar | 15 s |
 | `!hug [@nome]` | `!abraco`, `!abraço` | vai até alguém e abraça | 60 s |
 | `!attack [@nome]` | `!ataque`, `!bater` | vai até alguém e ataca | 120 s |
-| `!sound NOME` | `!som`, `!play`, `!sfx` | mesa de som (ainda não toca: fase 7) | 30 s (3 s para todos) |
+| `!sound NOME` | `!som`, `!play`, `!sfx`, ou só `!NOME` | toca um som da mesa de som | 30 s (3 s para todos) |
 
 `!` de largura total (`！`, comum em teclados japoneses) também vale. O dono
 do canal não tem espera. Comando que não faz nada (nome errado) não conta a
@@ -169,13 +219,14 @@ transparente também na tela.
 ## Previsto
 
 - Twitch e Odysee.
-- Mesa de som, pacotes .zip do Stream Avatars, emojis como imagem.
+- Pacotes .zip do Stream Avatars, emojis como imagem.
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
 
 ## Licença
 
 GPL-3.0-or-later. Veja [LICENSE](LICENSE). Inclui o
-[cJSON](vendor/cjson) (MIT).
+[cJSON](vendor/cjson) (MIT), o [dr_wav e o dr_mp3](vendor/dr_libs) (domínio
+público ou MIT-0) e o [stb_vorbis](vendor/stb) (domínio público ou MIT).
 
 O chat do YouTube é lido pelos mesmos endereços que o chat em janela
 separada do navegador usa; não é uma API oficial e pode mudar.

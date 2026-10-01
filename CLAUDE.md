@@ -1,7 +1,7 @@
 # Kikarinhas — notas para o Claude
 
 Avatares do chat numa janela ARGB que o OBS captura (tipo Stream Avatars),
-nativo X11, em C11 + Xlib + Cairo + Pango + libcurl. Leia o `PLANO.md`
+nativo X11, em C11 + Xlib + Cairo + Pango + libcurl + ALSA. Leia o `PLANO.md`
 antes de começar uma fase: ele tem a arquitetura, o estado de cada fase e as
 lições aprendidas (formato do Stream Avatars, protocolo do YouTube).
 
@@ -28,6 +28,11 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 - Testes com arquivos de usuário: use `--users` apontando para um arquivo
   temporário já existente (vazio evita importar o SA), nunca o
   `~/.local/share/kikarinhas/users.tsv` do usuário; idem `-c` para o .ini.
+- Áudio em teste: o dispositivo ALSA `null` não precisa de placa de som
+  (`device = null` ou `kk_audio_new("null", ...)`). Fora disso, o teste
+  toca de verdade nas caixas do usuário: volume baixo.
+- Captura de tela da janela: `xwd -root | convert xwd:- -crop ...`
+  (`xwd -id`, `import` e `scrot` falham neste X).
 - Socket em teste: caminho curto (`$XDG_RUNTIME_DIR/kk-*.sock`); o do
   scratchpad passa dos 108 bytes de um socket unix.
 - Fixtures de teste são sintéticas (nomes e ids inventados), no formato real.
@@ -53,8 +58,12 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/demochat.c` | chat de mentira para testes |
 | `src/ini.c` | .ini lido e editado no lugar (mantém comentários) |
 | `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
-| `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `ping`, `quit` |
-| `config/kikarinhas-config.c` | configurador GTK2 (opcional no build) |
+| `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `play`, `set_avatar`... |
+| `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
+| `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
+| `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
+| `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
+| `config/sounds.c`, `config/audience.c` | abas Sons e Espectadores |
 
 ## Convenções
 
@@ -69,5 +78,6 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ## Próximas fases (ver PLANO.md)
 
 5. Twitch (IRC anônimo) e Odysee; podem nascer como bridges no socket.
-6. Camadas HTML (WPE WebKit). 7. Extras: mesa de som (gancho `on_sound` em
-   main.c), zips do SA, emojis como imagem, reações do YouTube.
+6. Camadas HTML (WPE WebKit), opcional.
+7. Extras que faltam: fundos e zips do SA, emojis como imagem, reações do
+   YouTube. (Mesa de som e espectadores já feitos.)

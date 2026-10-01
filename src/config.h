@@ -26,6 +26,9 @@
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
  *              role = anyone|member|mod|owner, enabled = yes|no
+ *   [soundboard] enabled, volume = 100 (%), device = default,
+ *              voices = 8, commands = yes
+ *   [sound.NAME] file, aliases = a, b, volume = 100 (%)
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -46,6 +49,16 @@ typedef struct {
     kk_role role;
     bool enabled;
 } kk_config_command;
+
+/* A sound-board clip, played by "!sound NAME" (or one of its aliases) and,
+ * with [soundboard] commands = yes, also by "!NAME". */
+typedef struct {
+    char *name; /* lowercase */
+    char *file; /* relative paths are from the config file's folder */
+    char *aliases[KK_CONFIG_MAX_ALIASES];
+    int n_aliases;
+    int volume; /* percent, 0..400 */
+} kk_config_sound;
 
 typedef struct {
     /* [window] */
@@ -74,6 +87,14 @@ typedef struct {
     double shortcut_cd;
     kk_config_command *commands;
     int n_commands;
+    /* [soundboard] */
+    bool sound_enabled;
+    int sound_volume; /* master, percent */
+    char *sound_device; /* NULL = ALSA "default" */
+    int sound_voices;   /* sounds at once */
+    bool sound_commands;
+    kk_config_sound *sounds;
+    int n_sounds;
 } kk_config;
 
 /* Called for each problem found; line is 0 when not from the file. */
@@ -102,6 +123,11 @@ const kk_config_command *kk_config_default_commands(int *n);
 const char *const *kk_config_actions(void);
 
 kk_config_command *kk_config_find_command(kk_config *c, const char *name);
+/* By name or alias, ignoring ASCII case and a leading "!". */
+const kk_config_sound *kk_config_find_sound(const kk_config *c, const char *word);
+/* "Buzina Alta.ogg" -> "buzina_alta": a command-safe name; false if
+ * nothing usable is left. */
+bool kk_config_sound_name(char *out, size_t size, const char *file);
 
 /* Setters used by the command line too; they return false on bad input. */
 bool kk_config_set_str(char **dst, const char *value);

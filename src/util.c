@@ -114,3 +114,38 @@ void kk_make_parent_dirs(const char *path)
             *p = '/';
         }
 }
+
+/* Days since 1970-01-01 of a proleptic Gregorian date (Howard Hinnant). */
+static long long days_from_civil(long long y, unsigned m, unsigned d)
+{
+    y -= m <= 2;
+    long long era = (y >= 0 ? y : y - 399) / 400;
+    unsigned yoe = (unsigned)(y - era * 400);
+    unsigned doy = (153 * (m + (m > 2 ? (unsigned)-3 : 9)) + 2) / 5 + d - 1;
+    unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + (long long)doe - 719468;
+}
+
+bool kk_parse_iso_time(const char *s, long long *out)
+{
+    int y, mo, d, h, mi, sec, n = 0;
+    if (sscanf(s, "%4d-%2d-%2dT%2d:%2d:%2d%n", &y, &mo, &d, &h, &mi, &sec, &n) != 6 ||
+        mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || sec > 60)
+        return false;
+    s += n;
+    if (*s == '.')
+        for (s++; *s >= '0' && *s <= '9'; s++)
+            ;
+    long long off = 0;
+    if (*s == '+' || *s == '-') {
+        int oh, om;
+        if (sscanf(s + 1, "%2d:%2d", &oh, &om) != 2)
+            return false;
+        off = (oh * 3600LL + om * 60LL) * (*s == '-' ? -1 : 1);
+    } else if (*s && *s != 'Z') {
+        return false;
+    }
+    *out = days_from_civil(y, (unsigned)mo, (unsigned)d) * 86400LL + h * 3600LL +
+           mi * 60LL + sec - off;
+    return true;
+}

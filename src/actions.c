@@ -120,10 +120,7 @@ static bool cmd_sound(const kk_cmd_call *c)
 {
     kk_actions *a = ctx(c);
     const char *name = arg(c);
-    if (!name[0] || !a->sound)
-        return false;
-    a->sound(a->sound_ud, c->msg, name);
-    return true;
+    return name[0] && a->sound && a->sound(a->sound_ud, c->msg, name);
 }
 
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
@@ -192,6 +189,32 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
                 problems++;
             }
     }
+
+    /* "!buzina" for each sound, as if it were "!sound buzina". */
+    const kk_config_command *base = NULL;
+    for (int i = 0; i < cfg->n_commands; i++)
+        if (strcmp(cfg->commands[i].name, "sound") == 0 && cfg->commands[i].enabled)
+            base = &cfg->commands[i];
+    for (int i = 0; base && cfg->sound_enabled && cfg->sound_commands &&
+                    i < cfg->n_sounds; i++) {
+        const kk_config_sound *s = &cfg->sounds[i];
+        for (int w = -1; w < s->n_aliases; w++) {
+            const char *word = w < 0 ? s->name : s->aliases[w];
+            if (kk_commands_has(c, word)) {
+                snprintf(msg, sizeof msg,
+                         "o som \"%s\" não vira !%s: já é outro comando",
+                         s->name, word);
+                if (warn)
+                    warn(ud, 0, msg);
+                problems++;
+                continue;
+            }
+            kk_commands_add(c, word, cmd_sound, s->name, base->user_cd,
+                            base->global_cd, base->role);
+            kk_commands_set_group(c, word, "sound");
+        }
+    }
+
     if (cfg->shortcuts)
         kk_commands_set_fallback(c, fallback, cfg->shortcut_cd);
     return problems;

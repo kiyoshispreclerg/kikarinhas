@@ -51,6 +51,11 @@ void kk_commands_free(kk_commands *c);
 int kk_commands_add(kk_commands *c, const char *name, kk_cmd_fn fn,
                     const char *data, double user_cooldown,
                     double global_cooldown, kk_role role);
+/* True if word is a command name or alias. */
+bool kk_commands_has(kk_commands *c, const char *word);
+/* Cooldowns of name are shared with every command of the same group (e.g.
+ * each sound's own !command and !sound itself). */
+int kk_commands_set_group(kk_commands *c, const char *name, const char *group);
 /* Extra word for an existing command. Fails if the word is taken. */
 int kk_commands_alias(kk_commands *c, const char *name, const char *alias);
 void kk_commands_set_fallback(kk_commands *c, kk_cmd_fn fn,

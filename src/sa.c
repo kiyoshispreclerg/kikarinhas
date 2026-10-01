@@ -655,7 +655,16 @@ int kk_sa_parse_users(const cJSON *root, kk_sa_user_cb cb, void *ud)
                 u.n_gear++;
             }
         }
-        if (!u.avatar && !u.palette && u.n_gear == 0)
+        u.name = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(it, "displayName"));
+        if (u.name && !u.name[0])
+            u.name = NULL;
+        const char *t = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(it, "firstTimeSpawned"));
+        if (!t || !kk_parse_iso_time(t, &u.first))
+            u.first = 0;
+        t = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(it, "lastTimeUsed"));
+        if (!t || !kk_parse_iso_time(t, &u.last))
+            u.last = 0;
+        if (!u.avatar && !u.palette && u.n_gear == 0 && !u.name)
             continue;
         cb(ud, &u);
         count++;
@@ -669,6 +678,49 @@ int kk_sa_read_users(const char *data_dir, kk_sa_user_cb cb, void *ud)
     if (!root)
         return -1;
     int n = kk_sa_parse_users(root, cb, ud);
+    cJSON_Delete(root);
+    malloc_trim(0);
+    return n;
+}
+
+int kk_sa_parse_sounds(const cJSON *root, const char *sounds_dir,
+                       kk_sa_sound_cb cb, void *ud)
+{
+    static const char *const exts[] = {"ogg", "wav", "mp3"};
+    int count = 0;
+    const cJSON *it;
+    cJSON_ArrayForEach(it, cJSON_GetObjectItemCaseSensitive(root, "soundData"))
+    {
+        const char *file = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(it, "soundName"));
+        if (!it->string || !it->string[0])
+            continue;
+        if (!file || !file[0])
+            file = it->string;
+        char path[KK_PATH_MAX];
+        kk_sa_sound snd = {.name = it->string, .volume = 100};
+        for (size_t e = 0; e < sizeof exts / sizeof exts[0] && !snd.file; e++)
+            if (kk_pathf(path, sizeof path, "%s/%s.%s", sounds_dir, file, exts[e]) &&
+                kk_file_exists(path))
+                snd.file = path;
+        double lo = kk_json_num(it, "settings.volume", 1.0);
+        double hi = kk_json_num(it, "settings.volumeMax", lo);
+        double v = (lo + hi) / 2.0 * 100.0;
+        snd.volume = v < 0 ? 0 : v > 400 ? 400 : (int)lround(v);
+        cb(ud, &snd);
+        count++;
+    }
+    return count;
+}
+
+int kk_sa_read_sounds(const char *data_dir, kk_sa_sound_cb cb, void *ud)
+{
+    char dir[KK_PATH_MAX];
+    if (!kk_pathf(dir, sizeof dir, "%s/sounds", data_dir))
+        return -1;
+    cJSON *root = read_json(data_dir);
+    if (!root)
+        return -1;
+    int n = kk_sa_parse_sounds(root, dir, cb, ud);
     cJSON_Delete(root);
     malloc_trim(0);
     return n;

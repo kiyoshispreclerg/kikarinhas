@@ -164,8 +164,25 @@
    }
   }
  },
+ "soundData": {
+  "tom": {
+   "soundName": "tone",
+   "soundboard": true,
+   "settings": {"volume": 0.5, "pitch": 1.0, "volumeMax": 1.0, "pitchMax": 1.0},
+   "restriction": {"type": "everyone"}
+  },
+  "sumido": {
+   "soundName": "naoexiste",
+   "settings": {"volume": 0.8, "pitch": 1.0, "volumeMax": 0.8, "pitchMax": 1.0},
+   "restriction": {"type": "everyone"}
+  }
+ },
  "userData": {
   "YUCaaaaaaaaaaaaaaaaaaaaaa": {
+   "name": "fulana",
+   "displayName": "Fulana",
+   "firstTimeSpawned": "2024-01-02T03:04:05.1234567-03:00",
+   "lastTimeUsed": "2024-02-03T10:00:00Z",
    "avatar": {
     "selectedItem": "bloco"
    },
@@ -197,6 +214,13 @@
   "sOther": {
    "avatar": {
     "selectedItem": "bloco"
+   }
+  },
+  "YUCcccccccccccccccccccccc": {
+   "displayName": "Só Olhando",
+   "lastTimeUsed": "2023-12-31T23:59:59.5+00:00",
+   "avatar": {
+    "selectedItem": "none"
    }
   },
   "YUCbbbbbbbbbbbbbbbbbbbbbb": {

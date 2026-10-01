@@ -20,8 +20,11 @@ LIB_SRC = src/log.c \
       src/actions.c \
       src/ini.c \
       src/config.c \
-      src/control.c
-VENDOR_SRC = vendor/cjson/cJSON.c
+      src/control.c \
+      src/sample.c \
+      src/audio.c \
+      src/soundboard.c
+VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c
 LIBKK = $(BUILD)/libkk.a
 
 UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_*.c))
@@ -42,10 +45,15 @@ all: $(BUILD)/kikarinhas $(CONFIG_BIN)
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(BUILD)/kikarinhas-config: config/kikarinhas-config.c $(LIBKK)
+CONFIG_SRC = config/main.c config/sounds.c config/audience.c
+CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
+
+$(BUILD)/config/%.o: config/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(GTK_CFLAGS) $(WARNFLAGS) -MMD -MP \
-		$(ALL_LDFLAGS) -o $@ $< $(LIBKK) $(GTK_LIBS) -lm
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(GTK_CFLAGS) $(WARNFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILD)/kikarinhas-config: $(CONFIG_OBJ) $(LIBKK)
+	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(GTK_LIBS) $(LDLIBS)
 
 $(LIBKK): $(patsubst %.c,$(BUILD)/%.o,$(LIB_SRC) $(VENDOR_SRC))
 	$(AR) rcs $@ $^

@@ -48,6 +48,10 @@ char *kk_read_file(const char *path, size_t *len);
 
 bool kk_file_exists(const char *path);
 
+/* "2024-05-01T12:34:56.123-03:00" (offset or "Z" optional, fraction
+ * ignored) to Unix time. */
+bool kk_parse_iso_time(const char *s, long long *out);
+
 /* mkdir -p for the directory part of path (errors are left to whoever
  * then creates the file). */
 void kk_make_parent_dirs(const char *path);

@@ -10,8 +10,9 @@
 #include "log.h"
 #include "util.h"
 
-static const char *const field_names[] = {"avatar", "palette", "gear"};
-#define N_FIELDS 3
+static const char *const field_names[] = {"avatar", "palette", "gear",
+                                         "name",   "first",   "last"};
+#define N_FIELDS 6
 
 typedef struct {
     char *key;
@@ -193,7 +194,8 @@ int kk_users_save(kk_users *u)
         kk_log_warn("não consegui gravar %s: %s", tmp, strerror(errno));
         return -1;
     }
-    fputs("# Kikarinhas: avatar, paleta e acessórios de cada pessoa do chat\n", f);
+    fputs("# Kikarinhas: quem já passou pelo chat (avatar, paleta, acessórios, "
+          "nome, primeira e última vez)\n", f);
     for (int i = 0; i < u->count; i++) {
         const record *r = &u->recs[i];
         bool any = r->extra != NULL;
@@ -227,4 +229,20 @@ bool kk_users_default_path(char *out, size_t size)
         return kk_pathf(out, size, "%s/kikarinhas/users.tsv", xdg);
     const char *home = getenv("HOME");
     return home && kk_pathf(out, size, "%s/.local/share/kikarinhas/users.tsv", home);
+}
+
+const char *kk_users_key(const kk_users *u, int i)
+{
+    return i >= 0 && i < u->count ? u->recs[i].key : NULL;
+}
+
+void kk_users_seen(kk_users *u, const char *key, const char *name, long long now)
+{
+    char t[32];
+    snprintf(t, sizeof t, "%lld", now);
+    if (name && name[0])
+        kk_users_set(u, key, KK_USER_NAME, name);
+    if (!kk_users_get(u, key, KK_USER_FIRST))
+        kk_users_set(u, key, KK_USER_FIRST, t);
+    kk_users_set(u, key, KK_USER_LAST, t);
 }

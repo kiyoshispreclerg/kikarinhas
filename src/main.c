@@ -20,6 +20,7 @@
 #include "http.h"
 #include "log.h"
 #include "sa.h"
+#include "soundboard.h"
 #include "stage.h"
 #include "users.h"
 #include "window.h"
@@ -490,11 +491,10 @@ static void on_chat(void *ud, const kk_chat_msg *m)
     }
 }
 
-static void on_sound(void *ud, const kk_chat_msg *m, const char *sound)
+static bool on_sound(void *ud, const kk_chat_msg *m, const char *sound)
 {
-    (void)ud;
-    kk_log_info("%s pediu o som \"%s\" (a mesa de som chega na fase 7)",
-                m->name, sound);
+    (void)m;
+    return kk_soundboard_play(ud, sound, now_seconds());
 }
 
 typedef struct {
@@ -502,11 +502,27 @@ typedef struct {
     int imported;
 } import_ctx;
 
-/* Only people not known yet: never overwrite a choice made here. */
+static void set_time(kk_users *users, const char *key, kk_user_field f, long long t)
+{
+    char s[32];
+    snprintf(s, sizeof s, "%lld", t);
+    if (t > 0)
+        kk_users_set(users, key, f, s);
+}
+
+/* Never overwrite what is known here: people already in the file only get
+ * a name and dates they don't have yet. */
 static void on_sa_user(void *ud, const kk_sa_user *u)
 {
     import_ctx *ic = ud;
-    if (kk_users_exists(ic->users, u->key))
+    bool known = kk_users_exists(ic->users, u->key);
+    if (!kk_users_get(ic->users, u->key, KK_USER_NAME))
+        kk_users_set(ic->users, u->key, KK_USER_NAME, u->name);
+    if (!kk_users_get(ic->users, u->key, KK_USER_FIRST))
+        set_time(ic->users, u->key, KK_USER_FIRST, u->first);
+    if (!kk_users_get(ic->users, u->key, KK_USER_LAST))
+        set_time(ic->users, u->key, KK_USER_LAST, u->last);
+    if (known)
         return;
     kk_users_set(ic->users, u->key, KK_USER_AVATAR, u->avatar);
     kk_users_set(ic->users, u->key, KK_USER_PALETTE, u->palette);
@@ -539,6 +555,7 @@ typedef struct {
     bool demo_on;
     kk_users *users;      /* NULL if not used */
     kk_control *control;  /* NULL if off */
+    kk_soundboard *sounds;
     int timer_fd, signal_fd;
     uint64_t seed;
     bool quit;
@@ -656,6 +673,7 @@ static bool reload(app *a, cJSON *warnings)
     kk_commands_free(a->sink.commands);
     a->sink.commands = commands;
     a->sink.verbose = cfg.verbose;
+    kk_soundboard_configure(a->sounds, &cfg);
     a->stage->cfg.max_avatars = cfg.max_avatars;
     a->stage->cfg.despawn = cfg.despawn;
     a->stage->cfg.default_avatar = find_default_avatar(a, &cfg, &warn);
@@ -668,9 +686,39 @@ static bool reload(app *a, cJSON *warnings)
     return true;
 }
 
+/* {"type":"set_avatar","user":"youtube:UC...","avatar":"pikachu"}: from
+ * kikarinhas-config, which must not write the people file under our feet. */
+static void set_avatar(app *a, const cJSON *req, cJSON *reply)
+{
+    const char *key = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "user"));
+    const char *name = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "avatar"));
+    const kk_sa_avatar *def = name ? kk_sa_find(a->lib, name) : NULL;
+    const char *error = NULL;
+    if (!key || !key[0])
+        error = "faltou \"user\"";
+    else if (!def)
+        error = "avatar desconhecido";
+    else if (!a->users)
+        error = "sem arquivo de pessoas";
+    if (error) {
+        cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
+        cJSON_AddStringToObject(reply, "error", error);
+        return;
+    }
+    for (int i = 0; i < a->stage->count; i++) {
+        kk_avatar *av = &a->stage->avatars[i];
+        if (av->user_id && strcmp(av->user_id, key) == 0) {
+            if (av->def != def)
+                kk_stage_set_avatar(a->stage, av, def);
+            return; /* saved by the stage */
+        }
+    }
+    kk_users_set(a->users, key, KK_USER_AVATAR, def->key);
+    kk_users_set(a->users, key, KK_USER_PALETTE, NULL);
+}
+
 static void on_request(void *ud, const char *type, const cJSON *req, cJSON *reply)
 {
-    (void)req;
     app *a = ud;
     if (strcmp(type, "reload") == 0) {
         cJSON *warnings = cJSON_CreateArray();
@@ -679,6 +727,21 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
             cJSON_AddStringToObject(reply, "error", "configuração não aplicada");
         }
         cJSON_AddItemToObject(reply, "warnings", warnings);
+    } else if (strcmp(type, "play") == 0) {
+        const char *s = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "sound"));
+        if (!s || !kk_soundboard_play(a->sounds, s, now_seconds())) {
+            cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
+            cJSON_AddStringToObject(reply, "error", "som desconhecido ou que não toca");
+        }
+    } else if (strcmp(type, "stop") == 0) {
+        kk_soundboard_stop(a->sounds);
+    } else if (strcmp(type, "save") == 0) {
+        if (a->users && kk_users_save(a->users) < 0) {
+            cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
+            cJSON_AddStringToObject(reply, "error", "não consegui gravar o arquivo de pessoas");
+        }
+    } else if (strcmp(type, "set_avatar") == 0) {
+        set_avatar(a, req, reply);
     } else if (strcmp(type, "ping") == 0) {
         cJSON_AddStringToObject(reply, "version", KK_VERSION);
     } else if (strcmp(type, "quit") == 0) {
@@ -732,8 +795,11 @@ static void run(app *a)
         fds[FD_TIMER] = (struct pollfd){.fd = a->timer_fd, .events = POLLIN};
         fds[FD_SIGNAL] = (struct pollfd){.fd = a->signal_fd, .events = POLLIN};
         int nfds = FD_FIXED;
+        int n_audio = kk_soundboard_pollfds(a->sounds, fds + nfds, 8);
+        nfds += n_audio;
+        int ctl_at = nfds;
         if (a->control)
-            nfds += kk_control_pollfds(a->control, fds + FD_FIXED, MAX_FDS - FD_FIXED);
+            nfds += kk_control_pollfds(a->control, fds + nfds, MAX_FDS - nfds);
 
         /* Network transfers advance inside the wait; chat callbacks run
          * from it. The frame timer wakes us at least once per frame. */
@@ -749,9 +815,10 @@ static void run(app *a)
             return;
         }
         if (a->control)
-            kk_control_dispatch(a->control, fds + FD_FIXED, nfds - FD_FIXED);
+            kk_control_dispatch(a->control, fds + ctl_at, nfds - ctl_at);
 
         double t = now_seconds();
+        kk_soundboard_pump(a->sounds, fds + FD_FIXED, n_audio, t);
         if (a->youtube)
             kk_youtube_tick(a->youtube, t);
         if (a->demo_on)
@@ -946,7 +1013,13 @@ int main(int argc, char **argv)
     kk_stage_resize(&stage, win.width, win.height);
     spawn_avatars(&stage, &lib, &a.cfg);
 
-    kk_actions actions = {.stage = &stage, .sound = on_sound};
+    a.sounds = kk_soundboard_new();
+    if (!a.sounds) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_soundboard_configure(a.sounds, &a.cfg);
+    kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds};
     a.actions = &actions;
     a.sink = (chat_sink){
         .stage = &stage,
@@ -981,6 +1054,7 @@ int main(int argc, char **argv)
     kk_youtube_free(a.youtube);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);
+    kk_soundboard_free(a.sounds);
     if (a.users) {
         kk_users_save(a.users);
         kk_users_free(a.users);

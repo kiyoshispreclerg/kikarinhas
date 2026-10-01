@@ -5,7 +5,10 @@
  * stay where they are, and only writes a key when its value differs from the
  * default or the key was already there. "Salvar e aplicar" then asks the
  * running kikarinhas to reload over the control socket. The core never
- * needs this program. */
+ * needs this program.
+ *
+ * This file has the window and the Janela/Avatares/Chat/Comandos tabs;
+ * sounds.c and audience.c have the Sons and Espectadores ones. */
 #include <errno.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -17,7 +20,9 @@
 
 #include "config.h"
 #include "control.h"
+#include "editor.h"
 #include "ini.h"
+#include "sa.h"
 #include "util.h"
 
 enum {
@@ -37,31 +42,8 @@ static const char *const ROLE_LABELS[] = {
     "qualquer um", "membros", "moderadores", "dono",
 };
 
-typedef struct {
-    char path[KK_PATH_MAX];
-    kk_ini *ini;
-    char *loaded_custom[256]; /* custom commands in the file when loaded */
-    int n_loaded_custom;
 
-    GtkWidget *window, *status;
-    /* [window] */
-    GtkWidget *mode, *width, *height, *fps;
-    /* [avatars] */
-    GtkWidget *scale, *ground_auto, *ground, *count_auto, *count, *show,
-        *default_avatar, *sa_dir;
-    /* [chat] */
-    GtkWidget *youtube, *demo, *max, *despawn, *verbose, *users;
-    /* [control] */
-    GtkWidget *socket;
-    /* [commands] */
-    GtkWidget *shortcuts, *shortcut_cd;
-    GtkListStore *commands;
-    GtkWidget *tree;
-} editor;
-
-static void status(editor *e, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-
-static void status(editor *e, const char *fmt, ...)
+void status(editor *e, const char *fmt, ...)
 {
     char msg[2048];
     va_list ap;
@@ -73,7 +55,7 @@ static void status(editor *e, const char *fmt, ...)
 
 /* ---- widgets ------------------------------------------------------------- */
 
-static GtkWidget *page(GtkWidget *notebook, const char *title)
+GtkWidget *page(GtkWidget *notebook, const char *title)
 {
     GtkWidget *table = gtk_table_new(1, 2, FALSE);
     gtk_table_set_row_spacings(GTK_TABLE(table), 6);
@@ -86,7 +68,7 @@ static GtkWidget *page(GtkWidget *notebook, const char *title)
 }
 
 /* A labelled row; hint (optional) goes under the widget in small text. */
-static GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w,
+GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w,
                       const char *hint)
 {
     guint n;
@@ -117,14 +99,14 @@ static GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w,
     return w;
 }
 
-static GtkWidget *spin(double lo, double hi, double step, int digits)
+GtkWidget *spin(double lo, double hi, double step, int digits)
 {
     GtkWidget *s = gtk_spin_button_new_with_range(lo, hi, step);
     gtk_spin_button_set_digits(GTK_SPIN_BUTTON(s), (guint)digits);
     return s;
 }
 
-static GtkWidget *entry(const char *text)
+GtkWidget *entry(const char *text)
 {
     GtkWidget *w = gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(w), text ? text : "");
@@ -152,11 +134,32 @@ static GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo,
     return box;
 }
 
-static GtkWidget *check(const char *label, bool on)
+GtkWidget *check(const char *label, bool on)
 {
     GtkWidget *c = gtk_check_button_new_with_label(label);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(c), on);
     return c;
+}
+
+GtkWidget *hint_label(const char *text)
+{
+    GtkWidget *l = gtk_label_new(NULL);
+    char *markup = g_markup_printf_escaped("<small>%s</small>", text);
+    gtk_label_set_markup(GTK_LABEL(l), markup);
+    g_free(markup);
+    gtk_label_set_line_wrap(GTK_LABEL(l), TRUE);
+    /* GTK2 wraps at a narrow default width; use the window's. */
+    gtk_widget_set_size_request(l, 820, -1);
+    gtk_misc_set_alignment(GTK_MISC(l), 0, 0);
+    return l;
+}
+
+GtkWidget *icon_button(const char *stock, const char *label)
+{
+    GtkWidget *b = gtk_button_new_with_mnemonic(label);
+    if (stock)
+        gtk_button_set_image(GTK_BUTTON(b), gtk_image_new_from_stock(stock, GTK_ICON_SIZE_BUTTON));
+    return b;
 }
 
 /* What is written in the file for a path key, else the effective value. */
@@ -167,7 +170,7 @@ static const char *raw_or(const editor *e, const char *section, const char *key,
     return raw ? raw : value;
 }
 
-static void join(char *out, size_t size, char *const *items, int n)
+void join(char *out, size_t size, char *const *items, int n)
 {
     out[0] = '\0';
     size_t len = 0;
@@ -179,7 +182,7 @@ static void join(char *out, size_t size, char *const *items, int n)
     }
 }
 
-static void fmt_num(char *out, size_t size, double v)
+void fmt_num(char *out, size_t size, double v)
 {
     snprintf(out, size, "%g", v);
 }
@@ -487,8 +490,8 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     GtkWidget *buttons = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_START);
     gtk_box_set_spacing(GTK_BOX(buttons), 6);
-    GtkWidget *add = gtk_button_new_from_stock(GTK_STOCK_ADD);
-    GtkWidget *rm = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
+    GtkWidget *add = icon_button(GTK_STOCK_ADD, "_Adicionar");
+    GtkWidget *rm = icon_button(GTK_STOCK_REMOVE, "_Remover");
     GtkWidget *restore = gtk_button_new_with_mnemonic("Restaurar _padrão");
     g_signal_connect(add, "clicked", G_CALLBACK(on_add), e);
     g_signal_connect(rm, "clicked", G_CALLBACK(on_remove), e);
@@ -504,7 +507,7 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
 
 /* Writes key when the value differs from the default (NULL: no default) or
  * when the file already has it; an empty value removes the key. */
-static void put(editor *e, const char *section, const char *key,
+void put(editor *e, const char *section, const char *key,
                 const char *value, const char *dflt)
 {
     if (!value[0]) {
@@ -516,7 +519,7 @@ static void put(editor *e, const char *section, const char *key,
     kk_ini_set(e->ini, section, key, value);
 }
 
-static void put_int(editor *e, const char *section, const char *key, int v, int dflt)
+void put_int(editor *e, const char *section, const char *key, int v, int dflt)
 {
     char s[32], d[32];
     snprintf(s, sizeof s, "%d", v);
@@ -533,7 +536,7 @@ static void put_num(editor *e, const char *section, const char *key, double v,
     put(e, section, key, s, d);
 }
 
-static void put_bool(editor *e, const char *section, const char *key, GtkWidget *w,
+void put_bool(editor *e, const char *section, const char *key, GtkWidget *w,
                      bool dflt)
 {
     bool v = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w));
@@ -550,12 +553,12 @@ static void put_auto(editor *e, const char *section, const char *key,
                 gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_w)), -1);
 }
 
-static const char *text_of(GtkWidget *w)
+const char *text_of(GtkWidget *w)
 {
     return gtk_entry_get_text(GTK_ENTRY(w));
 }
 
-static int spin_int(GtkWidget *w)
+int spin_int(GtkWidget *w)
 {
     return gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
 }
@@ -656,6 +659,8 @@ static void collect(editor *e)
         save_command(e, &it);
         more = gtk_tree_model_iter_next(GTK_TREE_MODEL(e->commands), &it);
     }
+    sounds_collect(e);
+
     /* What is in the file now counts as loaded. */
     for (int i = 0; i < e->n_loaded_custom; i++)
         g_free(e->loaded_custom[i]);
@@ -718,6 +723,35 @@ static void on_save(GtkButton *b, gpointer ud)
     save(ud);
 }
 
+bool editor_socket(editor *e, char *out, size_t size)
+{
+    const char *s = text_of(e->socket);
+    if (strcmp(s, "off") == 0)
+        return false;
+    if (s[0] == '~')
+        return kk_pathf(out, size, "%s%s", g_get_home_dir(), s + 1);
+    if (s[0])
+        return kk_pathf(out, size, "%s", s);
+    return kk_control_default_path(out, size);
+}
+
+bool editor_request(editor *e, const char *line, char *reply, size_t size)
+{
+    char sock[KK_PATH_MAX];
+    return editor_socket(e, sock, sizeof sock) &&
+           kk_control_request(sock, line, reply, size, 3000) == 0;
+}
+
+const char *editor_sa_dir(editor *e, char *buf, size_t size)
+{
+    const char *s = text_of(e->sa_dir);
+    if (s[0] == '~' && kk_pathf(buf, size, "%s%s", g_get_home_dir(), s + 1))
+        return buf;
+    if (s[0] && kk_pathf(buf, size, "%s", s))
+        return buf;
+    return kk_sa_find_data_dir(buf, size) ? buf : NULL;
+}
+
 static void on_apply(GtkButton *b, gpointer ud)
 {
     (void)b;
@@ -725,18 +759,11 @@ static void on_apply(GtkButton *b, gpointer ud)
     if (!save(e))
         return;
     char sock[KK_PATH_MAX], reply[8192];
-    const char *s = text_of(e->socket);
-    if (strcmp(s, "off") == 0) {
+    if (!editor_socket(e, sock, sizeof sock)) {
         status(e, "Salvo. O socket está desligado: reinicie o kikarinhas para aplicar.");
         return;
     }
-    if (s[0] && s[0] != '~')
-        snprintf(sock, sizeof sock, "%s", s);
-    else if (s[0] == '~')
-        kk_pathf(sock, sizeof sock, "%s%s", g_get_home_dir(), s + 1);
-    else
-        kk_control_default_path(sock, sizeof sock);
-    if (kk_control_request(sock, "{\"type\":\"reload\"}", reply, sizeof reply, 3000) < 0) {
+    if (!editor_request(e, "{\"type\":\"reload\"}", reply, sizeof reply)) {
         status(e, "Salvo. O kikarinhas não está aberto (%s); vale quando ele abrir.", sock);
         return;
     }
@@ -827,6 +854,10 @@ static void build(editor *e, const kk_config *cfg)
 
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), commands_page(e, cfg),
                              gtk_label_new("Comandos"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), sounds_page(e, cfg),
+                             gtk_label_new("Sons"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
+                             gtk_label_new("Espectadores"));
 
     e->status = gtk_label_new(NULL);
     gtk_misc_set_alignment(GTK_MISC(e->status), 0, 0.5);
@@ -836,11 +867,9 @@ static void build(editor *e, const kk_config *cfg)
     GtkWidget *buttons = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_END);
     gtk_box_set_spacing(GTK_BOX(buttons), 6);
-    GtkWidget *close_b = gtk_button_new_from_stock(GTK_STOCK_CLOSE);
-    GtkWidget *save_b = gtk_button_new_from_stock(GTK_STOCK_SAVE);
-    GtkWidget *apply_b = gtk_button_new_with_mnemonic("Salvar e _aplicar");
-    gtk_button_set_image(GTK_BUTTON(apply_b),
-                         gtk_image_new_from_stock(GTK_STOCK_APPLY, GTK_ICON_SIZE_BUTTON));
+    GtkWidget *close_b = icon_button(GTK_STOCK_CLOSE, "_Fechar");
+    GtkWidget *save_b = icon_button(GTK_STOCK_SAVE, "_Salvar");
+    GtkWidget *apply_b = icon_button(GTK_STOCK_APPLY, "Salvar e _aplicar");
     g_signal_connect_swapped(close_b, "clicked", G_CALLBACK(gtk_widget_destroy), e->window);
     g_signal_connect(save_b, "clicked", G_CALLBACK(on_save), e);
     g_signal_connect(apply_b, "clicked", G_CALLBACK(on_apply), e);
@@ -900,6 +929,8 @@ int main(int argc, char **argv)
 
     gtk_widget_show_all(e.window);
     gtk_main();
+    sounds_free(&e);
+    audience_free(&e);
     kk_ini_free(e.ini);
     for (int i = 0; i < e.n_loaded_custom; i++)
         g_free(e.loaded_custom[i]);

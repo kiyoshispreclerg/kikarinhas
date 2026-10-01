@@ -273,7 +273,8 @@ TEST(sa_palettes)
 }
 
 typedef struct {
-    char keys[8][64], avatars[8][32], palettes[8][32], gear[8][64];
+    char keys[8][64], avatars[8][32], palettes[8][32], gear[8][64], names[8][32];
+    long long first[8], last[8];
     int n;
 } users_seen;
 
@@ -286,6 +287,9 @@ static void on_user(void *ud, const kk_sa_user *u)
     snprintf(s->avatars[s->n], 32, "%s", u->avatar ? u->avatar : "");
     snprintf(s->palettes[s->n], 32, "%s", u->palette ? u->palette : "");
     snprintf(s->gear[s->n], 64, "%s", u->n_gear ? u->gear[0] : "");
+    snprintf(s->names[s->n], 32, "%s", u->name ? u->name : "");
+    s->first[s->n] = u->first;
+    s->last[s->n] = u->last;
     s->n++;
 }
 
@@ -298,14 +302,25 @@ TEST(sa_users_import)
     int n = kk_sa_parse_users(root, on_user, &seen);
     cJSON_Delete(root);
 
-    /* Unknown prefixes and people with nothing chosen are skipped. */
-    CHECK_INT_EQ(n, 2);
+    /* Unknown prefixes and people with neither choices nor a name are
+     * skipped; someone with only a name comes for the audience list. */
+    CHECK_INT_EQ(n, 3);
     CHECK_STR_EQ(seen.keys[0], "youtube:UCaaaaaaaaaaaaaaaaaaaaaa");
     CHECK_STR_EQ(seen.avatars[0], "bloco");
     CHECK_STR_EQ(seen.palettes[0], "blue");
     CHECK_STR_EQ(seen.gear[0], "hats/crown");
+    CHECK_STR_EQ(seen.names[0], "Fulana");
+    CHECK_INT_EQ(seen.first[0], 1704175445); /* -03:00 taken into account */
+    CHECK_INT_EQ(seen.last[0], 1706954400);
     CHECK_STR_EQ(seen.keys[1], "twitch:123456");
     CHECK_STR_EQ(seen.palettes[1], "");
+    CHECK_STR_EQ(seen.names[1], "");
+    CHECK_INT_EQ(seen.first[1], 0);
+    CHECK_STR_EQ(seen.keys[2], "youtube:UCcccccccccccccccccccccc");
+    CHECK_STR_EQ(seen.avatars[2], "");
+    CHECK_STR_EQ(seen.names[2], "Só Olhando");
+    CHECK_INT_EQ(seen.first[2], 0);
+    CHECK_INT_EQ(seen.last[2], 1704067199);
 }
 
 int main(void)

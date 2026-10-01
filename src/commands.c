@@ -17,7 +17,7 @@ typedef struct {
     char *data;
     double user_cd, global_cd;
     kk_role role;
-    double global_until;
+    char *group; /* cooldowns are kept under this name; NULL = own name */
 } command;
 
 /* When someone may use a command again, keyed by hash(command, person). */
@@ -52,6 +52,7 @@ void kk_commands_free(kk_commands *c)
         for (int k = 0; k < c->cmds[i].n_names; k++)
             free(c->cmds[i].names[k]);
         free(c->cmds[i].data);
+        free(c->cmds[i].group);
     }
     free(c->cmds);
     free(c->cds);
@@ -96,6 +97,24 @@ int kk_commands_add(kk_commands *c, const char *name, kk_cmd_fn fn,
     cmd->user_cd = user_cooldown;
     cmd->global_cd = global_cooldown;
     cmd->role = role;
+    return 0;
+}
+
+bool kk_commands_has(kk_commands *c, const char *word)
+{
+    return find(c, word) != NULL;
+}
+
+int kk_commands_set_group(kk_commands *c, const char *name, const char *group)
+{
+    command *cmd = find(c, name);
+    char *g = group ? strdup(group) : NULL;
+    if (!cmd || (group && !g)) {
+        free(g);
+        return -1;
+    }
+    free(cmd->group);
+    cmd->group = g;
     return 0;
 }
 
@@ -232,17 +251,21 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
     if (cmd) {
         if (role < cmd->role)
             return KK_CMD_DENIED;
-        h = hash2(cmd->names[0], user_key);
+        const char *cd_name = cmd->group ? cmd->group : cmd->names[0];
+        h = hash2(cd_name, user_key);
+        /* Everybody's cooldown: the same table, under a key no person has. */
+        uint64_t hg = hash2(cd_name, "\x01");
         /* The channel owner is never kept waiting. */
         if (role != KK_ROLE_OWNER &&
-            (now < cmd->global_until || now < user_until(c, h)))
+            (now < user_until(c, hg) || now < user_until(c, h)))
             return KK_CMD_COOLDOWN;
         trim_copy(args, sizeof args, p + n);
         call.name = cmd->names[0];
         call.data = cmd->data;
         if (!cmd->fn(&call))
             return KK_CMD_FAILED;
-        cmd->global_until = now + cmd->global_cd;
+        if (cmd->global_cd > 0)
+            set_user_until(c, hg, now + cmd->global_cd, now);
         set_user_until(c, h, now + cmd->user_cd, now);
         return KK_CMD_RAN;
     }

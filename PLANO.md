@@ -279,8 +279,43 @@ data/         avatar padrão original, exemplo de .ini
    (abre, salva sem mudar nada do arquivo, aplica no programa aberto e
    grava um campo alterado); não deu para capturar a tela aqui, então a
    edição da lista de comandos pela interface ficou sem teste.
-5. **Twitch** (IRC anônimo) e **Odysee** (Commentron).
-6. **kikarinhas-web** (WPE) como camadas.
-7. **Extras**: fundos e sons do SA, emojis/emotes como imagem no balão,
-   plugin de OBS lendo a memória compartilhada direto (sem Xcomposite),
-   Wayland (layer-shell) no futuro.
+5. **Twitch** (IRC anônimo) e **Odysee** (Commentron). *Adiada*: cada
+   conector é isolado e entrega o mesmo `kk_chat_msg`, então nada depende
+   dela; pode começar como bridge no socket.
+6. **kikarinhas-web** (WPE) como camadas. *Adiada* (opcional).
+7. **Extras**. Feitos:
+   - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na
+     memória (dr_wav, dr_mp3 e stb_vorbis embutidos em `vendor/`, atrás de
+     `src/decode.h`), já em 16 bits estéreo a 48 kHz (reamostragem linear),
+     e mede pico e intensidade (RMS dos blocos de 50 ms acima de −50 dBFS);
+     `src/audio.c` mistura até N vozes (ganho em ponto fixo, satura em vez
+     de dar a volta) e escreve no ALSA sem bloquear, com os descritores do
+     ALSA no `poll()` do laço; abre o dispositivo no primeiro som e fecha
+     depois de 3 s parado. `src/soundboard.c` liga as seções
+     `[sound.NOME]` (arquivo, apelidos, volume 0–400%) ao mixer, com cache
+     de cada arquivo decodificado na primeira vez. Cada som vira também um
+     comando `!NOME` com a espera do `!som` compartilhada
+     (`kk_commands_set_group`). Socket: `play` e `stop`.
+   - **Espectadores**: o arquivo de pessoas guarda nome, primeira e última
+     vez (hora Unix); `--import-sa-users` completa com `displayName`,
+     `firstTimeSpawned` e `lastTimeUsed` do SA sem mudar escolhas, e traz
+     quem só tinha nome. Socket: `save` e `set_avatar`.
+   - **Configurador**: abas Sons (adicionar, tocar com o mesmo mixer,
+     nivelar, importar a mesa do SA com os volumes de lá) e Espectadores
+     (busca, ordenação, troca de avatar pelo socket ou, com o programa
+     fechado, direto no arquivo). Separado em `config/main.c`, `sounds.c` e
+     `audience.c`.
+   Lições:
+   - nivelar pela intensidade com porta de silêncio, e não pelo pico, é o
+     que iguala sons curtos e longos; o teto é o pico (nunca estoura);
+     meta −18 dBFS;
+   - o arquivo de pessoas é do kikarinhas enquanto ele roda (grava a cada
+     30 s): o configurador pede `save` antes de ler e troca avatar pelo
+     socket, senão a troca seria desfeita;
+   - o GTK2 sem tradução instalada mostra os botões prontos em inglês:
+     rótulos próprios com o ícone pronto.
+   Não verificado: o som no OBS (só conferido que o fluxo aparece no
+   PipeWire e some parado) e mp3 com taxa variável longos.
+   Pendentes: fundos do SA, emojis/emotes como imagem no balão, plugin de
+   OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
+   (layer-shell) no futuro, reações do YouTube.
