@@ -232,9 +232,26 @@ data/         avatar padrão original, exemplo de .ini
    parecem vir em `frameworkUpdates` da mesma resposta, como contagens
    agregadas por emoji, não por pessoa; dariam um "emote wall" de ícones
    subindo. Falta confirmar o formato numa live com reações.
-3. **Interações**: comandos, tempos de espera, gear, paletas, persistência
-   própria e importação do `userData` do SA. Super Chat/membro com reação
-   especial.
+3. **Interações** *(feita)*: registro de comandos genérico
+   (`src/commands.c`: nome, aliases, papel mínimo, espera por pessoa e
+   global, dado opcional; `!` e `！`; atalho `!nome` para avatar, peça ou
+   paleta) e comandos padrão em `src/actions.c` (avatar, color, gear, jump,
+   sit, dance, emote, hug, attack, sound → gancho para a fase 7).
+   Acessórios desenhados (fixos, animados e alinhados à folha do avatar),
+   paletas por troca exata de cor, `users.tsv` com gravação atômica a cada
+   30 s e na saída, importação automática do `userData` do SA na primeira
+   vez (947 pessoas importadas aqui). 21 testes de unidade. Lições sobre
+   os acessórios (deduzidas e conferidas visualmente; ver `sa.h`):
+   - referência = centro da base da célula do avatar (os pés); a peça
+     pende do centro da própria base; pivôs em pixels do avatar com y para
+     cima; o `uniquePivot` da peça substitui o `gearPivot` do conjunto;
+   - conjunto com pivô y=-1000 está escondido naquele quadro (cadeiras só
+     aparecem sentado);
+   - z = `zIndex` da peça se `isUniqueZindex`, senão `globalZIndex` do
+     conjunto; negativo fica atrás do corpo;
+   - `isAnimatedAligned`: a folha da peça tem a mesma grade da do avatar.
+   Pendente: `paletteSwap` das peças (b_heads deveriam herdar a paleta) e
+   Super Chat/membro com reação além do balão.
 4. **Socket unix e configurador GTK2**: protocolo de bridges, `reload`,
    `kikarinhas-config`.
 5. **Twitch** (IRC anônimo) e **Odysee** (Commentron).

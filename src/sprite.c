@@ -75,8 +75,47 @@ static cairo_surface_t *store_sheet(cairo_surface_t *src, const kk_sheet *s,
     return dst;
 }
 
+static uint32_t premultiply(uint32_t c)
+{
+    uint32_t a = c >> 24;
+    uint32_t r = ((c >> 16) & 0xff) * a / 255;
+    uint32_t g = ((c >> 8) & 0xff) * a / 255;
+    uint32_t b = (c & 0xff) * a / 255;
+    return a << 24 | r << 16 | g << 8 | b;
+}
+
+/* cairo pixels are premultiplied ARGB32: compare in that form. */
+static void apply_recolor(cairo_surface_t *surf, const kk_recolor *rc)
+{
+    uint32_t from[32], to[32];
+    int n = rc->n < 32 ? rc->n : 32;
+    for (int i = 0; i < n; i++) {
+        from[i] = premultiply(rc->from[i]);
+        to[i] = premultiply(rc->to[i]);
+    }
+    cairo_surface_flush(surf);
+    unsigned char *data = cairo_image_surface_get_data(surf);
+    int stride = cairo_image_surface_get_stride(surf);
+    int w = cairo_image_surface_get_width(surf);
+    int h = cairo_image_surface_get_height(surf);
+    for (int y = 0; y < h; y++) {
+        uint32_t *row = (uint32_t *)(data + (size_t)y * (size_t)stride);
+        for (int x = 0; x < w; x++) {
+            if (!(row[x] >> 24))
+                continue;
+            for (int i = 0; i < n; i++)
+                if (row[x] == from[i]) {
+                    row[x] = to[i];
+                    break;
+                }
+        }
+    }
+    cairo_surface_mark_dirty(surf);
+}
+
 int kk_sheet_load(kk_sheet *s, const char *png, int frame_w, int frame_h,
-                  double scale, bool smooth, int max_rows, int max_cols)
+                  double scale, bool smooth, int max_rows, int max_cols,
+                  const kk_recolor *recolor)
 {
     memset(s, 0, sizeof *s);
     if (frame_w <= 0 || frame_h <= 0 || scale <= 0.0)
@@ -89,6 +128,10 @@ int kk_sheet_load(kk_sheet *s, const char *png, int frame_w, int frame_h,
         cairo_surface_destroy(src);
         return -1;
     }
+    if (recolor && recolor->n > 0 &&
+        cairo_image_surface_get_format(src) == CAIRO_FORMAT_ARGB32)
+        apply_recolor(src, recolor);
+
     /* Some sheets carry a few extra pixels: ignore partial cells. */
     s->cols = cairo_image_surface_get_width(src) / frame_w;
     s->rows = cairo_image_surface_get_height(src) / frame_h;

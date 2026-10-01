@@ -1,0 +1,219 @@
+{
+ "avatarData": {
+  "Bloco": {
+   "name": "Bloco",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "CanUseGear": [
+    "hats",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 1,
+      "g": 0,
+      "b": 0,
+      "a": 1
+     },
+     {
+      "r": 0,
+      "g": 0,
+      "b": 0,
+      "a": 1
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "Blue": {
+     "colors": [
+      {
+       "r": 0,
+       "g": 0,
+       "b": 1,
+       "a": 1
+      },
+      {
+       "r": 0,
+       "g": 0,
+       "b": 0,
+       "a": 1
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "framesPerSecond": 5,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 2.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {
+        "hats": {
+         "crown": {
+          "x": -3.0,
+          "y": 9.0
+         }
+        }
+       }
+      },
+      {
+       "gearPivot": {},
+       "uniquePivot": {}
+      }
+     ]
+    },
+    "walk": {
+     "framesPerSecond": 9,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 4.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ]
+    },
+    "sit": {
+     "frameData": [
+      {
+       "gearPivot": {
+        "chairs": {
+         "x": 0.0,
+         "y": -2.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ]
+    },
+    "custom1": {
+     "customName": "dance",
+     "frameData": [
+      {
+       "gearPivot": {},
+       "uniquePivot": {}
+      }
+     ],
+     "animationLoops": true,
+     "loopCount": 2
+    },
+    "dance": {
+     "frameData": []
+    }
+   }
+  },
+  "semgear": {
+   "name": "SemGear",
+   "width": 16,
+   "height": 16,
+   "animationData": {
+    "idle": {
+     "frameData": [
+      {
+       "gearPivot": {},
+       "uniquePivot": {}
+      }
+     ]
+    }
+   }
+  }
+ },
+ "gear": {
+  "hats": {
+   "globalZIndex": 3,
+   "gearPiece": {
+    "cap": {
+     "pieceName": "cap",
+     "PPU": 1.0,
+     "width": 32.0,
+     "height": 32.0,
+     "flipsWithAvatarX": true
+    },
+    "crown": {
+     "pieceName": "crown",
+     "PPU": 2.0,
+     "width": 20.0,
+     "height": 10.0,
+     "zIndex": 7,
+     "isUniqueZindex": true,
+     "isAnimated": true,
+     "FPS": 4
+    }
+   }
+  },
+  "chairs": {
+   "globalZIndex": -10,
+   "gearPiece": {
+    "kart": {
+     "pieceName": "kart",
+     "width": 32.0,
+     "height": 32.0
+    }
+   }
+  }
+ },
+ "userData": {
+  "YUCaaaaaaaaaaaaaaaaaaaaaa": {
+   "avatar": {
+    "selectedItem": "bloco"
+   },
+   "color": {
+    "selectedItem": "blue"
+   },
+   "gear": {
+    "sets": {
+     "hats": {
+      "selectedItem": "crown"
+     },
+     "chairs": {
+      "selectedItem": "none"
+     }
+    }
+   }
+  },
+  "123456": {
+   "avatar": {
+    "selectedItem": "semgear"
+   },
+   "color": {
+    "selectedItem": "none"
+   },
+   "gear": {
+    "sets": {}
+   }
+  },
+  "sOther": {
+   "avatar": {
+    "selectedItem": "bloco"
+   }
+  },
+  "YUCbbbbbbbbbbbbbbbbbbbbbb": {
+   "avatar": {
+    "selectedItem": "none"
+   },
+   "color": {
+    "selectedItem": "none"
+   },
+   "gear": {
+    "sets": {}
+   }
+  }
+ },
+ "loginDetails": {
+  "youtube": {
+   "token": "never-read"
+  }
+ }
+}

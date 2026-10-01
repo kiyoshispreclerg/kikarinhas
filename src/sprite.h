@@ -3,6 +3,7 @@
 #define KK_SPRITE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <cairo.h>
 
@@ -19,11 +20,18 @@ typedef struct {
     int head_pad; /* same, above the head */
 } kk_sheet;
 
+/* Exact colour swap applied to the source pixels (a palette). */
+typedef struct {
+    const uint32_t *from, *to; /* ARGB, not premultiplied */
+    int n;
+} kk_recolor;
+
 /* Loads png, cut in frame_w x frame_h cells, scaled by scale. smooth picks
  * bilinear filtering instead of nearest (pixel art). Only the first
- * max_rows x max_cols cells are kept (0 = all). */
+ * max_rows x max_cols cells are kept (0 = all). recolor may be NULL. */
 int kk_sheet_load(kk_sheet *s, const char *png, int frame_w, int frame_h,
-                  double scale, bool smooth, int max_rows, int max_cols);
+                  double scale, bool smooth, int max_rows, int max_cols,
+                  const kk_recolor *recolor);
 void kk_sheet_free(kk_sheet *s);
 
 /* Draws cell (row, col) with its top-left corner at (x, y). */

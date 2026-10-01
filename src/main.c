@@ -12,11 +12,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "actions.h"
+#include "commands.h"
 #include "demochat.h"
 #include "http.h"
 #include "log.h"
 #include "sa.h"
 #include "stage.h"
+#include "users.h"
 #include "window.h"
 #include "youtube.h"
 
@@ -40,6 +43,8 @@ typedef struct {
     const char *youtube;
     bool demo_chat;
     bool verbose;
+    const char *users_path;
+    bool import_sa;
 } options;
 
 static void usage(FILE *out)
@@ -63,6 +68,11 @@ static void usage(FILE *out)
             "                      todos do chat usam este avatar (padrão: um\n"
             "                      sorteado por pessoa, sempre o mesmo)\n"
             "  -v, --verbose       mostra as mensagens do chat no terminal\n"
+            "      --users ARQ     onde guardar o avatar/cor/acessórios de cada\n"
+            "                      pessoa (padrão ~/.local/share/kikarinhas/users.tsv)\n"
+            "      --import-sa-users\n"
+            "                      importa as escolhas do Stream Avatars (feito\n"
+            "                      sozinho na primeira vez)\n"
             "\n"
             "Avatares:\n"
             "      --sa-dir PASTA  pasta \"data\" do Stream Avatars (padrão: procura\n"
@@ -104,6 +114,8 @@ static int parse_options(int argc, char **argv, options *o)
         OPT_DEMO_CHAT,
         OPT_MAX,
         OPT_DESPAWN,
+        OPT_USERS,
+        OPT_IMPORT_SA,
     };
     static const struct option longopts[] = {
         {"mode", required_argument, NULL, 'm'},
@@ -123,6 +135,8 @@ static int parse_options(int argc, char **argv, options *o)
         {"despawn", required_argument, NULL, OPT_DESPAWN},
         {"default-avatar", required_argument, NULL, 'd'},
         {"verbose", no_argument, NULL, 'v'},
+        {"users", required_argument, NULL, OPT_USERS},
+        {"import-sa-users", no_argument, NULL, OPT_IMPORT_SA},
         {"help", no_argument, NULL, 'h'},
         {"version", no_argument, NULL, 'V'},
         {NULL, 0, NULL, 0},
@@ -240,6 +254,12 @@ static int parse_options(int argc, char **argv, options *o)
             break;
         case 'v':
             o->verbose = true;
+            break;
+        case OPT_USERS:
+            o->users_path = optarg;
+            break;
+        case OPT_IMPORT_SA:
+            o->import_sa = true;
             break;
         case OPT_CHECK:
             o->check = true;
@@ -368,19 +388,64 @@ static int open_signal_fd(void)
 
 typedef struct {
     kk_stage *stage;
+    kk_commands *commands;
+    kk_actions *actions;
     bool verbose;
 } chat_sink;
 
 static void on_chat(void *ud, const kk_chat_msg *m)
 {
     chat_sink *sink = ud;
+    kk_avatar *a = kk_stage_chatter(sink->stage, m);
+    kk_cmd_result r = KK_CMD_NONE;
+    if (a) {
+        char key[256];
+        snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
+        sink->actions->self = a;
+        r = kk_commands_handle(sink->commands, m, key, now_seconds());
+        if (r == KK_CMD_NONE)
+            kk_stage_say(sink->stage, a, m);
+    }
     if (sink->verbose) {
         static const char *const kinds[] = {"", " [pago]", " [membro]"};
-        fprintf(stderr, "[%s] %s%s%s%s: %s\n", m->platform, m->name,
+        static const char *const results[] = {"", "  [comando]", "  [em espera]",
+                                              "  [sem permissão]", "  [nada feito]"};
+        fprintf(stderr, "[%s] %s%s%s%s: %s%s\n", m->platform, m->name,
                 kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
-                m->text);
+                m->text, results[r]);
     }
-    kk_stage_chat(sink->stage, m);
+}
+
+static void on_sound(void *ud, const kk_chat_msg *m, const char *sound)
+{
+    (void)ud;
+    kk_log_info("%s pediu o som \"%s\" (a mesa de som chega na fase 7)",
+                m->name, sound);
+}
+
+typedef struct {
+    kk_users *users;
+    int imported;
+} import_ctx;
+
+/* Only people not known yet: never overwrite a choice made here. */
+static void on_sa_user(void *ud, const kk_sa_user *u)
+{
+    import_ctx *ic = ud;
+    if (kk_users_exists(ic->users, u->key))
+        return;
+    kk_users_set(ic->users, u->key, KK_USER_AVATAR, u->avatar);
+    kk_users_set(ic->users, u->key, KK_USER_PALETTE, u->palette);
+    char gear[1024] = "";
+    size_t n = 0;
+    for (int i = 0; i < u->n_gear; i++) {
+        int w = snprintf(gear + n, sizeof gear - n, "%s%s", i ? "," : "", u->gear[i]);
+        if (w < 0 || (size_t)w >= sizeof gear - n)
+            break;
+        n += (size_t)w;
+    }
+    kk_users_set(ic->users, u->key, KK_USER_GEAR, gear);
+    ic->imported++;
 }
 
 typedef struct {
@@ -389,6 +454,7 @@ typedef struct {
     kk_http *http;
     kk_youtube *youtube;  /* NULL if not used */
     kk_demochat *demo;    /* NULL if not used */
+    kk_users *users;      /* NULL if not used */
     int timer_fd, signal_fd;
 } app;
 
@@ -402,6 +468,7 @@ static void run(app *a)
     };
     bool full = true;
     double last = now_seconds();
+    double next_save = last + 30.0;
 
     for (;;) {
         kk_window_events ev = {0};
@@ -432,6 +499,10 @@ static void run(app *a)
             kk_youtube_tick(a->youtube, t);
         if (a->demo)
             kk_demochat_tick(a->demo, t);
+        if (a->users && t >= next_save) {
+            kk_users_save(a->users);
+            next_save = t + 30.0;
+        }
 
         bool tick = false;
         if (fds[FD_TIMER].revents & POLLIN) {
@@ -541,7 +612,24 @@ int main(int argc, char **argv)
                 opt.mode == KK_MODE_OBS ? "obs" : "desktop", opt.fps,
                 win.use_shm ? ", MIT-SHM" : "");
 
+    /* Who wears what. The first time, bring over Stream Avatars' choices. */
+    char users_path[KK_PATH_MAX];
+    if (opt.users_path)
+        snprintf(users_path, sizeof users_path, "%s", opt.users_path);
+    else if (!kk_users_default_path(users_path, sizeof users_path))
+        users_path[0] = '\0';
+    kk_users *users = users_path[0] ? kk_users_open(users_path) : NULL;
+    if (users && (opt.import_sa || !kk_file_exists(users_path))) {
+        import_ctx ic = {.users = users};
+        if (kk_sa_read_users(sa_dir, on_sa_user, &ic) >= 0) {
+            kk_log_info("%d pessoas importadas do Stream Avatars para %s",
+                        ic.imported, users_path);
+            kk_users_save(users);
+        }
+    }
+
     kk_stage_config cfg = {
+        .users = users,
         .scale = opt.scale,
         .ground_margin = opt.ground,
         .max_avatars = opt.max_avatars,
@@ -564,11 +652,25 @@ int main(int argc, char **argv)
     kk_stage_resize(&stage, win.width, win.height);
     spawn_avatars(&stage, &lib, &opt);
 
-    chat_sink sink = {.stage = &stage, .verbose = opt.verbose};
+    kk_actions actions = {.stage = &stage, .sound = on_sound};
+    kk_commands *commands = kk_commands_new(&actions);
+    if (!commands) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_actions_register(commands);
+
+    chat_sink sink = {
+        .stage = &stage,
+        .commands = commands,
+        .actions = &actions,
+        .verbose = opt.verbose,
+    };
     app a = {
         .win = &win,
         .stage = &stage,
         .http = http,
+        .users = users,
         .timer_fd = timer_fd,
         .signal_fd = signal_fd,
     };
@@ -590,6 +692,11 @@ int main(int argc, char **argv)
     /* The http client goes first: its pending callbacks point at youtube. */
     kk_http_free(http);
     kk_youtube_free(a.youtube);
+    kk_commands_free(commands);
+    if (users) {
+        kk_users_save(users);
+        kk_users_free(users);
+    }
     kk_stage_free(&stage);
     kk_window_close(&win);
     kk_sa_free(&lib);

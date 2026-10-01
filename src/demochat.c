@@ -35,6 +35,13 @@ static const char *const lines[] = {
     "tô só olhando",
     "!jump",
     "vai dar bom",
+    "!dance",
+    "!hug",
+    "!attack",
+    "!sit",
+    "!avatar random",
+    "!cor random",
+    "!som buzina",
 };
 
 void kk_demochat_init(kk_demochat *d, kk_chat_cb cb, void *ud, uint64_t seed)

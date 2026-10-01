@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "log.h"
 
@@ -165,7 +166,11 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
     s->sheets = calloc(n, sizeof *s->sheets);
     s->sheet_state = calloc(n, sizeof *s->sheet_state);
     s->usable = calloc(n, sizeof *s->usable);
-    if (!s->sheets || !s->sheet_state || !s->usable)
+    size_t np = lib->n_pieces > 0 ? (size_t)lib->n_pieces : 1;
+    s->gear_sheets = calloc(np, sizeof *s->gear_sheets);
+    s->gear_state = calloc(np, sizeof *s->gear_state);
+    if (!s->sheets || !s->sheet_state || !s->usable || !s->gear_sheets ||
+        !s->gear_state)
         return -1;
     for (int i = 0; i < lib->count; i++) {
         const kk_sa_avatar *a = &lib->avatars[i];
@@ -199,6 +204,17 @@ void kk_stage_free(kk_stage *s)
     free(s->sheets);
     free(s->sheet_state);
     free(s->usable);
+    while (s->palette_sheets) {
+        kk_palette_sheet *ps = s->palette_sheets;
+        s->palette_sheets = ps->next;
+        kk_sheet_free(&ps->sheet);
+        free(ps);
+    }
+    if (s->gear_sheets)
+        for (int i = 0; i < s->lib->n_pieces; i++)
+            kk_sheet_free(&s->gear_sheets[i]);
+    free(s->gear_sheets);
+    free(s->gear_state);
     if (s->tag_font)
         pango_font_description_free(s->tag_font);
     if (s->bubble_font)
@@ -237,10 +253,50 @@ const kk_sheet *kk_stage_sheet(kk_stage *s, const kk_sa_avatar *def)
         bool ok = def->image && def->n_anims > 0 &&
                   kk_sheet_load(&s->sheets[i], def->image, def->frame_w,
                                 def->frame_h, s->cfg.scale / def->ppu,
-                                def->smooth, def->n_anims, max_frames(def)) == 0;
+                                def->smooth, def->n_anims, max_frames(def),
+                                NULL) == 0;
         s->sheet_state[i] = ok ? 1 : -1;
     }
     return s->sheet_state[i] == 1 ? &s->sheets[i] : NULL;
+}
+
+/* The avatar's sheet in palette (-1 = original), loaded once. */
+static const kk_sheet *look_sheet(kk_stage *s, const kk_sa_avatar *def,
+                                  int palette)
+{
+    if (palette < 0 || palette >= def->n_palettes)
+        return kk_stage_sheet(s, def);
+    int idx = (int)(def - s->lib->avatars);
+    for (kk_palette_sheet *ps = s->palette_sheets; ps; ps = ps->next)
+        if (ps->avatar == idx && ps->palette == palette)
+            return ps->ok ? &ps->sheet : NULL;
+
+    kk_palette_sheet *ps = calloc(1, sizeof *ps);
+    if (!ps)
+        return NULL;
+    ps->avatar = idx;
+    ps->palette = palette;
+    const kk_sa_palette *pal = &def->palettes[palette];
+    kk_recolor rc = {def->main_colors, pal->colors,
+                     pal->n < def->n_main_colors ? pal->n : def->n_main_colors};
+    ps->ok = def->image && def->n_anims > 0 &&
+             kk_sheet_load(&ps->sheet, def->image, def->frame_w, def->frame_h,
+                           s->cfg.scale / def->ppu, def->smooth, def->n_anims,
+                           max_frames(def), &rc) == 0;
+    ps->next = s->palette_sheets;
+    s->palette_sheets = ps;
+    return ps->ok ? &ps->sheet : NULL;
+}
+
+static const kk_sheet *gear_sheet(kk_stage *s, const kk_sa_piece *p)
+{
+    if (s->gear_state[p->id] == 0) {
+        bool ok = p->image && p->w > 0 && p->h > 0 &&
+                  kk_sheet_load(&s->gear_sheets[p->id], p->image, p->w, p->h,
+                                s->cfg.scale / p->ppu, false, 0, 0, NULL) == 0;
+        s->gear_state[p->id] = ok ? 1 : -1;
+    }
+    return s->gear_state[p->id] == 1 ? &s->gear_sheets[p->id] : NULL;
 }
 
 static kk_avatar *add_avatar(kk_stage *s, const kk_sa_avatar *def,
@@ -296,56 +352,254 @@ static uint32_t fnv1a(const char *s)
     return h;
 }
 
-/* Same person, same avatar (until phase 3 lets people choose). */
+/* ---- looks --------------------------------------------------------------- */
+
+static const char *user_key(const kk_avatar *a)
+{
+    return a->user_id;
+}
+
+static void save_field(kk_stage *s, const kk_avatar *a, kk_user_field f,
+                       const char *value)
+{
+    if (s->cfg.users && user_key(a))
+        kk_users_set(s->cfg.users, user_key(a), f, value);
+}
+
+/* "set/piece,set/piece" of what a wears. */
+static void save_gear(kk_stage *s, const kk_avatar *a)
+{
+    char buf[1024];
+    size_t n = 0;
+    buf[0] = '\0';
+    for (int i = 0; i < a->n_gear && n < sizeof buf; i++) {
+        int w = snprintf(buf + n, sizeof buf - n, "%s%s/%s", i ? "," : "",
+                         s->lib->sets[a->gear[i].set].key, a->gear[i].piece->key);
+        if (w < 0 || (size_t)w >= sizeof buf - n)
+            break;
+        n += (size_t)w;
+    }
+    save_field(s, a, KK_USER_GEAR, buf);
+}
+
+static bool wear(kk_stage *s, kk_avatar *a, int set, const kk_sa_piece *p)
+{
+    const kk_sa_gear_set *gs = &s->lib->sets[set];
+    int index = (int)(p - gs->pieces);
+    const kk_sheet *sh = gear_sheet(s, p);
+    if (!sh)
+        return false;
+    kk_avatar_wear(a, set, p, index, sh);
+    return true;
+}
+
+bool kk_stage_set_avatar(kk_stage *s, kk_avatar *a, const kk_sa_avatar *def)
+{
+    /* A palette belongs to one avatar: switching drops it. */
+    const kk_sheet *sh = kk_stage_sheet(s, def);
+    if (!sh)
+        return false;
+    kk_avatar_set_look(a, def, sh, -1, &s->rng);
+    save_field(s, a, KK_USER_AVATAR, def->key);
+    save_field(s, a, KK_USER_PALETTE, NULL);
+    save_gear(s, a);
+    return true;
+}
+
+bool kk_stage_set_palette(kk_stage *s, kk_avatar *a, int palette)
+{
+    const kk_sheet *sh = look_sheet(s, a->def, palette);
+    if (!sh)
+        return false;
+    kk_avatar_set_look(a, a->def, sh, palette, &s->rng);
+    save_field(s, a, KK_USER_PALETTE,
+               palette >= 0 ? a->def->palettes[palette].key : NULL);
+    return true;
+}
+
+bool kk_stage_wear(kk_stage *s, kk_avatar *a, const char *piece_name)
+{
+    int set;
+    const kk_sa_piece *p = kk_sa_find_piece(s->lib, a->def, piece_name, &set);
+    if (!p || !wear(s, a, set, p))
+        return false;
+    save_gear(s, a);
+    return true;
+}
+
+void kk_stage_unwear_all(kk_stage *s, kk_avatar *a)
+{
+    kk_avatar_unwear(a, -1);
+    save_gear(s, a);
+}
+
+/* Saved palette and gear, applied to a fresh avatar. */
+static void apply_saved(kk_stage *s, kk_avatar *a)
+{
+    if (!s->cfg.users || !a->user_id)
+        return;
+    const char *pal = kk_users_get(s->cfg.users, a->user_id, KK_USER_PALETTE);
+    int pi = pal ? kk_sa_find_palette(a->def, pal) : -1;
+    const kk_sheet *sh = pi >= 0 ? look_sheet(s, a->def, pi) : NULL;
+    if (sh)
+        kk_avatar_set_look(a, a->def, sh, pi, &s->rng);
+
+    const char *gear = kk_users_get(s->cfg.users, a->user_id, KK_USER_GEAR);
+    char buf[1024];
+    if (!gear || !kk_pathf(buf, sizeof buf, "%s", gear))
+        return;
+    char *save;
+    for (char *path = strtok_r(buf, ",", &save); path;
+         path = strtok_r(NULL, ",", &save)) {
+        int set;
+        const kk_sa_piece *p = kk_sa_piece_by_path(s->lib, path, &set);
+        bool allowed = false;
+        for (int k = 0; p && k < a->def->n_gear_sets; k++)
+            allowed = allowed || a->def->gear_sets[k] == set;
+        if (allowed)
+            wear(s, a, set, p);
+    }
+}
+
+/* ---- chat ---------------------------------------------------------------- */
+
+/* Saved choice, else the configured default, else one picked by hashing the
+ * id (same person, same avatar). */
 static kk_avatar *spawn_chatter(kk_stage *s, const char *key,
                                 const kk_chat_msg *m)
 {
-    if (s->cfg.default_avatar)
-        return add_avatar(s, s->cfg.default_avatar, m->name, key, m->badges);
-    if (s->n_usable == 0)
-        return NULL;
-    uint32_t start = fnv1a(key) % (uint32_t)s->n_usable;
-    for (int k = 0; k < s->n_usable; k++) {
-        const kk_sa_avatar *def =
-            &s->lib->avatars[s->usable[(start + (uint32_t)k) % (uint32_t)s->n_usable]];
-        kk_avatar *a = add_avatar(s, def, m->name, key, m->badges);
-        if (a)
-            return a;
+    const char *saved =
+        s->cfg.users ? kk_users_get(s->cfg.users, key, KK_USER_AVATAR) : NULL;
+    const kk_sa_avatar *def = saved ? kk_sa_find(s->lib, saved) : NULL;
+    if (!def)
+        def = s->cfg.default_avatar;
+    kk_avatar *a = def ? add_avatar(s, def, m->name, key, m->badges) : NULL;
+
+    if (!a && s->n_usable > 0) {
+        uint32_t start = fnv1a(key) % (uint32_t)s->n_usable;
+        for (int k = 0; k < s->n_usable && !a; k++) {
+            def = &s->lib->avatars[s->usable[(start + (uint32_t)k) %
+                                             (uint32_t)s->n_usable]];
+            a = add_avatar(s, def, m->name, key, m->badges);
+        }
     }
-    return NULL;
+    if (a)
+        apply_saved(s, a);
+    return a;
 }
 
-void kk_stage_chat(kk_stage *s, const kk_chat_msg *m)
+kk_avatar *kk_stage_chatter(kk_stage *s, const kk_chat_msg *m)
 {
     char key[256];
     snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
 
-    kk_avatar *a = NULL;
-    for (int i = 0; i < s->count && !a; i++)
-        if (s->avatars[i].user_id && strcmp(s->avatars[i].user_id, key) == 0)
-            a = &s->avatars[i];
-
-    if (!a) {
-        /* Full: the chatter silent for longest makes room. */
-        int chatters = 0, oldest = -1;
-        for (int i = 0; i < s->count; i++) {
-            if (!s->avatars[i].user_id)
-                continue;
-            chatters++;
-            if (oldest < 0 || s->avatars[i].quiet > s->avatars[oldest].quiet)
-                oldest = i;
+    for (int i = 0; i < s->count; i++)
+        if (s->avatars[i].user_id && strcmp(s->avatars[i].user_id, key) == 0) {
+            s->avatars[i].quiet = 0.0;
+            return &s->avatars[i];
         }
-        if (chatters >= s->cfg.max_avatars && oldest >= 0)
-            remove_avatar(s, oldest);
-        a = spawn_chatter(s, key, m);
-        if (!a)
-            return;
-    }
 
+    /* Full: the chatter silent for longest makes room. */
+    int chatters = 0, oldest = -1;
+    for (int i = 0; i < s->count; i++) {
+        if (!s->avatars[i].user_id)
+            continue;
+        chatters++;
+        if (oldest < 0 || s->avatars[i].quiet > s->avatars[oldest].quiet)
+            oldest = i;
+    }
+    if (chatters >= s->cfg.max_avatars && oldest >= 0)
+        remove_avatar(s, oldest);
+    return spawn_chatter(s, key, m);
+}
+
+void kk_stage_say(kk_stage *s, kk_avatar *a, const kk_chat_msg *m)
+{
     kk_avatar_jump(a);
     bool has_text = m->text[0] || (m->kind == KK_MSG_PAID && m->amount && m->amount[0]);
     kk_avatar_say(a, has_text ? render_bubble(s, m) : NULL,
                   bubble_seconds(m->text));
+}
+
+kk_avatar *kk_stage_find_by_name(kk_stage *s, const char *name)
+{
+    if (name[0] == '@')
+        name++;
+    if (!name[0])
+        return NULL;
+    for (int i = 0; i < s->count; i++)
+        if (strcasecmp(s->avatars[i].label, name) == 0)
+            return &s->avatars[i];
+    return NULL;
+}
+
+kk_avatar *kk_stage_random_other(kk_stage *s, const kk_avatar *not)
+{
+    if (s->count < 2)
+        return NULL;
+    int k = kk_rng_int(&s->rng, s->count - 1);
+    kk_avatar *b = &s->avatars[k];
+    return b == not ? &s->avatars[s->count - 1] : b;
+}
+
+bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act)
+{
+    (void)s;
+    if (!b || a == b || !b->user_id)
+        return false;
+    kk_avatar_approach(a, b->user_id, act);
+    return true;
+}
+
+static kk_avatar *find_key(kk_stage *s, const char *key)
+{
+    for (int i = 0; i < s->count; i++)
+        if (s->avatars[i].user_id && strcmp(s->avatars[i].user_id, key) == 0)
+            return &s->avatars[i];
+    return NULL;
+}
+
+static cairo_surface_t *heart_bubble(kk_stage *s)
+{
+    kk_chat_msg m = {.text = "❤️", .kind = KK_MSG_TEXT};
+    return render_bubble(s, &m);
+}
+
+/* Keeps approaching avatars heading for their goal and performs the action
+ * when they get there. */
+static void run_interactions(kk_stage *s)
+{
+    for (int i = 0; i < s->count; i++) {
+        kk_avatar *a = &s->avatars[i];
+        if (a->state != KK_ST_APPROACH || !a->goal_key)
+            continue;
+        kk_avatar *b = find_key(s, a->goal_key);
+        if (!b) {
+            kk_avatar_stop(a, &s->rng);
+            continue;
+        }
+        /* Stand beside the other one, on the side we come from. */
+        double gap = (a->sheet->cell_w + b->sheet->cell_w) * 0.3;
+        a->target = b->x + (a->x < b->x ? -gap : gap);
+        if (!a->arrived)
+            continue;
+
+        kk_action act = a->goal_act;
+        kk_avatar_stop(a, &s->rng);
+        a->left = b->x < a->x;
+        if (act == KK_ACT_HUG) {
+            kk_avatar_jump(a);
+            kk_avatar_jump(b);
+            kk_avatar_say(a, heart_bubble(s), 3.0);
+        } else {
+            if (!kk_avatar_emote(a, "attack", &s->rng))
+                kk_avatar_jump(a);
+            b->left = a->x < b->x;
+            if (!kk_avatar_emote(b, "hurt", &s->rng) &&
+                !kk_avatar_emote(b, "death", &s->rng))
+                kk_avatar_jump(b);
+        }
+    }
 }
 
 /* ---- update -------------------------------------------------------------- */
@@ -391,6 +645,7 @@ void kk_stage_update(kk_stage *s, double dt)
 {
     for (int i = 0; i < s->count; i++)
         kk_avatar_update(&s->avatars[i], dt, s->width, &s->rng);
+    run_interactions(s);
     for (int i = s->count - 1; i >= 0; i--)
         if (s->avatars[i].user_id && s->avatars[i].quiet > s->cfg.despawn &&
             !s->avatars[i].bubble)
