@@ -1,0 +1,308 @@
+{
+ "responseContext": {
+  "serviceTrackingParams": []
+ },
+ "continuationContents": {
+  "liveChatContinuation": {
+   "continuations": [
+    {
+     "invalidationContinuationData": {
+      "invalidationId": {
+       "objectSource": 1056,
+       "topic": "chat~XXXXXXXXXXX"
+      },
+      "timeoutMs": 10000,
+      "continuation": "TOKEN_NEXT"
+     }
+    }
+   ],
+   "actions": [
+    {
+     "clickTrackingParams": "x",
+     "addChatItemAction": {
+      "item": {
+       "liveChatTextMessageRenderer": {
+        "message": {
+         "runs": [
+          {
+           "text": "oi chat "
+          },
+          {
+           "emoji": {
+            "emojiId": "😂",
+            "shortcuts": [
+             ":joy:"
+            ],
+            "image": {
+             "thumbnails": [
+              {
+               "url": "https://example.invalid/e.png"
+              }
+             ]
+            }
+           }
+          },
+          {
+           "emoji": {
+            "emojiId": "UCxx/abc",
+            "shortcuts": [
+             ":hand-pink-waving:"
+            ],
+            "isCustomEmoji": true,
+            "image": {
+             "thumbnails": [
+              {
+               "url": "https://example.invalid/c.png"
+              }
+             ]
+            }
+           }
+          }
+         ]
+        },
+        "authorName": {
+         "simpleText": "@Fulana"
+        },
+        "authorPhoto": {
+         "thumbnails": [
+          {
+           "url": "https://example.invalid/a.png",
+           "width": 32,
+           "height": 32
+          }
+         ]
+        },
+        "contextMenuEndpoint": {},
+        "id": "m1",
+        "timestampUsec": "1790858477217822",
+        "authorExternalChannelId": "UCaaaaaaaaaaaaaaaaaaaaaa",
+        "trackingParams": "x"
+       }
+      },
+      "clientId": "c"
+     }
+    },
+    {
+     "clickTrackingParams": "x",
+     "addChatItemAction": {
+      "item": {
+       "liveChatTextMessageRenderer": {
+        "message": {
+         "runs": [
+          {
+           "text": "bem-vindos"
+          }
+         ]
+        },
+        "authorName": {
+         "simpleText": "@DonaDaLive"
+        },
+        "authorPhoto": {
+         "thumbnails": [
+          {
+           "url": "https://example.invalid/a.png",
+           "width": 32,
+           "height": 32
+          }
+         ]
+        },
+        "contextMenuEndpoint": {},
+        "id": "m2",
+        "timestampUsec": "1790858477217822",
+        "authorExternalChannelId": "UCbbbbbbbbbbbbbbbbbbbbbb",
+        "trackingParams": "x",
+        "authorBadges": [
+         {
+          "liveChatAuthorBadgeRenderer": {
+           "icon": {
+            "iconType": "OWNER"
+           },
+           "tooltip": "Owner"
+          }
+         }
+        ]
+       }
+      },
+      "clientId": "c"
+     }
+    },
+    {
+     "clickTrackingParams": "x",
+     "addChatItemAction": {
+      "item": {
+       "liveChatTextMessageRenderer": {
+        "message": {
+         "runs": [
+          {
+           "text": "sem spam"
+          }
+         ]
+        },
+        "authorName": {
+         "simpleText": "@Moderador"
+        },
+        "authorPhoto": {
+         "thumbnails": [
+          {
+           "url": "https://example.invalid/a.png",
+           "width": 32,
+           "height": 32
+          }
+         ]
+        },
+        "contextMenuEndpoint": {},
+        "id": "m3",
+        "timestampUsec": "1790858477217822",
+        "authorExternalChannelId": "UCcccccccccccccccccccccc",
+        "trackingParams": "x",
+        "authorBadges": [
+         {
+          "liveChatAuthorBadgeRenderer": {
+           "icon": {
+            "iconType": "MODERATOR"
+           },
+           "tooltip": "Moderator"
+          }
+         },
+         {
+          "liveChatAuthorBadgeRenderer": {
+           "customThumbnail": {
+            "thumbnails": [
+             {
+              "url": "https://example.invalid/m.png"
+             }
+            ]
+           },
+           "tooltip": "Member (1 year)"
+          }
+         }
+        ]
+       }
+      },
+      "clientId": "c"
+     }
+    },
+    {
+     "addChatItemAction": {
+      "item": {
+       "liveChatPlaceholderItemRenderer": {
+        "id": "p1",
+        "timestampUsec": "1"
+       }
+      }
+     }
+    },
+    {
+     "replaceChatItemAction": {
+      "targetItemId": "p1",
+      "replacementItem": {
+       "liveChatTextMessageRenderer": {
+        "message": {
+         "runs": [
+          {
+           "text": "liberada"
+          }
+         ]
+        },
+        "authorName": {
+         "simpleText": "@Segurada"
+        },
+        "id": "p1",
+        "authorExternalChannelId": "UCdddddddddddddddddddddd",
+        "timestampUsec": "2"
+       }
+      }
+     }
+    },
+    {
+     "addChatItemAction": {
+      "item": {
+       "liveChatPaidMessageRenderer": {
+        "id": "s1",
+        "timestampUsec": "3",
+        "authorName": {
+         "simpleText": "@Generoso"
+        },
+        "authorExternalChannelId": "UCeeeeeeeeeeeeeeeeeeeeee",
+        "purchaseAmountText": {
+         "simpleText": "R$ 10,00"
+        },
+        "message": {
+         "runs": [
+          {
+           "text": "cafezinho"
+          }
+         ]
+        },
+        "headerBackgroundColor": 4294947584
+       }
+      }
+     }
+    },
+    {
+     "addChatItemAction": {
+      "item": {
+       "liveChatMembershipItemRenderer": {
+        "id": "n1",
+        "timestampUsec": "4",
+        "authorName": {
+         "simpleText": "@Novato"
+        },
+        "authorExternalChannelId": "UCffffffffffffffffffffff",
+        "headerSubtext": {
+         "runs": [
+          {
+           "text": "Boas-vindas a "
+          },
+          {
+           "text": "Canal"
+          },
+          {
+           "text": "!"
+          }
+         ]
+        },
+        "authorBadges": [
+         {
+          "liveChatAuthorBadgeRenderer": {
+           "customThumbnail": {
+            "thumbnails": [
+             {
+              "url": "https://example.invalid/m.png"
+             }
+            ]
+           },
+           "tooltip": "Member (1 year)"
+          }
+         }
+        ]
+       }
+      }
+     }
+    },
+    {
+     "addChatItemAction": {
+      "item": {
+       "liveChatViewerEngagementMessageRenderer": {
+        "id": "v1",
+        "message": {
+         "runs": [
+          {
+           "text": "Bem-vindo ao chat"
+          }
+         ]
+        }
+       }
+      }
+     }
+    },
+    {
+     "removeChatItemAction": {
+      "targetItemId": "m9"
+     }
+    }
+   ]
+  }
+ },
+ "trackingParams": "x"
+}

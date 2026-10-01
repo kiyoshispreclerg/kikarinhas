@@ -19,7 +19,7 @@ VENDOR_WARNFLAGS = -Wall -Wextra -Werror
 OPTFLAGS ?= -O2 -g
 
 # Library headers go in as -isystem so -Wpedantic/-Werror only judge our code.
-PKGS       = x11 xext cairo pangocairo
+PKGS       = x11 xext cairo pangocairo libcurl
 PKG_CFLAGS = $(shell $(PKG_CONFIG) --cflags $(PKGS) | sed 's/-I/-isystem /g')
 PKG_LIBS   = $(shell $(PKG_CONFIG) --libs $(PKGS))
 

@@ -7,14 +7,16 @@
 
 #include "log.h"
 
-/* Lowest opaque row of a cell, counted from its bottom edge. */
-static int cell_bottom_gap(cairo_surface_t *surf, int x0, int y0, int w, int h)
+/* Transparent rows at the bottom (or top) edge of a cell. */
+static int cell_gap(cairo_surface_t *surf, int x0, int y0, int w, int h,
+                    bool from_top)
 {
     const unsigned char *data = cairo_image_surface_get_data(surf);
     int stride = cairo_image_surface_get_stride(surf);
     for (int gap = 0; gap < h; gap++) {
+        int y = from_top ? y0 + gap : y0 + h - 1 - gap;
         const uint32_t *row =
-            (const uint32_t *)(data + (size_t)(y0 + h - 1 - gap) * (size_t)stride) + x0;
+            (const uint32_t *)(data + (size_t)y * (size_t)stride) + x0;
         for (int x = 0; x < w; x++)
             if (row[x] >> 24)
                 return gap;
@@ -22,15 +24,15 @@ static int cell_bottom_gap(cairo_surface_t *surf, int x0, int y0, int w, int h)
     return h; /* empty cell */
 }
 
-static int compute_foot_pad(const kk_sheet *s)
+/* Smallest gap over the idle and walk cells (rows 0 and 1: the poses that
+ * stand on the ground), in on-screen pixels. */
+static int compute_pad(const kk_sheet *s, bool top)
 {
-    cairo_surface_flush(s->pixels);
     int pad = s->store_h;
-    /* Rows 0 and 1 are idle and walk: the poses that stand on the ground. */
     for (int row = 0; row < 2 && row < s->rows; row++)
         for (int col = 0; col < s->cols; col++) {
-            int gap = cell_bottom_gap(s->pixels, col * s->store_w,
-                                      row * s->store_h, s->store_w, s->store_h);
+            int gap = cell_gap(s->pixels, col * s->store_w, row * s->store_h,
+                               s->store_w, s->store_h, top);
             if (gap < pad)
                 pad = gap;
         }
@@ -107,7 +109,9 @@ int kk_sheet_load(kk_sheet *s, const char *png, int frame_w, int frame_h,
     s->store_h = smooth ? s->cell_h : frame_h;
     s->pixels = store_sheet(src, s, frame_w, frame_h, smooth);
     cairo_surface_destroy(src);
-    s->foot_pad = compute_foot_pad(s);
+    cairo_surface_flush(s->pixels);
+    s->foot_pad = compute_pad(s, false);
+    s->head_pad = compute_pad(s, true);
     return 0;
 }
 

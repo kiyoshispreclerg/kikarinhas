@@ -31,12 +31,26 @@ typedef struct {
     bool done;
 } kk_anim;
 
+/* Where the avatars live: ground line and window width. */
+typedef struct {
+    int ground_y;
+    int width;
+} kk_view;
+
 typedef struct {
     const kk_sa_avatar *def;
     const kk_sheet *sheet;
     char *label;
+    char *user_id; /* "platform:id" of the chatter; NULL for demo avatars */
+    double quiet;  /* seconds since the last message */
     cairo_surface_t *tag; /* pre-rendered name tag */
     int tag_w, tag_h;
+    int tag_row; /* tags are stacked in rows so neighbours don't overlap */
+
+    cairo_surface_t *bubble; /* speech bubble, NULL when silent */
+    int bubble_w, bubble_h;
+    double bubble_left; /* seconds until the bubble goes away */
+    unsigned bubble_serial; /* bumps when the bubble changes */
 
     double x;      /* horizontal centre, px */
     double lift;   /* height above the ground while jumping, px */
@@ -53,12 +67,14 @@ typedef struct {
     int drawn_frame;
     int drawn_row;
     bool drawn_left;
+    unsigned drawn_serial;
 } kk_avatar;
 
-/* label is copied. tag is owned by the avatar from now on. */
+/* label and user_id (may be NULL) are copied. tag is owned by the avatar
+ * from now on. */
 void kk_avatar_init(kk_avatar *a, const kk_sa_avatar *def, const kk_sheet *sheet,
-                    const char *label, cairo_surface_t *tag, double x,
-                    double scale, kk_rng *rng);
+                    const char *label, const char *user_id,
+                    cairo_surface_t *tag, double x, double scale, kk_rng *rng);
 void kk_avatar_free(kk_avatar *a);
 
 /* Advances behaviour and animation; the avatar wanders in [0, width). */
@@ -67,17 +83,22 @@ void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng);
 /* Makes the avatar jump now (if it is on the ground). */
 void kk_avatar_jump(kk_avatar *a);
 
-/* Area the avatar covers when standing on ground_y. */
-kk_rect kk_avatar_bounds(const kk_avatar *a, int ground_y);
+/* Shows bubble (owned by the avatar from now on; NULL for none) for
+ * seconds, replacing the current one. */
+void kk_avatar_say(kk_avatar *a, cairo_surface_t *bubble, double seconds);
 
-/* Paints sprite and name tag (may run several times per frame, once per
- * damaged region). */
-void kk_avatar_draw(const kk_avatar *a, cairo_t *cr, int ground_y);
+/* Area the avatar covers (sprite, tag and bubble). */
+kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v);
+
+/* Painting is split so every bubble goes above every body. Both may run
+ * several times per frame, once per damaged region. */
+void kk_avatar_draw_body(const kk_avatar *a, cairo_t *cr, const kk_view *v);
+void kk_avatar_draw_bubble(const kk_avatar *a, cairo_t *cr, const kk_view *v);
 
 /* Records the current pose as painted, after the frame went out. */
-void kk_avatar_mark_drawn(kk_avatar *a, int ground_y);
+void kk_avatar_mark_drawn(kk_avatar *a, const kk_view *v);
 
 /* True if the next paint would differ from the last one. */
-bool kk_avatar_changed(const kk_avatar *a, int ground_y);
+bool kk_avatar_changed(const kk_avatar *a, const kk_view *v);
 
 #endif

@@ -16,6 +16,7 @@ typedef struct {
     int cell_w, cell_h;      /* on-screen cell size */
     int cols, rows;
     int foot_pad; /* on-screen transparent rows under the feet in idle/walk */
+    int head_pad; /* same, above the head */
 } kk_sheet;
 
 /* Loads png, cut in frame_w x frame_h cells, scaled by scale. smooth picks

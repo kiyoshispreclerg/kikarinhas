@@ -178,9 +178,32 @@ static void pick_next(kk_avatar *a, int width, kk_rng *rng)
     }
 }
 
+static void set_bubble(kk_avatar *a, cairo_surface_t *bubble, double seconds)
+{
+    if (a->bubble)
+        cairo_surface_destroy(a->bubble);
+    a->bubble = bubble;
+    a->bubble_w = bubble ? cairo_image_surface_get_width(bubble) : 0;
+    a->bubble_h = bubble ? cairo_image_surface_get_height(bubble) : 0;
+    a->bubble_left = seconds;
+    a->bubble_serial++;
+}
+
+void kk_avatar_say(kk_avatar *a, cairo_surface_t *bubble, double seconds)
+{
+    set_bubble(a, bubble, seconds);
+    a->quiet = 0.0;
+}
+
 void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
 {
     anim_update(a, dt);
+    a->quiet += dt;
+    if (a->bubble) {
+        a->bubble_left -= dt;
+        if (a->bubble_left <= 0.0)
+            set_bubble(a, NULL, 0.0);
+    }
 
     switch (a->state) {
     case KK_ST_IDLE:
@@ -240,13 +263,14 @@ void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
 /* ---- geometry and painting ----------------------------------------------- */
 
 void kk_avatar_init(kk_avatar *a, const kk_sa_avatar *def, const kk_sheet *sheet,
-                    const char *label, cairo_surface_t *tag, double x,
-                    double scale, kk_rng *rng)
+                    const char *label, const char *user_id,
+                    cairo_surface_t *tag, double x, double scale, kk_rng *rng)
 {
     memset(a, 0, sizeof *a);
     a->def = def;
     a->sheet = sheet;
     a->label = strdup(label);
+    a->user_id = user_id ? strdup(user_id) : NULL;
     a->tag = tag;
     a->tag_w = cairo_image_surface_get_width(tag);
     a->tag_h = cairo_image_surface_get_height(tag);
@@ -262,54 +286,91 @@ void kk_avatar_init(kk_avatar *a, const kk_sa_avatar *def, const kk_sheet *sheet
 void kk_avatar_free(kk_avatar *a)
 {
     free(a->label);
+    free(a->user_id);
     if (a->tag)
         cairo_surface_destroy(a->tag);
+    if (a->bubble)
+        cairo_surface_destroy(a->bubble);
 }
 
-static void sprite_origin(const kk_avatar *a, int ground_y, int *x, int *y)
+static void sprite_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
 {
     *x = (int)lround(a->x) - a->sheet->cell_w / 2;
-    *y = ground_y - (a->sheet->cell_h - a->sheet->foot_pad) -
+    *y = v->ground_y - (a->sheet->cell_h - a->sheet->foot_pad) -
          (int)lround(a->lift);
 }
 
-static void tag_origin(const kk_avatar *a, int ground_y, int *x, int *y)
+static void tag_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
 {
     *x = (int)lround(a->x) - a->tag_w / 2;
-    *y = ground_y + TAG_GAP - (int)lround(a->lift);
+    *y = v->ground_y + TAG_GAP + a->tag_row * (a->tag_h - 2) -
+         (int)lround(a->lift);
 }
 
-kk_rect kk_avatar_bounds(const kk_avatar *a, int ground_y)
+/* Above the head, kept inside the window. */
+static void bubble_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
+{
+    int sx, sy;
+    sprite_origin(a, v, &sx, &sy);
+    *x = (int)lround(a->x) - a->bubble_w / 2;
+    if (*x + a->bubble_w > v->width)
+        *x = v->width - a->bubble_w;
+    if (*x < 0)
+        *x = 0;
+    *y = sy + a->sheet->head_pad - a->bubble_h;
+    if (*y < 0)
+        *y = 0;
+}
+
+kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
 {
     int sx, sy, tx, ty;
-    sprite_origin(a, ground_y, &sx, &sy);
-    tag_origin(a, ground_y, &tx, &ty);
-    return kk_rect_union((kk_rect){sx, sy, a->sheet->cell_w, a->sheet->cell_h},
-                         (kk_rect){tx, ty, a->tag_w, a->tag_h});
+    sprite_origin(a, v, &sx, &sy);
+    tag_origin(a, v, &tx, &ty);
+    kk_rect r = kk_rect_union(
+        (kk_rect){sx, sy, a->sheet->cell_w, a->sheet->cell_h},
+        (kk_rect){tx, ty, a->tag_w, a->tag_h});
+    if (a->bubble) {
+        int bx, by;
+        bubble_origin(a, v, &bx, &by);
+        r = kk_rect_union(r, (kk_rect){bx, by, a->bubble_w, a->bubble_h});
+    }
+    return r;
 }
 
-bool kk_avatar_changed(const kk_avatar *a, int ground_y)
+bool kk_avatar_changed(const kk_avatar *a, const kk_view *v)
 {
     return a->anim.frame != a->drawn_frame || a->anim.row != a->drawn_row ||
-           a->left != a->drawn_left ||
-           !kk_rect_equal(kk_avatar_bounds(a, ground_y), a->drawn);
+           a->left != a->drawn_left || a->bubble_serial != a->drawn_serial ||
+           !kk_rect_equal(kk_avatar_bounds(a, v), a->drawn);
 }
 
-void kk_avatar_draw(const kk_avatar *a, cairo_t *cr, int ground_y)
+void kk_avatar_draw_body(const kk_avatar *a, cairo_t *cr, const kk_view *v)
 {
     int sx, sy, tx, ty;
-    sprite_origin(a, ground_y, &sx, &sy);
-    tag_origin(a, ground_y, &tx, &ty);
+    sprite_origin(a, v, &sx, &sy);
+    tag_origin(a, v, &tx, &ty);
 
     kk_sheet_draw(a->sheet, cr, a->anim.row, a->anim.frame, a->left, sx, sy);
     cairo_set_source_surface(cr, a->tag, tx, ty);
     cairo_paint(cr);
 }
 
-void kk_avatar_mark_drawn(kk_avatar *a, int ground_y)
+void kk_avatar_draw_bubble(const kk_avatar *a, cairo_t *cr, const kk_view *v)
 {
-    a->drawn = kk_avatar_bounds(a, ground_y);
+    if (!a->bubble)
+        return;
+    int bx, by;
+    bubble_origin(a, v, &bx, &by);
+    cairo_set_source_surface(cr, a->bubble, bx, by);
+    cairo_paint(cr);
+}
+
+void kk_avatar_mark_drawn(kk_avatar *a, const kk_view *v)
+{
+    a->drawn = kk_avatar_bounds(a, v);
     a->drawn_frame = a->anim.frame;
     a->drawn_row = a->anim.row;
     a->drawn_left = a->left;
+    a->drawn_serial = a->bubble_serial;
 }

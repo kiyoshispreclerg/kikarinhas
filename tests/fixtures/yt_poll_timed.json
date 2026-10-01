@@ -1,0 +1,15 @@
+{
+ "responseContext": {},
+ "continuationContents": {
+  "liveChatContinuation": {
+   "continuations": [
+    {
+     "timedContinuationData": {
+      "timeoutMs": 6000,
+      "continuation": "TOKEN_TIMED"
+     }
+    }
+   ]
+  }
+ }
+}

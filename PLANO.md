@@ -211,8 +211,27 @@ data/         avatar padrão original, exemplo de .ini
    - `malloc_trim` depois do parse devolve ~17 MB do JSON.
    Pendente: pacotes .zip (premade/workshop) e plaquinhas de nome que se
    sobrepõem quando avatares ficam juntos.
-2. **YouTube**: conector InnerTube; um avatar por pessoa, nome, balão,
-   sumiço por inatividade, limite com fila. Testes com respostas gravadas.
+2. **YouTube** *(feita)*: conector InnerTube integrado ao laço via
+   `curl_multi_wait`; um avatar por pessoa (sorteado por hash do id, sempre
+   o mesmo), pulo e balão a cada mensagem, Super Chat dourado, membro
+   verde, nome colorido por selo, sumiço após 300 s em silêncio, limite com
+   saída de quem está calado há mais tempo, nomes em duas linhas,
+   `--demo-chat`. Testes com fixtures sintéticas no formato real. Testado
+   numa live japonesa com ~2 msg/s: 30 avatares, ~3,6% de CPU, ~97 MB de
+   RSS; reconectou sozinho após queda de DNS. Lições:
+   - a primeira resposta do "Live chat" repete o histórico: é descartada;
+   - tokens `invalidationContinuationData` pedem `timeoutMs` de 10 s
+     porque o navegador recebe push; sem push, sondamos a cada 2,5 s;
+   - mensagens em moderação chegam como placeholder e depois em
+     `replaceChatItemAction`;
+   - fontes CJK são mais altas: a margem do chão mede "Ág日本語".
+   Não verificado ao vivo: selos (nenhum apareceu nas amostras), Super
+   Chat e membros (só nas fixtures). Pendente: emojis de canal viram
+   `:atalho:` em texto (imagens na fase 7).
+   Ideia anotada: as **reações** do YouTube (coração, 100, risada...)
+   parecem vir em `frameworkUpdates` da mesma resposta, como contagens
+   agregadas por emoji, não por pessoa; dariam um "emote wall" de ícones
+   subindo. Falta confirmar o formato numa live com reações.
 3. **Interações**: comandos, tempos de espera, gear, paletas, persistência
    própria e importação do `userData` do SA. Super Chat/membro com reação
    especial.

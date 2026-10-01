@@ -12,10 +12,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "demochat.h"
+#include "http.h"
 #include "log.h"
 #include "sa.h"
 #include "stage.h"
 #include "window.h"
+#include "youtube.h"
 
 #define MAX_NAMED 64
 
@@ -29,8 +32,14 @@ typedef struct {
     const char *named[MAX_NAMED];
     int n_named;
     const char *sa_dir;
+    const char *default_avatar;
+    int max_avatars;
+    double despawn;
     uint64_t seed;
     bool list, check;
+    const char *youtube;
+    bool demo_chat;
+    bool verbose;
 } options;
 
 static void usage(FILE *out)
@@ -44,10 +53,22 @@ static void usage(FILE *out)
             "  -s, --size LxA      tamanho da janela no modo obs (padrão 1280x720)\n"
             "  -f, --fps N         quadros por segundo, 1 a 240 (padrão 30)\n"
             "\n"
+            "Chat:\n"
+            "  -y, --youtube ALVO  link da live ou do canal, @handle ou id do vídeo;\n"
+            "                      com um canal, espera ele entrar ao vivo\n"
+            "      --demo-chat     chat de mentira, para testar sem live\n"
+            "      --max N         avatares do chat ao mesmo tempo (padrão 30)\n"
+            "      --despawn S     segundos em silêncio até o avatar sair (padrão 300)\n"
+            "  -d, --default-avatar NOME\n"
+            "                      todos do chat usam este avatar (padrão: um\n"
+            "                      sorteado por pessoa, sempre o mesmo)\n"
+            "  -v, --verbose       mostra as mensagens do chat no terminal\n"
+            "\n"
             "Avatares:\n"
             "      --sa-dir PASTA  pasta \"data\" do Stream Avatars (padrão: procura\n"
             "                      nas bibliotecas do Steam)\n"
-            "  -n, --count N       quantos avatares aleatórios mostrar (padrão 6)\n"
+            "  -n, --count N       avatares aleatórios fora do chat (padrão 6, ou 0\n"
+            "                      com chat ou --avatar)\n"
             "  -a, --avatar NOME   mostra este avatar (pode repetir)\n"
             "      --scale X       escala dos avatares (padrão 2)\n"
             "      --ground N      pixels entre o chão e a borda de baixo\n"
@@ -73,7 +94,17 @@ static bool parse_int(const char *s, long lo, long hi, long *out)
 
 static int parse_options(int argc, char **argv, options *o)
 {
-    enum { OPT_SA_DIR = 256, OPT_SCALE, OPT_GROUND, OPT_SEED, OPT_LIST, OPT_CHECK };
+    enum {
+        OPT_SA_DIR = 256,
+        OPT_SCALE,
+        OPT_GROUND,
+        OPT_SEED,
+        OPT_LIST,
+        OPT_CHECK,
+        OPT_DEMO_CHAT,
+        OPT_MAX,
+        OPT_DESPAWN,
+    };
     static const struct option longopts[] = {
         {"mode", required_argument, NULL, 'm'},
         {"size", required_argument, NULL, 's'},
@@ -86,6 +117,12 @@ static int parse_options(int argc, char **argv, options *o)
         {"seed", required_argument, NULL, OPT_SEED},
         {"list", no_argument, NULL, OPT_LIST},
         {"check", no_argument, NULL, OPT_CHECK},
+        {"youtube", required_argument, NULL, 'y'},
+        {"demo-chat", no_argument, NULL, OPT_DEMO_CHAT},
+        {"max", required_argument, NULL, OPT_MAX},
+        {"despawn", required_argument, NULL, OPT_DESPAWN},
+        {"default-avatar", required_argument, NULL, 'd'},
+        {"verbose", no_argument, NULL, 'v'},
         {"help", no_argument, NULL, 'h'},
         {"version", no_argument, NULL, 'V'},
         {NULL, 0, NULL, 0},
@@ -98,12 +135,14 @@ static int parse_options(int argc, char **argv, options *o)
         .scale = 2.0,
         .ground = -1,
         .count = -1,
+        .max_avatars = 30,
+        .despawn = 300.0,
         .seed = (uint64_t)time(NULL) ^ ((uint64_t)getpid() << 32),
     };
 
     int c;
     long v;
-    while ((c = getopt_long(argc, argv, "m:s:f:n:a:hV", longopts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "m:s:f:n:a:y:d:vhV", longopts, NULL)) != -1) {
         switch (c) {
         case 'm':
             if (strcmp(optarg, "obs") == 0) {
@@ -176,6 +215,32 @@ static int parse_options(int argc, char **argv, options *o)
         case OPT_LIST:
             o->list = true;
             break;
+        case 'y':
+            o->youtube = optarg;
+            break;
+        case OPT_DEMO_CHAT:
+            o->demo_chat = true;
+            break;
+        case OPT_MAX:
+            if (!parse_int(optarg, 1, 1000, &v)) {
+                kk_log_error("máximo inválido: %s", optarg);
+                return -1;
+            }
+            o->max_avatars = (int)v;
+            break;
+        case OPT_DESPAWN:
+            if (!parse_int(optarg, 5, 86400, &v)) {
+                kk_log_error("tempo inválido: %s", optarg);
+                return -1;
+            }
+            o->despawn = (double)v;
+            break;
+        case 'd':
+            o->default_avatar = optarg;
+            break;
+        case 'v':
+            o->verbose = true;
+            break;
         case OPT_CHECK:
             o->check = true;
             break;
@@ -195,7 +260,7 @@ static int parse_options(int argc, char **argv, options *o)
         return -1;
     }
     if (o->count < 0)
-        o->count = o->n_named ? 0 : 6;
+        o->count = o->n_named || o->youtube || o->demo_chat ? 0 : 6;
     return 0;
 }
 
@@ -225,7 +290,8 @@ static void list_avatars(const kk_sa_library *lib)
 static int check_avatars(const kk_sa_library *lib)
 {
     kk_stage st;
-    if (kk_stage_init(&st, lib, 1.0, 0, 1) < 0)
+    kk_stage_config cfg = {.scale = 1.0, .max_avatars = 1, .despawn = 1, .seed = 1};
+    if (kk_stage_init(&st, lib, &cfg) < 0)
         return 1;
     int bad = 0, warn = 0;
     for (int i = 0; i < lib->count; i++) {
@@ -300,31 +366,57 @@ static int open_signal_fd(void)
     return signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
 }
 
-static void run(kk_window *win, kk_stage *stage, int timer_fd, int signal_fd)
+typedef struct {
+    kk_stage *stage;
+    bool verbose;
+} chat_sink;
+
+static void on_chat(void *ud, const kk_chat_msg *m)
+{
+    chat_sink *sink = ud;
+    if (sink->verbose) {
+        static const char *const kinds[] = {"", " [pago]", " [membro]"};
+        fprintf(stderr, "[%s] %s%s%s%s: %s\n", m->platform, m->name,
+                kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
+                m->text);
+    }
+    kk_stage_chat(sink->stage, m);
+}
+
+typedef struct {
+    kk_window *win;
+    kk_stage *stage;
+    kk_http *http;
+    kk_youtube *youtube;  /* NULL if not used */
+    kk_demochat *demo;    /* NULL if not used */
+    int timer_fd, signal_fd;
+} app;
+
+static void run(app *a)
 {
     enum { FD_X, FD_TIMER, FD_SIGNAL };
     struct pollfd fds[] = {
-        [FD_X] = {.fd = kk_window_fd(win), .events = POLLIN},
-        [FD_TIMER] = {.fd = timer_fd, .events = POLLIN},
-        [FD_SIGNAL] = {.fd = signal_fd, .events = POLLIN},
+        [FD_X] = {.fd = kk_window_fd(a->win), .events = POLLIN},
+        [FD_TIMER] = {.fd = a->timer_fd, .events = POLLIN},
+        [FD_SIGNAL] = {.fd = a->signal_fd, .events = POLLIN},
     };
     bool full = true;
     double last = now_seconds();
 
     for (;;) {
         kk_window_events ev = {0};
-        kk_window_dispatch(win, &ev);
+        kk_window_dispatch(a->win, &ev);
         if (ev.quit)
             return;
         if (ev.resized)
-            kk_stage_resize(stage, win->width, win->height);
+            kk_stage_resize(a->stage, a->win->width, a->win->height);
         if (ev.redraw)
             full = true;
 
-        if (poll(fds, sizeof fds / sizeof fds[0], -1) < 0) {
-            if (errno == EINTR)
-                continue;
-            kk_log_error("poll: %s", strerror(errno));
+        /* Network transfers advance inside the wait; chat callbacks run
+         * from it. The frame timer wakes us at least once per frame. */
+        if (kk_http_wait(a->http, fds, sizeof fds / sizeof fds[0], 1000) < 0) {
+            kk_log_error("falha no laço principal");
             return;
         }
 
@@ -335,27 +427,32 @@ static void run(kk_window *win, kk_stage *stage, int timer_fd, int signal_fd)
             return;
         }
 
+        double t = now_seconds();
+        if (a->youtube)
+            kk_youtube_tick(a->youtube, t);
+        if (a->demo)
+            kk_demochat_tick(a->demo, t);
+
         bool tick = false;
         if (fds[FD_TIMER].revents & POLLIN) {
             uint64_t expirations;
-            if (read(timer_fd, &expirations, sizeof expirations) > 0) {
-                double t = now_seconds();
+            if (read(a->timer_fd, &expirations, sizeof expirations) > 0) {
                 double dt = t - last;
                 last = t;
                 /* After a stall, don't teleport everyone forward. */
-                kk_stage_update(stage, dt > 0.1 ? 0.1 : dt);
+                kk_stage_update(a->stage, dt > 0.1 ? 0.1 : dt);
                 tick = true;
             }
         }
 
         /* While the server still reads the last frame, skip this one; the
          * avatars remember what was painted, so the next frame catches up. */
-        if ((tick || full) && !kk_window_busy(win)) {
-            cairo_t *cr = cairo_create(win->surface);
+        if ((tick || full) && !kk_window_busy(a->win)) {
+            cairo_t *cr = cairo_create(a->win->surface);
             const kk_rect *rects;
-            int n = kk_stage_render(stage, cr, full, &rects);
+            int n = kk_stage_render(a->stage, cr, full, &rects);
             cairo_destroy(cr);
-            kk_window_present(win, rects, n);
+            kk_window_present(a->win, rects, n);
             full = false;
         }
     }
@@ -444,20 +541,59 @@ int main(int argc, char **argv)
                 opt.mode == KK_MODE_OBS ? "obs" : "desktop", opt.fps,
                 win.use_shm ? ", MIT-SHM" : "");
 
+    kk_stage_config cfg = {
+        .scale = opt.scale,
+        .ground_margin = opt.ground,
+        .max_avatars = opt.max_avatars,
+        .despawn = opt.despawn,
+        .seed = opt.seed,
+    };
+    if (opt.default_avatar) {
+        cfg.default_avatar = kk_sa_find(&lib, opt.default_avatar);
+        if (!cfg.default_avatar)
+            kk_log_warn("avatar padrão não encontrado: %s (veja --list)",
+                        opt.default_avatar);
+    }
+
     kk_stage stage;
-    if (kk_stage_init(&stage, &lib, opt.scale, opt.ground, opt.seed) < 0) {
+    kk_http *http = kk_http_new();
+    if (!http || kk_stage_init(&stage, &lib, &cfg) < 0) {
         kk_log_error("sem memória");
         return 1;
     }
     kk_stage_resize(&stage, win.width, win.height);
     spawn_avatars(&stage, &lib, &opt);
 
-    run(&win, &stage, timer_fd, signal_fd);
+    chat_sink sink = {.stage = &stage, .verbose = opt.verbose};
+    app a = {
+        .win = &win,
+        .stage = &stage,
+        .http = http,
+        .timer_fd = timer_fd,
+        .signal_fd = signal_fd,
+    };
+    kk_demochat demo;
+    if (opt.demo_chat) {
+        kk_demochat_init(&demo, on_chat, &sink, opt.seed);
+        a.demo = &demo;
+    }
+    int rc = 0;
+    if (opt.youtube) {
+        a.youtube = kk_youtube_new(http, opt.youtube, on_chat, &sink);
+        if (!a.youtube)
+            rc = 2;
+    }
 
+    if (rc == 0)
+        run(&a);
+
+    /* The http client goes first: its pending callbacks point at youtube. */
+    kk_http_free(http);
+    kk_youtube_free(a.youtube);
     kk_stage_free(&stage);
     kk_window_close(&win);
     kk_sa_free(&lib);
     close(timer_fd);
     close(signal_fd);
-    return 0;
+    return rc;
 }

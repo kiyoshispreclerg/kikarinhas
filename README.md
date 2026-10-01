@@ -5,10 +5,9 @@ bonequinho que passeia, pula e reage numa janela transparente que o OBS
 captura. Parecido com o Stream Avatars e o Desktop Ponies, mas nativo para
 Linux (X11) e leve: C, Cairo e Pango.
 
-> **Fase 1.** Os avatares do Stream Avatars instalados no seu computador já
-> andam, sentam, pulam e fazem as animações extras na tela, cada um com o
-> nome embaixo. Ainda não há chat: os avatares são sorteados ou escolhidos
-> pela linha de comando. Veja o [PLANO.md](PLANO.md).
+> **Fase 2.** Lê o chat público de uma live do YouTube (sem login nem chave):
+> cada pessoa que fala ganha um avatar do Stream Avatars, que pula e mostra
+> a mensagem num balão. Veja o [PLANO.md](PLANO.md).
 
 ## Compilar
 
@@ -16,12 +15,14 @@ Dependências (Debian/Ubuntu):
 
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
-    libcairo2-dev libpango1.0-dev
+    libcairo2-dev libpango1.0-dev libcurl4-openssl-dev
 ```
 
 ```sh
 make            # gera build/kikarinhas
-make asan-run   # versão com AddressSanitizer/UBSan
+make test       # testes de unidade
+make asan       # testes com AddressSanitizer/UBSan
+make asan-run   # o programa com AddressSanitizer/UBSan
 ```
 
 ## Usar
@@ -31,6 +32,9 @@ prefixo do Proton). Ela é procurada nas bibliotecas do Steam; se não for
 achada, indique com `--sa-dir`. Nada é copiado nem alterado lá.
 
 ```sh
+build/kikarinhas -y https://www.youtube.com/watch?v=ID   # chat de uma live
+build/kikarinhas -y @SeuCanal           # espera o canal entrar ao vivo
+build/kikarinhas --demo-chat            # chat de mentira, para testar
 build/kikarinhas                        # 6 avatares sorteados, janela 1280x720
 build/kikarinhas -n 20 -s 1920x1080     # 20 avatares em 1080p
 build/kikarinhas -a pikachu -a crewmate # avatares escolhidos
@@ -44,8 +48,14 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `-m, --mode obs\|desktop` | `obs` (padrão): janela comum para capturar; `desktop`: sobreposição em tela cheia, sem receber cliques |
 | `-s, --size LxA` | tamanho da janela no modo `obs` (padrão `1280x720`) |
 | `-f, --fps N` | quadros por segundo (padrão 30) |
+| `-y, --youtube ALVO` | link da live ou do canal, `@handle` ou id do vídeo |
+| `--demo-chat` | chat de mentira com gente inventada |
+| `--max N` | avatares do chat ao mesmo tempo (padrão 30); quem está calado há mais tempo sai primeiro |
+| `--despawn S` | segundos em silêncio até o avatar sair (padrão 300) |
+| `-d, --default-avatar NOME` | todos usam este avatar (padrão: um sorteado por pessoa, sempre o mesmo) |
+| `-v, --verbose` | mostra as mensagens no terminal |
 | `--sa-dir PASTA` | pasta `data` do Stream Avatars |
-| `-n, --count N` | quantos avatares sorteados (padrão 6, ou 0 se usar `-a`) |
+| `-n, --count N` | avatares sorteados fora do chat (padrão 6, ou 0 com chat ou `-a`) |
 | `-a, --avatar NOME` | mostra este avatar; pode repetir |
 | `--scale X` | escala dos avatares (padrão 2) |
 | `--ground N` | pixels entre o chão e a borda de baixo (padrão: espaço do nome) |
@@ -65,7 +75,7 @@ transparente também na tela.
 
 ## Previsto
 
-- Chat do YouTube primeiro; Twitch e Odysee depois.
+- Comandos do chat (`!avatar`, `!dance`...), Twitch e Odysee.
 - Acessórios (gear), paletas e pacotes .zip do Stream Avatars.
 - Configurador em GTK2.
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
@@ -74,6 +84,9 @@ transparente também na tela.
 
 GPL-3.0-or-later. Veja [LICENSE](LICENSE). Inclui o
 [cJSON](vendor/cjson) (MIT).
+
+O chat do YouTube é lido pelos mesmos endereços que o chat em janela
+separada do navegador usa; não é uma API oficial e pode mudar.
 
 As artes dos avatares pertencem aos seus autores e não fazem parte do
 Kikarinhas.
