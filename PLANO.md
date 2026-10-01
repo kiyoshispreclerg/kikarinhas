@@ -189,10 +189,13 @@ data/         avatar padrão original, exemplo de .ini
 
 ## Fases
 
-0. **Prova de conceito**: janela ARGB + Cairo desenhando um retângulo
-   semitransparente animado. Validar no OBS ("Captura de janela
-   (Xcomposite)" com transparência), inclusive com a janela coberta;
-   validar o modo desktop com clique atravessando.
+0. **Prova de conceito** *(feita)*: janela ARGB + Cairo desenhando um
+   cartão semitransparente animado, MIT-SHM com dano parcial, modos obs e
+   desktop (clique atravessa via Shape). Medido: ~0,8% de CPU a 30 fps
+   em 1920x1080, ~25 MB de RSS. Lição: conteúdo estático (texto Pango com
+   contorno, gradientes) vai para uma superfície de cache e só é copiado
+   a cada quadro; redesenhar tudo custava ~10x mais.
+   *Falta validar no OBS pelo usuário*, inclusive com a janela coberta.
 1. **Motor de sprites e importador do SA**: ler `streamavatars_json.txt` e
    zips; script em `tools/` que valida a regra linha=animação em todos os
    avatares instalados; um avatar andando com idle/walk/sit/jump.

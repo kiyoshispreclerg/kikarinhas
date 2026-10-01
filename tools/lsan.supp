@@ -1,0 +1,2 @@
+# fontconfig keeps a process-wide font cache that is never freed.
+leak:libfontconfig.so
