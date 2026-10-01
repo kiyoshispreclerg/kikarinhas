@@ -5,11 +5,13 @@ bonequinho que passeia, pula e reage numa janela transparente que o OBS
 captura. Parecido com o Stream Avatars e o Desktop Ponies, mas nativo para
 Linux (X11) e leve: C, Cairo e Pango.
 
-> **Fase 3.** Lê o chat público de uma live do YouTube (sem login nem chave):
+> **Fase 4.** Lê o chat público de uma live do YouTube (sem login nem chave):
 > cada pessoa que fala ganha um avatar do Stream Avatars, que pula e mostra
 > a mensagem num balão. Pelo chat, cada um escolhe avatar, cor e acessórios
 > (guardados para a próxima live) e manda o avatar dançar, sentar, abraçar
-> ou atacar. Veja o [PLANO.md](PLANO.md).
+> ou atacar. Tudo se configura num `.ini` (ou no `kikarinhas-config`), inclusive
+> os comandos, e outros programas mandam mensagens por um socket unix. Veja o
+> [PLANO.md](PLANO.md).
 
 ## Compilar
 
@@ -18,10 +20,11 @@ Dependências (Debian/Ubuntu):
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
     libcairo2-dev libpango1.0-dev libcurl4-openssl-dev
+sudo apt install libgtk2.0-dev   # opcional: só para o kikarinhas-config
 ```
 
 ```sh
-make            # gera build/kikarinhas
+make            # gera build/kikarinhas (e build/kikarinhas-config, com GTK2)
 make test       # testes de unidade
 make asan       # testes com AddressSanitizer/UBSan
 make asan-run   # o programa com AddressSanitizer/UBSan
@@ -64,9 +67,71 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `--scale X` | escala dos avatares (padrão 2) |
 | `--ground N` | pixels entre o chão e a borda de baixo (padrão: espaço do nome) |
 | `--seed N` | semente do sorteio, para repetir a mesma cena |
+| `-c, --config ARQ` | arquivo de configuração (padrão `~/.config/kikarinhas/kikarinhas.ini`) |
+| `--socket CAMINHO\|off` | socket de controle (padrão `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
+| `--reload` | pede ao kikarinhas aberto para reler a configuração e sai |
 
 Para sair: feche a janela ou use Ctrl+C. No modo `desktop`, que não recebe
-cliques, use `pkill kikarinhas`.
+cliques, use `pkill kikarinhas` ou `echo quit | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/kikarinhas.sock`.
+
+### Configuração
+
+Tudo o que as opções fazem também pode ficar em
+`~/.config/kikarinhas/kikarinhas.ini`; as opções da linha de comando valem
+por cima do arquivo. O [data/kikarinhas.ini](data/kikarinhas.ini) explica
+cada chave. O jeito mais fácil de editar é o `kikarinhas-config` (GTK2):
+abas Janela, Avatares, Chat e Comandos, e o botão **Salvar e aplicar**. Ele
+mantém os comentários do arquivo e só grava o que for diferente do padrão.
+
+Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
+--reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
+tempo de sumiço, fps, chat de mentira, `verbose` e o alvo do YouTube mudam
+na hora. Tamanho, modo, escala, chão, avatares fixos, pasta do Stream Avatars,
+arquivo de pessoas e socket só mudam reiniciando, e o log avisa.
+Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
+
+Os comandos do chat são configurados em seções `[command.NOME]`:
+
+```ini
+# aliases substitui a lista padrão; cooldown é a espera por pessoa, em
+# segundos; role é quem pode: anyone, member, mod ou owner.
+[command.dance]
+aliases = danca, dança, baila
+cooldown = 30
+role = member
+
+[command.attack]
+enabled = no
+
+# Comando novo: !buzina toca o som "buzina"; !pika vira o avatar pikachu.
+[command.buzina]
+action = sound
+data = buzina
+global_cooldown = 10
+
+[command.pika]
+action = avatar
+data = pikachu
+```
+
+### Socket de controle e bridges
+
+O kikarinhas escuta em `$XDG_RUNTIME_DIR/kikarinhas.sock` (só o seu usuário
+acessa). Cada linha é um JSON e recebe uma linha de resposta:
+
+```sh
+S=$XDG_RUNTIME_DIR/kikarinhas.sock
+echo '{"type":"message","platform":"twitch","user_id":"123","name":"Fulana","text":"oi !jump","badges":["subscriber"]}' \
+    | socat - UNIX-CONNECT:$S        # {"ok":true}
+echo reload | socat - UNIX-CONNECT:$S
+echo ping   | socat - UNIX-CONNECT:$S
+```
+
+Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
+`text`, `kind` (`text`, `paid` ou `member`), `amount` e `badges` (`owner`,
+`mod`, `member`, `verified`, e também `broadcaster`, `moderator` e
+`subscriber`) são opcionais. Assim, uma plataforma que o kikarinhas não
+conhece pode virar uma bridge em qualquer linguagem.
 
 ### Comandos do chat
 
@@ -103,8 +168,6 @@ transparente também na tela.
 
 ## Previsto
 
-- Arquivo de configuração e configurador GTK2 (comandos, aliases e esperas
-  configuráveis).
 - Twitch e Odysee.
 - Mesa de som, pacotes .zip do Stream Avatars, emojis como imagem.
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.

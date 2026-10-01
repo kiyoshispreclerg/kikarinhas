@@ -398,6 +398,7 @@ void kk_youtube_free(kk_youtube *yt)
 {
     if (!yt)
         return;
+    kk_http_cancel(yt->http, yt);
     free(yt->continuation);
     free(yt);
 }

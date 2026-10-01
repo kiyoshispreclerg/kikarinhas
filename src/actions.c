@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "actions.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -8,6 +9,13 @@
 static kk_actions *ctx(const kk_cmd_call *c)
 {
     return c->ud;
+}
+
+/* A command's data, when it has one, is its argument: "!pika" can be an
+ * "avatar" command with data "pikachu". Otherwise, what was typed. */
+static const char *arg(const kk_cmd_call *c)
+{
+    return c->data ? c->data : c->args;
 }
 
 static bool is_any(const char *s, const char *const *words)
@@ -27,10 +35,10 @@ static bool cmd_avatar(const kk_cmd_call *c)
     kk_actions *a = ctx(c);
     kk_stage *s = a->stage;
     const kk_sa_avatar *def = NULL;
-    if (is_any(c->args, RANDOM) && s->n_usable > 0)
+    if (is_any(arg(c), RANDOM) && s->n_usable > 0)
         def = &s->lib->avatars[s->usable[kk_rng_int(&s->rng, s->n_usable)]];
-    else if (c->args[0])
-        def = kk_sa_find(s->lib, c->args);
+    else if (arg(c)[0])
+        def = kk_sa_find(s->lib, arg(c));
     return def && def != a->self->def && kk_stage_set_avatar(s, a->self, def);
 }
 
@@ -40,11 +48,11 @@ static bool cmd_color(const kk_cmd_call *c)
     kk_actions *a = ctx(c);
     const kk_sa_avatar *def = a->self->def;
     int pal;
-    if (is_any(c->args, NONE))
+    if (is_any(arg(c), NONE))
         pal = -1;
-    else if (is_any(c->args, RANDOM) && def->n_palettes > 0)
+    else if (is_any(arg(c), RANDOM) && def->n_palettes > 0)
         pal = kk_rng_int(&a->stage->rng, def->n_palettes);
-    else if ((pal = kk_sa_find_palette(def, c->args)) < 0)
+    else if ((pal = kk_sa_find_palette(def, arg(c))) < 0)
         return false;
     return pal != a->self->palette && kk_stage_set_palette(a->stage, a->self, pal);
 }
@@ -53,13 +61,13 @@ static bool cmd_color(const kk_cmd_call *c)
 static bool cmd_gear(const kk_cmd_call *c)
 {
     kk_actions *a = ctx(c);
-    if (is_any(c->args, NONE)) {
+    if (is_any(arg(c), NONE)) {
         if (a->self->n_gear == 0)
             return false;
         kk_stage_unwear_all(a->stage, a->self);
         return true;
     }
-    return c->args[0] && kk_stage_wear(a->stage, a->self, c->args);
+    return arg(c)[0] && kk_stage_wear(a->stage, a->self, arg(c));
 }
 
 static bool cmd_jump(const kk_cmd_call *c)
@@ -85,14 +93,14 @@ static bool cmd_dance(const kk_cmd_call *c)
 static bool cmd_emote(const kk_cmd_call *c)
 {
     kk_actions *a = ctx(c);
-    return kk_avatar_emote(a->self, c->args[0] ? c->args : NULL, &a->stage->rng);
+    return kk_avatar_emote(a->self, arg(c)[0] ? arg(c) : NULL, &a->stage->rng);
 }
 
 /* !hug / !attack [@name]: without a name, someone at random. */
 static bool interact(const kk_cmd_call *c, kk_action act)
 {
     kk_actions *a = ctx(c);
-    kk_avatar *b = c->args[0] ? kk_stage_find_by_name(a->stage, c->args)
+    kk_avatar *b = arg(c)[0] ? kk_stage_find_by_name(a->stage, arg(c))
                               : kk_stage_random_other(a->stage, a->self);
     return kk_stage_interact(a->stage, a->self, b, act);
 }
@@ -111,7 +119,7 @@ static bool cmd_attack(const kk_cmd_call *c)
 static bool cmd_sound(const kk_cmd_call *c)
 {
     kk_actions *a = ctx(c);
-    const char *name = c->data ? c->data : c->args;
+    const char *name = arg(c);
     if (!name[0] || !a->sound)
         return false;
     a->sound(a->sound_ud, c->msg, name);
@@ -134,32 +142,57 @@ static bool fallback(const kk_cmd_call *c)
            kk_stage_set_palette(s, a->self, pal);
 }
 
-void kk_actions_register(kk_commands *c)
+kk_cmd_fn kk_actions_find(const char *action)
 {
     static const struct {
         const char *name;
         kk_cmd_fn fn;
-        double user_cd, global_cd;
-        const char *aliases[6];
-    } defaults[] = {
-        /* Cooldowns follow Stream Avatars' defaults where it has one. */
-        {"avatar", cmd_avatar, 5, 0, {"personagem", "char"}},
-        {"color", cmd_color, 5, 0, {"cor", "colour", "paleta", "palette"}},
-        {"gear", cmd_gear, 5, 0, {"item", "acessorio", "acessório", "equip"}},
-        {"jump", cmd_jump, 3, 0, {"pula", "pular"}},
-        {"sit", cmd_sit, 10, 0, {"senta", "sentar"}},
-        {"dance", cmd_dance, 60, 0, {"danca", "dança", "dancar", "dançar"}},
-        {"emote", cmd_emote, 15, 0, {"anim"}},
-        {"hug", cmd_hug, 60, 0, {"abraco", "abraço", "abracar", "abraçar"}},
-        {"attack", cmd_attack, 120, 0, {"ataque", "atacar", "bater"}},
-        {"sound", cmd_sound, 30, 3, {"som", "play", "sfx", "mesa"}},
+    } table[] = {
+        {"avatar", cmd_avatar}, {"color", cmd_color}, {"gear", cmd_gear},
+        {"jump", cmd_jump},     {"sit", cmd_sit},     {"dance", cmd_dance},
+        {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
+        {"sound", cmd_sound},
     };
-    for (size_t i = 0; i < sizeof defaults / sizeof defaults[0]; i++) {
-        kk_commands_add(c, defaults[i].name, defaults[i].fn, NULL,
-                        defaults[i].user_cd, defaults[i].global_cd,
-                        KK_ROLE_ANYONE);
-        for (int k = 0; k < 6 && defaults[i].aliases[k]; k++)
-            kk_commands_alias(c, defaults[i].name, defaults[i].aliases[k]);
+    for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
+        if (strcmp(table[i].name, action) == 0)
+            return table[i].fn;
+    return NULL;
+}
+
+int kk_actions_register(kk_commands *c, const kk_config *cfg,
+                        kk_config_warn_fn warn, void *ud)
+{
+    char msg[256];
+    int problems = 0;
+    for (int i = 0; i < cfg->n_commands; i++) {
+        const kk_config_command *k = &cfg->commands[i];
+        kk_cmd_fn fn = k->action ? kk_actions_find(k->action) : NULL;
+        if (!k->enabled || !fn)
+            continue;
+        if (kk_commands_add(c, k->name, fn, k->data, k->user_cd, k->global_cd,
+                            k->role) < 0) {
+            snprintf(msg, sizeof msg, "!%s já é apelido de outro comando", k->name);
+            if (warn)
+                warn(ud, 0, msg);
+            problems++;
+        }
     }
-    kk_commands_set_fallback(c, fallback, 5);
+    /* Aliases after every name, so an alias can't steal a later name. */
+    for (int i = 0; i < cfg->n_commands; i++) {
+        const kk_config_command *k = &cfg->commands[i];
+        if (!k->enabled || !k->action || !kk_actions_find(k->action))
+            continue;
+        for (int a = 0; a < k->n_aliases; a++)
+            if (kk_commands_alias(c, k->name, k->aliases[a]) < 0) {
+                snprintf(msg, sizeof msg,
+                         "apelido !%s de !%s ignorado: já é de outro comando",
+                         k->aliases[a], k->name);
+                if (warn)
+                    warn(ud, 0, msg);
+                problems++;
+            }
+    }
+    if (cfg->shortcuts)
+        kk_commands_set_fallback(c, fallback, cfg->shortcut_cd);
+    return problems;
 }

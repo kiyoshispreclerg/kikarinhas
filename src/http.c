@@ -10,7 +10,7 @@
 #include "log.h"
 
 #define MAX_BODY (16u << 20)
-#define MAX_WAIT_FDS 8
+#define MAX_WAIT_FDS 32
 #define USER_AGENT                                                             \
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " \
     "Chrome/130.0 Safari/537.36"
@@ -100,6 +100,25 @@ void kk_http_free(kk_http *h)
     }
     curl_multi_cleanup(h->multi);
     free(h);
+}
+
+void kk_http_cancel(kk_http *h, void *ud)
+{
+    request *r = h->active;
+    while (r) {
+        request *next = r->next;
+        if (r->ud == ud) {
+            curl_multi_remove_handle(h->multi, r->easy);
+            if (r->prev)
+                r->prev->next = r->next;
+            else
+                h->active = r->next;
+            if (r->next)
+                r->next->prev = r->prev;
+            request_free(r);
+        }
+        r = next;
+    }
 }
 
 static int start(kk_http *h, const char *url, const char *json, kk_http_cb cb,

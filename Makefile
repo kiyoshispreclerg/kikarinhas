@@ -17,7 +17,10 @@ LIB_SRC = src/log.c \
       src/demochat.c \
       src/users.c \
       src/commands.c \
-      src/actions.c
+      src/actions.c \
+      src/ini.c \
+      src/config.c \
+      src/control.c
 VENDOR_SRC = vendor/cjson/cJSON.c
 LIBKK = $(BUILD)/libkk.a
 
@@ -28,10 +31,21 @@ ALL_LDFLAGS = $(SANFLAGS) $(LDFLAGS)
 
 .PHONY: all test run asan asan-run install uninstall lint clean
 
-all: $(BUILD)/kikarinhas
+# kikarinhas-config is optional: built only when GTK2 is there.
+HAVE_GTK2 := $(shell $(PKG_CONFIG) --exists gtk+-2.0 && echo 1)
+CONFIG_BIN = $(if $(HAVE_GTK2),$(BUILD)/kikarinhas-config)
+GTK_CFLAGS = $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null | sed 's/-I/-isystem /g')
+GTK_LIBS   = $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
+
+all: $(BUILD)/kikarinhas $(CONFIG_BIN)
 
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(BUILD)/kikarinhas-config: config/kikarinhas-config.c $(LIBKK)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(GTK_CFLAGS) $(WARNFLAGS) -MMD -MP \
+		$(ALL_LDFLAGS) -o $@ $< $(LIBKK) $(GTK_LIBS) -lm
 
 $(LIBKK): $(patsubst %.c,$(BUILD)/%.o,$(LIB_SRC) $(VENDOR_SRC))
 	$(AR) rcs $@ $^
@@ -72,12 +86,15 @@ asan-run: asan
 
 install: $(BUILD)/kikarinhas
 	install -Dm755 $< $(DESTDIR)$(BINDIR)/kikarinhas
+	$(if $(CONFIG_BIN),install -Dm755 $(CONFIG_BIN) $(DESTDIR)$(BINDIR)/kikarinhas-config)
+	install -Dm644 data/kikarinhas.ini $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
 
 uninstall:
-	rm -f $(DESTDIR)$(BINDIR)/kikarinhas
+	rm -f $(DESTDIR)$(BINDIR)/kikarinhas $(DESTDIR)$(BINDIR)/kikarinhas-config
+	rm -f $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
 
 lint:
-	@if grep -nE '\b(strcpy|strcat|sprintf|vsprintf|gets)[[:space:]]*\(' src/*.c src/*.h tests/unit/*.c; then \
+	@if grep -nE '\b(strcpy|strcat|sprintf|vsprintf|gets)[[:space:]]*\(' src/*.c src/*.h tests/unit/*.c config/*.c; then \
 		echo "*** banned function used"; exit 1; fi
 	@command -v cppcheck >/dev/null || { echo "*** cppcheck not installed"; exit 1; }
 	cppcheck --std=c11 --enable=warning,performance,portability \

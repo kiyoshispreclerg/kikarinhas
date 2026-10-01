@@ -19,13 +19,17 @@ make asan-run ARGS="--demo-chat"   # o programa com ASan
 build/kikarinhas --check           # valida todas as folhas do SA instalado
 build/kikarinhas --demo-chat -v    # chat de mentira, sem rede
 build/kikarinhas -y <link-da-live> -v
+build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ```
 
 - Os vazamentos do fontconfig são esperados e estão em `tools/lsan.supp`.
 - `make lint` precisa do cppcheck (não instalado aqui); funções proibidas:
   strcpy, strcat, sprintf, vsprintf, gets.
 - Testes com arquivos de usuário: use `--users` apontando para um arquivo
-  temporário, nunca o `~/.local/share/kikarinhas/users.tsv` do usuário.
+  temporário já existente (vazio evita importar o SA), nunca o
+  `~/.local/share/kikarinhas/users.tsv` do usuário; idem `-c` para o .ini.
+- Socket em teste: caminho curto (`$XDG_RUNTIME_DIR/kk-*.sock`); o do
+  scratchpad passa dos 108 bytes de um socket unix.
 - Fixtures de teste são sintéticas (nomes e ids inventados), no formato real.
   Não grave dados de pessoas reais do chat no repositório.
 - O SA do usuário está em `~/Steam/Library/steamapps/compatdata/665300/...`
@@ -47,6 +51,10 @@ build/kikarinhas -y <link-da-live> -v
 | `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
 | `src/users.c` | `users.tsv`: escolhas de cada pessoa, gravação atômica |
 | `src/demochat.c` | chat de mentira para testes |
+| `src/ini.c` | .ini lido e editado no lugar (mantém comentários) |
+| `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
+| `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `ping`, `quit` |
+| `config/kikarinhas-config.c` | configurador GTK2 (opcional no build) |
 
 ## Convenções
 
@@ -60,9 +68,6 @@ build/kikarinhas -y <link-da-live> -v
 
 ## Próximas fases (ver PLANO.md)
 
-4. Arquivo de configuração (`~/.config/kikarinhas/kikarinhas.ini`), incluindo
-   comandos/aliases/esperas (o registro já aceita `kk_commands_add/alias`),
-   socket unix (bridges + `reload`) e `kikarinhas-config` em GTK2.
-5. Twitch (IRC anônimo) e Odysee.
+5. Twitch (IRC anônimo) e Odysee; podem nascer como bridges no socket.
 6. Camadas HTML (WPE WebKit). 7. Extras: mesa de som (gancho `on_sound` em
    main.c), zips do SA, emojis como imagem, reações do YouTube.

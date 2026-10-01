@@ -27,7 +27,7 @@
 typedef struct kk_youtube kk_youtube;
 
 /* target: video link or id, channel link, @handle or UC... channel id.
- * Free the http client before this one: pending callbacks point here. */
+ * Free it before the http client (it cancels its pending requests). */
 kk_youtube *kk_youtube_new(kk_http *http, const char *target, kk_chat_cb cb,
                            void *ud);
 void kk_youtube_free(kk_youtube *yt);

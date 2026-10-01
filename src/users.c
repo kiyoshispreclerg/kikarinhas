@@ -180,20 +180,6 @@ int kk_users_count(const kk_users *u)
     return u->count;
 }
 
-/* mkdir -p for the directory part of path. */
-static void make_parent_dirs(const char *path)
-{
-    char buf[KK_PATH_MAX];
-    if (!kk_pathf(buf, sizeof buf, "%s", path))
-        return;
-    for (char *p = buf + 1; *p; p++)
-        if (*p == '/') {
-            *p = '\0';
-            mkdir(buf, 0755);
-            *p = '/';
-        }
-}
-
 int kk_users_save(kk_users *u)
 {
     if (!u->dirty)
@@ -201,7 +187,7 @@ int kk_users_save(kk_users *u)
     char tmp[KK_PATH_MAX];
     if (!kk_pathf(tmp, sizeof tmp, "%s.tmp", u->path))
         return -1;
-    make_parent_dirs(u->path);
+    kk_make_parent_dirs(u->path);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         kk_log_warn("não consegui gravar %s: %s", tmp, strerror(errno));

@@ -48,6 +48,10 @@ char *kk_read_file(const char *path, size_t *len);
 
 bool kk_file_exists(const char *path);
 
+/* mkdir -p for the directory part of path (errors are left to whoever
+ * then creates the file). */
+void kk_make_parent_dirs(const char *path);
+
 /* snprintf for paths: false (and an empty string) if it would not fit. */
 bool kk_pathf(char *out, size_t size, const char *fmt, ...)
     __attribute__((format(printf, 3, 4)));

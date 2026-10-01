@@ -3,6 +3,7 @@
 #define KK_ACTIONS_H
 
 #include "commands.h"
+#include "config.h"
 #include "stage.h"
 
 /* The built-in chat commands and what they do to the avatars. */
@@ -17,8 +18,14 @@ typedef struct {
     kk_avatar *self; /* the sender's avatar, set before each dispatch */
 } kk_actions;
 
-/* Registers the default commands, aliases and cooldowns into c, which must
- * have been created with a kk_actions as its ud. */
-void kk_actions_register(kk_commands *c);
+/* Handler for an "action =" name of the config, or NULL. */
+kk_cmd_fn kk_actions_find(const char *action);
+
+/* Registers the enabled commands of cfg (with their aliases, cooldowns and
+ * roles) and the "!name" shortcut into c, which must have been created with
+ * a kk_actions as its ud. Clashing names and aliases are reported to warn
+ * and skipped; returns how many. */
+int kk_actions_register(kk_commands *c, const kk_config *cfg,
+                        kk_config_warn_fn warn, void *ud);
 
 #endif

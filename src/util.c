@@ -101,3 +101,16 @@ bool kk_pathf(char *out, size_t size, const char *fmt, ...)
     }
     return true;
 }
+
+void kk_make_parent_dirs(const char *path)
+{
+    char buf[KK_PATH_MAX];
+    if (!kk_pathf(buf, sizeof buf, "%s", path))
+        return;
+    for (char *p = buf + 1; *p; p++)
+        if (*p == '/') {
+            *p = '\0';
+            mkdir(buf, 0755);
+            *p = '/';
+        }
+}

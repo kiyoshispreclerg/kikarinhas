@@ -252,8 +252,33 @@ data/         avatar padrão original, exemplo de .ini
    - `isAnimatedAligned`: a folha da peça tem a mesma grade da do avatar.
    Pendente: `paletteSwap` das peças (b_heads deveriam herdar a paleta) e
    Super Chat/membro com reação além do balão.
-4. **Socket unix e configurador GTK2**: protocolo de bridges, `reload`,
-   `kikarinhas-config`.
+4. **Configuração, socket unix e configurador GTK2** *(feita)*:
+   `src/ini.c` lê e edita .ini preservando comentários e ordem;
+   `src/config.c` monta a configuração em camadas (padrões → `.ini` →
+   linha de comando, refeitas a cada `reload`) e guarda a tabela dos
+   comandos padrão; seções `[command.NOME]` mudam apelidos, esperas, papel
+   e `enabled`, ou criam comandos novos com `action` + `data` (o `data`
+   vira o argumento fixo: `!buzina` = `sound buzina`). `src/control.c`:
+   socket em `$XDG_RUNTIME_DIR/kikarinhas.sock` (0600), JSON por linha
+   (`message`, `reload`, `ping`, `quit`, ou a palavra solta), até 16
+   clientes, respostas sem bloquear; recusa tomar o socket de outra
+   instância e troca um socket velho de um travamento. `reload` também por
+   SIGHUP e por `kikarinhas --reload`; muda ao vivo comandos, avatar
+   padrão, limites, fps, demo e alvo do YouTube (`kk_http_cancel` solta as
+   requisições do conector antigo); o resto avisa que precisa reiniciar.
+   `kikarinhas-config` (GTK2, opcional no build) edita tudo, com a lista
+   de comandos editável, e manda `reload`. 13 testes novos (34 no total).
+   Testado de ponta a ponta com ASan: bridge, comandos do .ini, `reload`
+   pelo socket, por SIGHUP e pelo configurador. Lições:
+   - comentário só em linha própria: um valor pode ter `#` (links);
+   - o caminho de um socket unix tem no máximo 108 bytes: o padrão fica em
+     `$XDG_RUNTIME_DIR`, e caminho longo dá erro claro em vez de truncar;
+   - o GTK põe o `LC_NUMERIC` do sistema (vírgula decimal): o configurador
+     volta para "C" para gravar `1.5`.
+   Não verificado: a interface do configurador só foi conferida em parte
+   (abre, salva sem mudar nada do arquivo, aplica no programa aberto e
+   grava um campo alterado); não deu para capturar a tela aqui, então a
+   edição da lista de comandos pela interface ficou sem teste.
 5. **Twitch** (IRC anônimo) e **Odysee** (Commentron).
 6. **kikarinhas-web** (WPE) como camadas.
 7. **Extras**: fundos e sons do SA, emojis/emotes como imagem no balão,
