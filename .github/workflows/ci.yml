@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUILD_DEPS: >-
+    build-essential pkg-config gettext libx11-dev libxext-dev libcairo2-dev
+    libpango1.0-dev libcurl4-openssl-dev libasound2-dev libssl-dev libgtk2.0-dev
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $BUILD_DEPS cppcheck
+      - run: make lint
+
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [test, asan]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $BUILD_DEPS
+      - run: make ${{ matrix.target }}
+        env:
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/tools/lsan.supp
