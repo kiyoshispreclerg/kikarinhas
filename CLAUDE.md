@@ -7,7 +7,10 @@ lições aprendidas (formato do Stream Avatars, protocolo do YouTube).
 
 O usuário escreve em português (pt-BR) e quer as respostas em português.
 Mensagens para o usuário, logs e textos da interface ficam em português;
-comentários e identificadores no código, em inglês.
+comentários e identificadores no código, em inglês. Exceção: o
+`kikarinhas-config` usa gettext com msgids em inglês (`_("...")`, `N_()`,
+`ngettext()`) e traduções em `po/` (pt_BR e en); o `kikarinhas` em si não
+traduz nada.
 
 ## Compilar e testar
 
@@ -16,6 +19,7 @@ make            # build/kikarinhas, sem avisos (-Werror -Wpedantic etc.)
 make test       # testes de unidade (tests/unit/test_*.c)
 make asan       # os testes com ASan/UBSan
 make asan-run ARGS="--demo-chat"   # o programa com ASan
+make pot                           # recria po/kikarinhas.pot e mescla nos .po
 build/kikarinhas --check           # valida todas as folhas do SA instalado
 build/kikarinhas --demo-chat -v    # chat de mentira, sem rede
 build/kikarinhas -y <link-da-live> -v
@@ -69,6 +73,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
 | `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas e o ícone |
+| `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/audience.c` | abas Sons e Espectadores |
 

@@ -11,6 +11,7 @@
 
 #include "audio.h"
 #include "editor.h"
+#include "i18n.h"
 #include "sa.h"
 #include "sample.h"
 
@@ -63,7 +64,7 @@ static const kk_sample *sample_of(editor *e, const char *file, char *err, size_t
     gpointer cached;
     if (g_hash_table_lookup_extended(t->cache, path, NULL, &cached)) {
         if (!cached)
-            snprintf(err, size, "não toca");
+            snprintf(err, size, _("can't play"));
         return cached;
     }
     kk_sample *s = g_new0(kk_sample, 1);
@@ -169,9 +170,9 @@ static void play_row(editor *e, GtkTreeIter *it)
     if (!s)
         status(e, "%s: %s", file, err);
     else if (!a || kk_audio_play(a, s, volume / 100.0, now_s()) < 0)
-        status(e, "Não consegui abrir o áudio \"%s\".", t->audio_device);
+        status(e, _("Could not open the audio device \"%s\"."), t->audio_device);
     else {
-        status(e, "Tocando !%s (%d%%).", name, volume);
+        status(e, _("Playing !%s (%d%%)."), name, volume);
         if (!t->pump_id)
             t->pump_id = g_timeout_add(20, pump, t);
         pump(t);
@@ -207,7 +208,7 @@ static void on_play(GtkButton *b, gpointer ud)
     GList *rows = selected_rows(e);
     GtkTreeIter it;
     if (!rows)
-        status(e, "Escolha um som na lista.");
+        status(e, _("Pick a sound in the list."));
     else if (ref_iter(e, rows->data, &it))
         play_row(e, &it);
     g_list_free_full(rows, (GDestroyNotify)gtk_tree_row_reference_free);
@@ -275,9 +276,13 @@ static void level(editor *e, GList *rows)
     gdk_window_set_cursor(gtk_widget_get_window(e->window), NULL);
     gdk_cursor_unref(busy);
     if (failed)
-        status(e, "%d som(ns) nivelado(s); %d não tocam (veja a coluna Duração).", n, failed);
+        status(e, ngettext("%d sound leveled; %d cannot be played (see the Length column).",
+                           "%d sounds leveled; %d cannot be played (see the Length column).", n),
+               n, failed);
     else
-        status(e, "%d som(ns) nivelado(s). Ouça e ajuste se precisar; depois, Salvar.", n);
+        status(e, ngettext("%d sound leveled. Listen and adjust if needed; then Save.",
+                           "%d sounds leveled. Listen and adjust if needed; then Save.", n),
+               n);
 }
 
 static void on_level_selected(GtkButton *b, gpointer ud)
@@ -286,7 +291,7 @@ static void on_level_selected(GtkButton *b, gpointer ud)
     editor *e = ud;
     GList *rows = selected_rows(e);
     if (!rows)
-        status(e, "Escolha os sons na lista (Ctrl ou Shift para vários).");
+        status(e, _("Pick the sounds in the list (Ctrl or Shift for several)."));
     else
         level(e, rows);
     g_list_free_full(rows, (GDestroyNotify)gtk_tree_row_reference_free);
@@ -365,13 +370,13 @@ static void on_name_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpo
     if (!iter_at(e, path, &it))
         return;
     if (!s[0] || strlen(s) >= sizeof name || strpbrk(s, " \t!,[]=")) {
-        status(e, "Nome de som inválido: uma palavra só, sem espaços.");
+        status(e, _("Invalid sound name: a single word, no spaces."));
         return;
     }
     for (size_t i = 0; i <= strlen(s); i++)
         name[i] = (char)g_ascii_tolower(s[i]);
     if (sound_taken(e, name, &it)) {
-        status(e, "Já existe um som \"%s\".", name);
+        status(e, _("A sound \"%s\" already exists."), name);
         return;
     }
     gtk_list_store_set(e->sounds->store, &it, S_NAME, name, -1);
@@ -397,7 +402,7 @@ static void on_volume_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
     if (n && text[n - 1] == '%')
         text[n - 1] = '\0';
     if (!kk_parse_long(text, 0, 400, &v)) {
-        status(e, "Volume inválido: de 0 a 400%%.");
+        status(e, _("Invalid volume: 0 to 400%%."));
         return;
     }
     if (iter_at(e, path, &it))
@@ -422,11 +427,11 @@ static void on_add(GtkButton *b, gpointer ud)
     editor *e = ud;
     sounds_tab *t = e->sounds;
     GtkWidget *d = gtk_file_chooser_dialog_new(
-        "Adicionar sons", GTK_WINDOW(e->window), GTK_FILE_CHOOSER_ACTION_OPEN,
-        "_Cancelar", GTK_RESPONSE_CANCEL, "_Adicionar", GTK_RESPONSE_ACCEPT, NULL);
+        _("Add sounds"), GTK_WINDOW(e->window), GTK_FILE_CHOOSER_ACTION_OPEN,
+        _("_Cancel"), GTK_RESPONSE_CANCEL, _("_Add"), GTK_RESPONSE_ACCEPT, NULL);
     gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(d), TRUE);
     GtkFileFilter *f = gtk_file_filter_new();
-    gtk_file_filter_set_name(f, "Sons (wav, ogg, mp3)");
+    gtk_file_filter_set_name(f, _("Sounds (wav, ogg, mp3)"));
     static const char *const pats[] = {"*.wav", "*.WAV", "*.ogg", "*.OGG",
                                        "*.oga", "*.mp3", "*.MP3"};
     for (size_t i = 0; i < sizeof pats / sizeof pats[0]; i++)
@@ -455,8 +460,11 @@ static void on_add(GtkButton *b, gpointer ud)
             snprintf(t->last_folder, sizeof t->last_folder, "%s", folder);
         g_free(folder);
         g_slist_free_full(files, g_free);
-        status(e, "%d som(ns) adicionado(s). O nome é o comando no chat (!nome); "
-                  "clique duas vezes numa célula para mudar.", n);
+        status(e, ngettext("%d sound added. The name is the chat command (!name); "
+                           "double-click a cell to change it.",
+                           "%d sounds added. The name is the chat command (!name); "
+                           "double-click a cell to change it.", n),
+               n);
         scan(e);
     }
     gtk_widget_destroy(d);
@@ -477,9 +485,11 @@ static void on_remove(GtkButton *b, gpointer ud)
     }
     g_list_free_full(rows, (GDestroyNotify)gtk_tree_row_reference_free);
     if (n)
-        status(e, "%d som(ns) removido(s) da lista (os arquivos ficam onde estão).", n);
+        status(e, ngettext("%d sound removed from the list (the file stays where it is).",
+                           "%d sounds removed from the list (the files stay where they are).", n),
+               n);
     else
-        status(e, "Escolha os sons na lista.");
+        status(e, _("Pick the sounds in the list."));
 }
 
 typedef struct {
@@ -510,16 +520,16 @@ static void on_import(GtkButton *b, gpointer ud)
     editor *e = ud;
     char sa[KK_PATH_MAX];
     if (!editor_sa_dir(e, sa, sizeof sa)) {
-        status(e, "Não achei o Stream Avatars; indique a pasta na aba Avatares.");
+        status(e, _("Could not find Stream Avatars; set its folder in the Avatars tab."));
         return;
     }
     import_ctx ic = {.e = e};
     if (kk_sa_read_sounds(sa, on_sa_sound, &ic) < 0) {
-        status(e, "Não consegui ler a lista de sons do Stream Avatars em %s.", sa);
+        status(e, _("Could not read the Stream Avatars sound list in %s."), sa);
         return;
     }
-    status(e, "%d som(ns) importado(s) do Stream Avatars, com os volumes de lá; "
-              "%d já estavam na lista, %d sem arquivo.",
+    status(e, _("%d sound(s) imported from Stream Avatars, with their volumes; "
+                "%d were already in the list, %d without a file."),
            ic.added, ic.known, ic.missing);
     scan(e);
 }
@@ -555,14 +565,14 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
     gtk_container_set_border_width(GTK_CONTAINER(box), 12);
 
     GtkWidget *top = gtk_hbox_new(FALSE, 12);
-    t->enabled = check("Mesa de som ligada", cfg->sound_enabled);
-    t->commands = check("Cada som também é um comando (!nome)", cfg->sound_commands);
+    t->enabled = check(_("Sound board on"), cfg->sound_enabled);
+    t->commands = check(_("Each sound is also a command (!name)"), cfg->sound_commands);
     gtk_box_pack_start(GTK_BOX(top), t->enabled, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(top), t->commands, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
 
     GtkWidget *mid = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new("Volume geral"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new(_("Overall volume")), FALSE, FALSE, 0);
     t->volume = gtk_hscale_new_with_range(0, 400, 5);
     gtk_scale_set_value_pos(GTK_SCALE(t->volume), GTK_POS_RIGHT);
     gtk_scale_set_digits(GTK_SCALE(t->volume), 0);
@@ -570,15 +580,16 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
     gtk_widget_set_size_request(t->volume, 220, -1);
     g_signal_connect(t->volume, "value-changed", G_CALLBACK(on_master_changed), t);
     gtk_box_pack_start(GTK_BOX(mid), t->volume, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new("%   Ao mesmo tempo"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new("%"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new(_("At the same time")), FALSE, FALSE, 6);
     t->voices = spin(1, 64, 1, 0);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(t->voices), cfg->sound_voices);
     gtk_box_pack_start(GTK_BOX(mid), t->voices, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new("   Saída ALSA"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(mid), gtk_label_new(_("ALSA output")), FALSE, FALSE, 6);
     t->device = entry(cfg->sound_device);
     gtk_entry_set_width_chars(GTK_ENTRY(t->device), 12);
-    gtk_widget_set_tooltip_text(t->device, "Vazio: \"default\" (o PipeWire ou o "
-                                           "PulseAudio, se houver)");
+    gtk_widget_set_tooltip_text(t->device, _("Empty: \"default\" (PipeWire or "
+                                             "PulseAudio, if present)"));
     gtk_box_pack_start(GTK_BOX(mid), t->device, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), mid, FALSE, FALSE, 0);
 
@@ -604,11 +615,11 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
         int col;
         GCallback edited;
     } cols[] = {
-        {"Comando", S_NAME, G_CALLBACK(on_name_edited)},
-        {"Apelidos", S_ALIASES, G_CALLBACK(on_aliases_edited)},
-        {"Volume", S_VOLUME, G_CALLBACK(on_volume_edited)},
-        {"Duração", S_LENGTH, NULL},
-        {"Arquivo", S_FILE, NULL},
+        {N_("Command"), S_NAME, G_CALLBACK(on_name_edited)},
+        {N_("Aliases"), S_ALIASES, G_CALLBACK(on_aliases_edited)},
+        {N_("Volume"), S_VOLUME, G_CALLBACK(on_volume_edited)},
+        {N_("Length"), S_LENGTH, NULL},
+        {N_("File"), S_FILE, NULL},
     };
     for (size_t i = 0; i < sizeof cols / sizeof cols[0]; i++) {
         GtkCellRenderer *r = gtk_cell_renderer_text_new();
@@ -618,7 +629,7 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
             gtk_tree_view_column_set_cell_data_func(c, r, volume_text, NULL, NULL);
             g_object_set(r, "xalign", 1.0, NULL);
         } else {
-            c = gtk_tree_view_column_new_with_attributes(cols[i].title, r, "text",
+            c = gtk_tree_view_column_new_with_attributes(_(cols[i].title), r, "text",
                                                          cols[i].col, NULL);
         }
         if (cols[i].edited) {
@@ -641,32 +652,32 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(box),
-                       hint_label("No chat: !som NOME (ou !NOME). Clique duas vezes numa "
-                                  "linha para ouvir com o volume dela. Volume de 0 a 400%; "
-                                  "\"Nivelar\" mede cada som e acerta o volume para todos "
-                                  "soarem parecidos, sem estourar."),
+                       hint_label(_("In the chat: !sound NAME (or !NAME). Double-click a "
+                                    "row to listen at its volume. Volume from 0 to 400%; "
+                                    "\"Level\" measures each sound and sets the volume so "
+                                    "they all sound alike, without clipping.")),
                        FALSE, FALSE, 0);
 
     GtkWidget *buttons = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(buttons), button(GTK_STOCK_ADD, "_Adicionar…", G_CALLBACK(on_add), e),
+    gtk_box_pack_start(GTK_BOX(buttons), button(GTK_STOCK_ADD, _("_Add…"), G_CALLBACK(on_add), e),
                        FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(buttons),
-                       button(GTK_STOCK_REMOVE, "_Remover", G_CALLBACK(on_remove), e), FALSE,
+                       button(GTK_STOCK_REMOVE, _("_Remove"), G_CALLBACK(on_remove), e), FALSE,
                        FALSE, 0);
     gtk_box_pack_start(GTK_BOX(buttons),
-                       button(GTK_STOCK_MEDIA_PLAY, "_Tocar", G_CALLBACK(on_play), e),
+                       button(GTK_STOCK_MEDIA_PLAY, _("_Play"), G_CALLBACK(on_play), e),
                        FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(buttons),
-                       button(GTK_STOCK_MEDIA_STOP, "_Parar", G_CALLBACK(on_stop), e),
+                       button(GTK_STOCK_MEDIA_STOP, _("_Stop"), G_CALLBACK(on_stop), e),
                        FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(buttons),
-                       button(NULL, "_Nivelar selecionados", G_CALLBACK(on_level_selected), e),
+                       button(NULL, _("_Level selected"), G_CALLBACK(on_level_selected), e),
                        FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(buttons),
-                       button(NULL, "Nivelar _todos", G_CALLBACK(on_level_all), e), FALSE,
+                       button(NULL, _("Level _all"), G_CALLBACK(on_level_all), e), FALSE,
                        FALSE, 0);
     gtk_box_pack_end(GTK_BOX(buttons),
-                     button(NULL, "_Importar do Stream Avatars", G_CALLBACK(on_import), e),
+                     button(NULL, _("_Import from Stream Avatars"), G_CALLBACK(on_import), e),
                      FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), buttons, FALSE, FALSE, 0);
 

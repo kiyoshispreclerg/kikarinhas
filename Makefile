@@ -32,7 +32,7 @@ UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/te
 ALL_CFLAGS  = $(STDFLAGS) $(OPTFLAGS) $(SANFLAGS) $(PKG_CFLAGS) $(CFLAGS)
 ALL_LDFLAGS = $(SANFLAGS) $(LDFLAGS)
 
-.PHONY: all test run asan asan-run install uninstall lint clean
+.PHONY: all test run asan asan-run install uninstall lint clean locale pot update-po
 
 # kikarinhas-config is optional: built only when GTK2 is there.
 HAVE_GTK2 := $(shell $(PKG_CONFIG) --exists gtk+-2.0 && echo 1)
@@ -40,7 +40,26 @@ CONFIG_BIN = $(if $(HAVE_GTK2),$(BUILD)/kikarinhas-config)
 GTK_CFLAGS = $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null | sed 's/-I/-isystem /g')
 GTK_LIBS   = $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
 
-all: $(BUILD)/kikarinhas $(CONFIG_BIN)
+# Translations of kikarinhas-config (po/LINGUAS lists the languages). Built
+# into $(BUILD)/locale, which the program finds next to its own executable.
+LINGUAS = $(shell sed 's/\#.*//' po/LINGUAS)
+HAVE_MSGFMT := $(shell command -v msgfmt >/dev/null 2>&1 && echo 1)
+MO_FILES = $(if $(and $(HAVE_GTK2),$(HAVE_MSGFMT)),$(foreach l,$(LINGUAS),$(BUILD)/locale/$(l)/LC_MESSAGES/kikarinhas.mo))
+
+all: $(BUILD)/kikarinhas $(CONFIG_BIN) $(MO_FILES)
+locale: $(MO_FILES)
+
+$(BUILD)/locale/%/LC_MESSAGES/kikarinhas.mo: po/%.po
+	@mkdir -p $(@D)
+	msgfmt -c -o $@ $<
+
+# Rebuilds the template from the sources and merges it into every .po.
+pot update-po:
+	xgettext --from-code=UTF-8 -L C --keyword=_ --keyword=N_ --keyword=ngettext:1,2 \
+		--add-comments=TRANSLATORS -f po/POTFILES.in -o po/kikarinhas.pot \
+		--package-name=kikarinhas --package-version=$(VERSION) \
+		--copyright-holder="Kikarinhas contributors" --msgid-bugs-address=""
+	for l in $(LINGUAS); do msgmerge -q -U --backup=none po/$$l.po po/kikarinhas.pot; done
 
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
@@ -50,7 +69,7 @@ CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(GTK_CFLAGS) $(WARNFLAGS) -MMD -MP -c -o $@ $<
+	$(CC) $(CPPFLAGS) -DLOCALEDIR='"$(LOCALEDIR)"' $(ALL_CFLAGS) $(GTK_CFLAGS) $(WARNFLAGS) -MMD -MP -c -o $@ $<
 
 $(BUILD)/kikarinhas-config: $(CONFIG_OBJ) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(GTK_LIBS) $(LDLIBS)
@@ -92,17 +111,20 @@ asan:
 asan-run: asan
 	LSAN_OPTIONS=suppressions=$(CURDIR)/tools/lsan.supp $(BUILD)/asan/kikarinhas $(ARGS)
 
-install: $(BUILD)/kikarinhas
+install: $(BUILD)/kikarinhas $(MO_FILES)
 	install -Dm755 $< $(DESTDIR)$(BINDIR)/kikarinhas
 	$(if $(CONFIG_BIN),install -Dm755 $(CONFIG_BIN) $(DESTDIR)$(BINDIR)/kikarinhas-config)
 	install -Dm644 data/kikarinhas.ini $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
 	install -Dm644 data/kikarinhas.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop
 	$(if $(CONFIG_BIN),install -Dm644 data/kikarinhas-config.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop)
 	install -Dm644 data/kikarinhas.svg $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg
+	$(foreach l,$(if $(MO_FILES),$(LINGUAS)),install -Dm644 $(BUILD)/locale/$(l)/LC_MESSAGES/kikarinhas.mo \
+		$(DESTDIR)$(LOCALEDIR)/$(l)/LC_MESSAGES/kikarinhas.mo;)
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/kikarinhas $(DESTDIR)$(BINDIR)/kikarinhas-config
 	rm -f $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
+	for l in $(LINGUAS); do rm -f $(DESTDIR)$(LOCALEDIR)/$$l/LC_MESSAGES/kikarinhas.mo; done
 	rm -f $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop \
 	      $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop \
 	      $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg

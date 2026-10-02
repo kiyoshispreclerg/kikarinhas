@@ -1,0 +1,714 @@
+# Portuguese translations for kikarinhas package.
+# Copyright (C) 2026 Kikarinhas contributors
+# This file is distributed under the same license as the kikarinhas package.
+#
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: kikarinhas 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-02 09:37-0300\n"
+"PO-Revision-Date: 2026-10-02 09:37-0300\n"
+"Last-Translator: Kikarinhas contributors\n"
+"Language-Team: \n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: config/main.c:45
+msgid "anyone"
+msgstr "qualquer um"
+
+#: config/main.c:45
+msgid "members"
+msgstr "membros"
+
+#: config/main.c:45
+msgid "moderators"
+msgstr "moderadores"
+
+#: config/main.c:45
+msgid "owner"
+msgstr "dono"
+
+#: config/main.c:159
+msgid "automatic"
+msgstr "automático"
+
+#: config/main.c:302
+msgid "Invalid command name: use a single word, no spaces."
+msgstr "Nome de comando inválido: use uma palavra só, sem espaços."
+
+#: config/main.c:308
+#, c-format
+msgid "A command !%s already exists."
+msgstr "Já existe um comando !%s."
+
+#: config/main.c:319
+#, c-format
+msgid "Invalid cooldown: \"%s\" (seconds, 0 to 86400)."
+msgstr "Espera inválida: \"%s\" (segundos, de 0 a 86400)."
+
+#: config/main.c:402
+msgid "new"
+msgstr "novo"
+
+#: config/main.c:418
+msgid ""
+"New command: give it a name, pick the action and, for \"sound\", the sound "
+"in \"Data\"."
+msgstr ""
+"Comando novo: dê um nome, escolha a ação e, para \"sound\", o som em "
+"\"Dado\"."
+
+#: config/main.c:427 config/main.c:445
+msgid "Pick a command in the list."
+msgstr "Escolha um comando na lista."
+
+#: config/main.c:433
+msgid "Default commands cannot be removed: untick \"Active\" to turn one off."
+msgstr "Comandos padrão não são removidos: desmarque \"Ativo\" para desligar."
+
+#: config/main.c:453
+msgid "Only default commands have default values."
+msgstr "Só comandos padrão têm valores padrão."
+
+#: config/main.c:471
+msgid "Shortcut \"!name\" for an avatar, accessory or palette;"
+msgstr "Atalho \"!nome\" para avatar, acessório ou paleta;"
+
+#: config/main.c:475
+msgid "cooldown"
+msgstr "espera"
+
+#: config/main.c:499
+msgid "Active"
+msgstr "Ativo"
+
+#: config/main.c:500 config/sounds.c:618
+msgid "Command"
+msgstr "Comando"
+
+#: config/main.c:501
+msgid "Action"
+msgstr "Ação"
+
+#: config/main.c:502
+msgid "Data"
+msgstr "Dado"
+
+#: config/main.c:503 config/sounds.c:619
+msgid "Aliases"
+msgstr "Apelidos"
+
+#: config/main.c:504
+msgid "Cooldown (s)"
+msgstr "Espera (s)"
+
+#: config/main.c:505
+msgid "Global (s)"
+msgstr "Para todos (s)"
+
+#: config/main.c:509
+msgid "Who can"
+msgstr "Quem pode"
+
+#: config/main.c:520
+msgid ""
+"<small>Double-click a cell to edit it. Aliases separated by commas. \"Data\" "
+"is the command's fixed argument (the sound of a !horn, the avatar of a !"
+"pika); empty, whatever the person typed is used. The channel owner never "
+"waits.</small>"
+msgstr ""
+"<small>Clique duas vezes numa célula para editar. Apelidos separados por "
+"vírgula. \"Dado\" é o argumento fixo do comando (o som de um !buzina, o "
+"avatar de um !pika); vazio, vale o que a pessoa digitou. O dono do canal "
+"nunca espera.</small>"
+
+#: config/main.c:531 config/sounds.c:431
+msgid "_Add"
+msgstr "_Adicionar"
+
+#: config/main.c:532 config/sounds.c:665
+msgid "_Remove"
+msgstr "_Remover"
+
+#: config/main.c:533
+msgid "Restore _defaults"
+msgstr "Restaurar _padrão"
+
+#: config/main.c:738
+#, c-format
+msgid "line %d: "
+msgstr "linha %d: "
+
+#: config/main.c:757
+#, c-format
+msgid "Could not write %s: %s"
+msgstr "Não consegui gravar %s: %s"
+
+#: config/main.c:762
+#, c-format
+msgid "Saved to %s, but with a problem: %s"
+msgstr "Salvo em %s, mas com um problema: %s"
+
+#: config/main.c:764
+#, c-format
+msgid "Saved to %s."
+msgstr "Salvo em %s."
+
+#: config/main.c:798
+#, c-format
+msgid "kikarinhas: not running"
+msgstr "kikarinhas: não está rodando"
+
+#: config/main.c:804
+#, c-format
+msgid "kikarinhas running: v%s"
+msgstr "kikarinhas rodando: v%s"
+
+#: config/main.c:806
+#, c-format
+msgid "kikarinhas running"
+msgstr "kikarinhas rodando"
+
+#: config/main.c:830
+msgid "Saved. The socket is off: restart kikarinhas to apply."
+msgstr "Salvo. O socket está desligado: reinicie o kikarinhas para aplicar."
+
+#: config/main.c:834
+#, c-format
+msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
+msgstr "Salvo. O kikarinhas não está aberto (%s); vale quando ele abrir."
+
+#: config/main.c:843
+#, c-format
+msgid "Saved, but kikarinhas did not apply it: %s"
+msgstr "Salvo, mas o kikarinhas não aplicou: %s"
+
+#: config/main.c:846
+#, c-format
+msgid "Applied, with %d warning(s): %s"
+msgstr "Aplicado, com %d aviso(s): %s"
+
+#: config/main.c:849
+msgid "Saved and applied."
+msgstr "Salvo e aplicado."
+
+#: config/main.c:859
+#, c-format
+msgid "Kikarinhas v%s — settings"
+msgstr "Kikarinhas v%s — configuração"
+
+#: config/main.c:870
+msgid "Window"
+msgstr "Janela"
+
+#: config/main.c:875
+msgid "Mode"
+msgstr "Modo"
+
+#: config/main.c:876
+msgid ""
+"obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
+"the desktop, clicks go through."
+msgstr ""
+"obs: janela comum para a Captura de janela (Xcomposite) do OBS. desktop: por "
+"cima da área de trabalho, o clique atravessa."
+
+#: config/main.c:886
+msgid "Size"
+msgstr "Tamanho"
+
+#: config/main.c:886
+msgid "Only in obs mode."
+msgstr "Só no modo obs."
+
+#: config/main.c:887
+msgid "Frames per second"
+msgstr "Quadros por segundo"
+
+#: config/main.c:890
+msgid "Avatars"
+msgstr "Avatares"
+
+#: config/main.c:891
+msgid "Scale"
+msgstr "Escala"
+
+#: config/main.c:893
+msgid "Ground"
+msgstr "Chão"
+
+#: config/main.c:894
+msgid ""
+"Pixels between the feet and the bottom edge; automatic leaves room for the "
+"name."
+msgstr ""
+"Pixels entre os pés e a borda de baixo; automático deixa espaço para o nome."
+
+#: config/main.c:895
+msgid "Random"
+msgstr "Sorteados"
+
+#: config/main.c:896
+msgid ""
+"Avatars that walk around without belonging to anyone in the chat; automatic: "
+"6 without chat, 0 with chat."
+msgstr ""
+"Avatares que andam sem ser de ninguém do chat; automático: 6 sem chat, 0 com "
+"chat."
+
+#: config/main.c:897
+msgid "Always on screen"
+msgstr "Sempre na tela"
+
+#: config/main.c:898
+msgid "Avatar names separated by commas."
+msgstr "Nomes de avatares separados por vírgula."
+
+#: config/main.c:902
+msgid "Everyone's avatar"
+msgstr "Avatar de todos"
+
+#: config/main.c:903
+msgid "Empty: a random one per person, always the same."
+msgstr "Vazio: um sorteado por pessoa, sempre o mesmo."
+
+#: config/main.c:904
+msgid "Stream Avatars folder"
+msgstr "Pasta do Stream Avatars"
+
+#: config/main.c:906
+msgid "The \"data\" folder; empty: searches the Steam libraries."
+msgstr "A pasta \"data\"; vazio: procura nas bibliotecas do Steam."
+
+#: config/main.c:909
+msgid "below"
+msgstr "embaixo"
+
+#: config/main.c:910
+msgid "above"
+msgstr "em cima"
+
+#: config/main.c:912
+msgid "Avatar name"
+msgstr "Nome do avatar"
+
+#: config/main.c:913
+msgid "Show names"
+msgstr "Mostrar nomes"
+
+#: config/main.c:914
+msgid "Above or below the avatar."
+msgstr "Em cima ou embaixo do avatar."
+
+#: config/main.c:915
+msgid "Messages"
+msgstr "Mensagens"
+
+#: config/main.c:916
+msgid "Show a speech bubble with the message"
+msgstr "Mostrar balão com a mensagem"
+
+#: config/main.c:921
+msgid "Name font"
+msgstr "Fonte do nome"
+
+#: config/main.c:922
+msgid ""
+"Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
+"Bold. Only changes when kikarinhas restarts."
+msgstr ""
+"Família e estilo do Pango (ex.: Sans Bold) e tamanho em pontos; vazio: Sans "
+"Bold. Só muda reiniciando o kikarinhas."
+
+#: config/main.c:927
+msgid "Bubble font"
+msgstr "Fonte do balão"
+
+#: config/main.c:928
+msgid "Empty: Sans. Applies to the next bubbles."
+msgstr "Vazio: Sans. Vale para os próximos balões."
+
+#: config/main.c:930
+msgid "Chat"
+msgstr "Chat"
+
+#: config/main.c:932
+msgid ""
+"Link to the stream or channel, @handle or video id. With a channel, it waits "
+"for it to go live."
+msgstr ""
+"Link da live ou do canal, @handle ou id do vídeo. Com um canal, espera ele "
+"entrar ao vivo."
+
+#: config/main.c:934
+msgid "Fake chat (to test without a stream)"
+msgstr "Chat de mentira (para testar sem live)"
+
+#: config/main.c:935
+msgid "Avatars at the same time"
+msgstr "Avatares ao mesmo tempo"
+
+#: config/main.c:937
+msgid "Leaves after"
+msgstr "Some depois de"
+
+#: config/main.c:938
+msgid "Seconds of silence until the avatar leaves."
+msgstr "Segundos em silêncio até o avatar sair."
+
+#: config/main.c:940
+msgid "Print the messages in the terminal"
+msgstr "Mostrar as mensagens no terminal"
+
+#: config/main.c:941
+msgid "People file"
+msgstr "Arquivo de pessoas"
+
+#: config/main.c:942
+msgid ""
+"Avatar, color and accessories of each person; empty: ~/.local/share/"
+"kikarinhas/users.tsv."
+msgstr ""
+"Avatar, cor e acessórios de cada um; vazio: ~/.local/share/kikarinhas/users."
+"tsv."
+
+#: config/main.c:944
+msgid "Control socket"
+msgstr "Socket de controle"
+
+#: config/main.c:946
+msgid "For bridges and the Apply button; empty: the default; off: disabled."
+msgstr "Para bridges e para o botão Aplicar; vazio: o padrão; off: desligado."
+
+#: config/main.c:949
+msgid "Commands"
+msgstr "Comandos"
+
+#: config/main.c:951
+msgid "Sounds"
+msgstr "Sons"
+
+#: config/main.c:953
+msgid "Viewers"
+msgstr "Espectadores"
+
+#: config/main.c:972
+msgid "_Close"
+msgstr "_Fechar"
+
+#: config/main.c:973
+msgid "_Save"
+msgstr "_Salvar"
+
+#: config/main.c:974
+msgid "Save and _apply"
+msgstr "Salvar e _aplicar"
+
+#: config/main.c:1018
+#, c-format
+msgid ""
+"Usage: kikarinhas-config [FILE]\n"
+"       kikarinhas-config -V, --version\n"
+"Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
+msgstr ""
+"Uso: kikarinhas-config [ARQUIVO]\n"
+"      kikarinhas-config -V, --version\n"
+"Edita ~/.config/kikarinhas/kikarinhas.ini (ou ARQUIVO).\n"
+
+#: config/main.c:1026
+#, c-format
+msgid "kikarinhas-config: no $HOME\n"
+msgstr "kikarinhas-config: sem $HOME\n"
+
+#: config/main.c:1033
+#, c-format
+msgid "kikarinhas-config: could not read %s: %s\n"
+msgstr "kikarinhas-config: não consegui ler %s: %s\n"
+
+#: config/main.c:1038
+msgid ""
+"# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
+"# comments are kept.\n"
+msgstr ""
+"# Kikarinhas: gerado pelo kikarinhas-config. Pode editar à mão;\n"
+"# comentários são mantidos.\n"
+
+#: config/main.c:1047
+#, c-format
+msgid "kikarinhas-config: out of memory\n"
+msgstr "kikarinhas-config: sem memória\n"
+
+#: config/sounds.c:67
+#, c-format
+msgid "can't play"
+msgstr "não toca"
+
+#: config/sounds.c:173
+#, c-format
+msgid "Could not open the audio device \"%s\"."
+msgstr "Não consegui abrir o áudio \"%s\"."
+
+#: config/sounds.c:175
+#, c-format
+msgid "Playing !%s (%d%%)."
+msgstr "Tocando !%s (%d%%)."
+
+#: config/sounds.c:211
+msgid "Pick a sound in the list."
+msgstr "Escolha um som na lista."
+
+#: config/sounds.c:279
+#, c-format
+msgid "%d sound leveled; %d cannot be played (see the Length column)."
+msgid_plural "%d sounds leveled; %d cannot be played (see the Length column)."
+msgstr[0] "%d som nivelado; %d não toca (veja a coluna Duração)."
+msgstr[1] "%d sons nivelados; %d não tocam (veja a coluna Duração)."
+
+#: config/sounds.c:283
+#, c-format
+msgid "%d sound leveled. Listen and adjust if needed; then Save."
+msgid_plural "%d sounds leveled. Listen and adjust if needed; then Save."
+msgstr[0] "%d som nivelado. Ouça e ajuste se precisar; depois, Salvar."
+msgstr[1] "%d sons nivelados. Ouça e ajuste se precisar; depois, Salvar."
+
+#: config/sounds.c:294
+msgid "Pick the sounds in the list (Ctrl or Shift for several)."
+msgstr "Escolha os sons na lista (Ctrl ou Shift para vários)."
+
+#: config/sounds.c:373
+msgid "Invalid sound name: a single word, no spaces."
+msgstr "Nome de som inválido: uma palavra só, sem espaços."
+
+#: config/sounds.c:379
+#, c-format
+msgid "A sound \"%s\" already exists."
+msgstr "Já existe um som \"%s\"."
+
+#: config/sounds.c:405
+#, c-format
+msgid "Invalid volume: 0 to 400%%."
+msgstr "Volume inválido: de 0 a 400%%."
+
+#: config/sounds.c:430
+msgid "Add sounds"
+msgstr "Adicionar sons"
+
+#: config/sounds.c:431
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+#: config/sounds.c:434
+msgid "Sounds (wav, ogg, mp3)"
+msgstr "Sons (wav, ogg, mp3)"
+
+#: config/sounds.c:463
+#, c-format
+msgid ""
+"%d sound added. The name is the chat command (!name); double-click a cell to "
+"change it."
+msgid_plural ""
+"%d sounds added. The name is the chat command (!name); double-click a cell "
+"to change it."
+msgstr[0] ""
+"%d som adicionado. O nome é o comando no chat (!nome); clique duas vezes "
+"numa célula para mudar."
+msgstr[1] ""
+"%d sons adicionados. O nome é o comando no chat (!nome); clique duas vezes "
+"numa célula para mudar."
+
+#: config/sounds.c:488
+#, c-format
+msgid "%d sound removed from the list (the file stays where it is)."
+msgid_plural "%d sounds removed from the list (the files stay where they are)."
+msgstr[0] "%d som removido da lista (o arquivo fica onde está)."
+msgstr[1] "%d sons removidos da lista (os arquivos ficam onde estão)."
+
+#: config/sounds.c:492
+msgid "Pick the sounds in the list."
+msgstr "Escolha os sons na lista."
+
+#: config/sounds.c:523
+msgid "Could not find Stream Avatars; set its folder in the Avatars tab."
+msgstr "Não achei o Stream Avatars; indique a pasta na aba Avatares."
+
+#: config/sounds.c:528
+#, c-format
+msgid "Could not read the Stream Avatars sound list in %s."
+msgstr "Não consegui ler a lista de sons do Stream Avatars em %s."
+
+#: config/sounds.c:531
+#, c-format
+msgid ""
+"%d sound(s) imported from Stream Avatars, with their volumes; %d were "
+"already in the list, %d without a file."
+msgstr ""
+"%d som(ns) importado(s) do Stream Avatars, com os volumes de lá; %d já "
+"estavam na lista, %d sem arquivo."
+
+#: config/sounds.c:568
+msgid "Sound board on"
+msgstr "Mesa de som ligada"
+
+#: config/sounds.c:569
+msgid "Each sound is also a command (!name)"
+msgstr "Cada som também é um comando (!nome)"
+
+#: config/sounds.c:575
+msgid "Overall volume"
+msgstr "Volume geral"
+
+#: config/sounds.c:584
+msgid "At the same time"
+msgstr "Ao mesmo tempo"
+
+#: config/sounds.c:588
+msgid "ALSA output"
+msgstr "Saída ALSA"
+
+#: config/sounds.c:591
+msgid "Empty: \"default\" (PipeWire or PulseAudio, if present)"
+msgstr "Vazio: \"default\" (o PipeWire ou o PulseAudio, se houver)"
+
+#: config/sounds.c:620
+msgid "Volume"
+msgstr "Volume"
+
+#: config/sounds.c:621
+msgid "Length"
+msgstr "Duração"
+
+#: config/sounds.c:622
+msgid "File"
+msgstr "Arquivo"
+
+#: config/sounds.c:655
+msgid ""
+"In the chat: !sound NAME (or !NAME). Double-click a row to listen at its "
+"volume. Volume from 0 to 400%; \"Level\" measures each sound and sets the "
+"volume so they all sound alike, without clipping."
+msgstr ""
+"No chat: !som NOME (ou !NOME). Clique duas vezes numa linha para ouvir com o "
+"volume dela. Volume de 0 a 400%; \"Nivelar\" mede cada som e acerta o volume "
+"para todos soarem parecidos, sem estourar."
+
+#: config/sounds.c:662
+msgid "_Add…"
+msgstr "_Adicionar…"
+
+#: config/sounds.c:668
+msgid "_Play"
+msgstr "_Tocar"
+
+#: config/sounds.c:671
+msgid "_Stop"
+msgstr "_Parar"
+
+#: config/sounds.c:674
+msgid "_Level selected"
+msgstr "_Nivelar selecionados"
+
+#: config/sounds.c:677
+msgid "Level _all"
+msgstr "Nivelar _todos"
+
+#: config/sounds.c:680
+msgid "_Import from Stream Avatars"
+msgstr "_Importar do Stream Avatars"
+
+#: config/audience.c:55
+msgid "%Y-%m-%d %H:%M"
+msgstr "%d/%m/%Y %H:%M"
+
+#: config/audience.c:85
+#, c-format
+msgid "%d viewer"
+msgid_plural "%d viewers"
+msgstr[0] "%d espectador"
+msgstr[1] "%d espectadores"
+
+#: config/audience.c:87
+#, c-format
+msgid "%d of %d viewers"
+msgstr "%d de %d espectadores"
+
+#: config/audience.c:102
+#, c-format
+msgid "Could not read the people file %s."
+msgstr "Não consegui ler o arquivo de pessoas %s."
+
+#: config/audience.c:128
+msgid " (just read from the running kikarinhas)"
+msgstr " (lido agora do kikarinhas aberto)"
+
+#: config/audience.c:186
+msgid "Could not find Stream Avatars: no avatar list to choose from."
+msgstr "Não achei o Stream Avatars: sem a lista de avatares para escolher."
+
+#: config/audience.c:272
+#, c-format
+msgid "There is no avatar \"%s\" in Stream Avatars."
+msgstr "Não existe o avatar \"%s\" no Stream Avatars."
+
+#: config/audience.c:294
+#, c-format
+msgid "%s is now %s (already in effect in the running kikarinhas)."
+msgstr "%s agora é %s (já valendo no kikarinhas aberto)."
+
+#: config/audience.c:296
+#, c-format
+msgid "kikarinhas refused: %s"
+msgstr "O kikarinhas recusou: %s"
+
+#: config/audience.c:301
+#, c-format
+msgid "%s is now %s (saved to the file; takes effect next time)."
+msgstr "%s agora é %s (gravado no arquivo; vale na próxima vez)."
+
+#: config/audience.c:303
+msgid "Could not write the people file."
+msgstr "Não consegui gravar o arquivo de pessoas."
+
+#: config/audience.c:323
+msgid "Search"
+msgstr "Procurar"
+
+#: config/audience.c:329
+msgid "_Refresh"
+msgstr "A_tualizar"
+
+#: config/audience.c:353
+msgid "Name"
+msgstr "Nome"
+
+#: config/audience.c:354
+msgid "Platform"
+msgstr "Plataforma"
+
+#: config/audience.c:355
+msgid "First seen"
+msgstr "Primeira vez"
+
+#: config/audience.c:356
+msgid "Latest"
+msgstr "Mais recente"
+
+#: config/audience.c:375
+msgid "Avatar"
+msgstr "Avatar"
+
+#: config/audience.c:388
+msgid ""
+"Double-click the avatar to change it (you can type the name). With "
+"kikarinhas running, the change takes effect at once. Empty avatar: a random "
+"one, always the same. People from Stream Avatars without a name or dates: "
+"run kikarinhas --import-sa-users once."
+msgstr ""
+"Clique duas vezes no avatar para trocar (dá para digitar o nome). Com o "
+"kikarinhas aberto, a troca vale na hora. Avatar vazio: um sorteado, sempre o "
+"mesmo. Quem veio do Stream Avatars sem nome ou datas: rode uma vez "
+"kikarinhas --import-sa-users."

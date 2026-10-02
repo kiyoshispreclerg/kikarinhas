@@ -54,7 +54,7 @@ GtkWidget *entry(const char *text);
 GtkWidget *check(const char *label, bool on);
 const char *text_of(GtkWidget *w);
 int spin_int(GtkWidget *w);
-/* A button with a stock icon and our own (Portuguese) label: GTK2's own
+/* A button with a stock icon and our own (translated) label: GTK2's own
  * translations are often not installed. */
 GtkWidget *icon_button(const char *stock, const char *label);
 /* A small label in grey, for explanations under a list. */

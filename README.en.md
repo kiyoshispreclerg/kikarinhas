@@ -91,6 +91,17 @@ build/kikarinhas --check                # checks every spritesheet
 Right-click the window (`obs` mode) to open `kikarinhas-config` on the same
 `.ini`; only one is opened at a time.
 
+### Configurator languages
+
+`kikarinhas-config` speaks the session's language (`LANGUAGE`, `LC_ALL` or
+`LANG`): Brazilian Portuguese (`pt_BR`) and English (`en`; any other
+language falls back to English). `kikarinhas` itself has no interface text.
+To add a language, put its code in `po/LINGUAS`, create the `.po` with
+`msginit -l xx -i po/kikarinhas.pot -o po/xx.po`, translate it and run `make`
+(the `.mo` files land in `build/locale`, which the program finds next to its
+executable; `make install` installs them). After changing strings in the
+code, `make pot` refreshes the `.pot` and merges it into every `.po`.
+
 To quit: close the window or press Ctrl+C. In `desktop` mode, which does not
 receive clicks, use `pkill kikarinhas` or
 `echo quit | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/kikarinhas.sock`.
@@ -103,8 +114,7 @@ file. [data/kikarinhas.ini](data/kikarinhas.ini) explains every key (the
 comments are in Portuguese). The easiest way to edit it is
 `kikarinhas-config` (GTK2): tabs Window, Avatars, Chat, Commands, Sounds and
 Viewers, and the **Save and apply** button. It keeps the file's comments and
-only writes what differs from the default. (The program's own interface
-text is in Portuguese.)
+only writes what differs from the default.
 
 In the Avatars tab, `show_names`/`name_position` (below or above the avatar)
 and `show_bubbles` turn the name tag and the speech bubble on or off.

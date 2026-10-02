@@ -91,6 +91,17 @@ build/kikarinhas --check                # confere todas as spritesheets
 Clique com o botão direito na janela (modo `obs`) para abrir o
 `kikarinhas-config` com o mesmo `.ini`; só abre um por vez.
 
+### Idiomas do configurador
+
+O `kikarinhas-config` fala o idioma da sessão (`LANGUAGE`, `LC_ALL` ou
+`LANG`): português do Brasil (`pt_BR`) e inglês (`en`; qualquer outro
+idioma cai no inglês). O `kikarinhas` em si não tem textos de interface.
+Para acrescentar um idioma, adicione o código em `po/LINGUAS`, crie o `.po`
+com `msginit -l xx -i po/kikarinhas.pot -o po/xx.po`, traduza e rode `make`
+(os `.mo` saem em `build/locale`, que o programa acha ao lado do executável;
+`make install` os instala). Depois de mudar textos no código, `make pot`
+atualiza o `.pot` e mescla nos `.po`.
+
 Para sair: feche a janela ou use Ctrl+C. No modo `desktop`, que não recebe
 cliques, use `pkill kikarinhas` ou `echo quit | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/kikarinhas.sock`.
 

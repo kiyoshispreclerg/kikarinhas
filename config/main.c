@@ -15,12 +15,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <gtk/gtk.h>
 
 #include "config.h"
 #include "control.h"
 #include "editor.h"
+#include "i18n.h"
 #include "ini.h"
 #include "sa.h"
 #include "util.h"
@@ -38,8 +40,9 @@ enum {
     N_COLS,
 };
 
+/* Translated where shown: see role_label() and role_of_label(). */
 static const char *const ROLE_LABELS[] = {
-    "qualquer um", "membros", "moderadores", "dono",
+    N_("anyone"), N_("members"), N_("moderators"), N_("owner"),
 };
 
 
@@ -123,7 +126,7 @@ static GtkWidget *font_row(GtkWidget *family, GtkWidget *size)
     return box;
 }
 
-/* A check box "automático" next to a spin button it disables. */
+/* A check box _("automatic") next to a spin button it disables. */
 static void on_auto_toggled(GtkToggleButton *b, gpointer spinner)
 {
     gtk_widget_set_sensitive(GTK_WIDGET(spinner), !gtk_toggle_button_get_active(b));
@@ -153,7 +156,7 @@ static GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo,
                             double hi, int value)
 {
     GtkWidget *box = gtk_hbox_new(FALSE, 6);
-    *check = gtk_check_button_new_with_label("automático");
+    *check = gtk_check_button_new_with_label(_("automatic"));
     *spinner = spin(lo, hi, 1, 0);
     gtk_box_pack_start(GTK_BOX(box), *check, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), *spinner, FALSE, FALSE, 0);
@@ -240,7 +243,7 @@ static void append_command(editor *e, const kk_config_command *k, bool custom)
     gtk_list_store_set(e->commands, &it, COL_ENABLED, k->enabled, COL_NAME, k->name,
                        COL_ACTION, k->action ? k->action : "", COL_DATA,
                        k->data ? k->data : "", COL_ALIASES, aliases, COL_CD, cd,
-                       COL_GCD, gcd, COL_ROLE, ROLE_LABELS[k->role], COL_CUSTOM,
+                       COL_GCD, gcd, COL_ROLE, _(ROLE_LABELS[k->role]), COL_CUSTOM,
                        custom, -1);
 }
 
@@ -296,13 +299,13 @@ static void on_name_edited(GtkCellRendererText *r, gchar *path, gchar *text,
     const char *s = text[0] == '!' ? text + 1 : text;
     size_t n = strlen(s);
     if (n == 0 || n >= sizeof name || strpbrk(s, " \t!")) {
-        status(e, "Nome de comando inválido: use uma palavra só, sem espaços.");
+        status(e, _("Invalid command name: use a single word, no spaces."));
         return;
     }
     for (size_t i = 0; i <= n; i++)
         name[i] = (char)g_ascii_tolower(s[i]);
     if (name_taken(e, name, path)) {
-        status(e, "Já existe um comando !%s.", name);
+        status(e, _("A command !%s already exists."), name);
         return;
     }
     set_cell(e, path, COL_NAME, name);
@@ -313,7 +316,7 @@ static void on_number_edited(editor *e, gchar *path, gchar *text, int col)
     double v;
     g_strstrip(text);
     if (!kk_parse_double(text, 0, 86400, &v)) {
-        status(e, "Espera inválida: \"%s\" (segundos, de 0 a 86400).", text);
+        status(e, _("Invalid cooldown: \"%s\" (seconds, 0 to 86400)."), text);
         return;
     }
     char s[32];
@@ -395,9 +398,11 @@ static void on_add(GtkButton *b, gpointer ud)
 {
     (void)b;
     editor *e = ud;
-    char name[32] = "novo";
+    char name[32], base[16];
+    snprintf(base, sizeof base, "%s", _("new"));
+    snprintf(name, sizeof name, "%s", base);
     for (int i = 2; name_taken(e, name, ""); i++)
-        snprintf(name, sizeof name, "novo%d", i);
+        snprintf(name, sizeof name, "%s%d", base, i);
     kk_config_command k = {.name = name, .action = (char *)"sound",
                            .user_cd = 30, .enabled = true};
     append_command(e, &k, true);
@@ -410,7 +415,7 @@ static void on_add(GtkButton *b, gpointer ud)
                                  TRUE);
         gtk_tree_path_free(p);
     }
-    status(e, "Comando novo: dê um nome, escolha a ação e, para \"sound\", o som em \"Dado\".");
+    status(e, _("New command: give it a name, pick the action and, for \"sound\", the sound in \"Data\"."));
 }
 
 static void on_remove(GtkButton *b, gpointer ud)
@@ -419,13 +424,13 @@ static void on_remove(GtkButton *b, gpointer ud)
     editor *e = ud;
     GtkTreeIter it;
     if (!selected(e, &it)) {
-        status(e, "Escolha um comando na lista.");
+        status(e, _("Pick a command in the list."));
         return;
     }
     gboolean custom;
     gtk_tree_model_get(GTK_TREE_MODEL(e->commands), &it, COL_CUSTOM, &custom, -1);
     if (!custom) {
-        status(e, "Comandos padrão não são removidos: desmarque \"Ativo\" para desligar.");
+        status(e, _("Default commands cannot be removed: untick \"Active\" to turn one off."));
         return;
     }
     gtk_list_store_remove(e->commands, &it);
@@ -437,7 +442,7 @@ static void on_restore(GtkButton *b, gpointer ud)
     editor *e = ud;
     GtkTreeIter it;
     if (!selected(e, &it)) {
-        status(e, "Escolha um comando na lista.");
+        status(e, _("Pick a command in the list."));
         return;
     }
     gchar *name;
@@ -445,7 +450,7 @@ static void on_restore(GtkButton *b, gpointer ud)
     const kk_config_command *d = builtin(name);
     g_free(name);
     if (!d) {
-        status(e, "Só comandos padrão têm valores padrão.");
+        status(e, _("Only default commands have default values."));
         return;
     }
     char aliases[512], cd[32], gcd[32];
@@ -463,11 +468,11 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     gtk_container_set_border_width(GTK_CONTAINER(box), 12);
 
     GtkWidget *top = gtk_hbox_new(FALSE, 6);
-    e->shortcuts = check("Atalho \"!nome\" para avatar, acessório ou paleta;", cfg->shortcuts);
+    e->shortcuts = check(_("Shortcut \"!name\" for an avatar, accessory or palette;"), cfg->shortcuts);
     e->shortcut_cd = spin(0, 86400, 1, 0);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->shortcut_cd), cfg->shortcut_cd);
     gtk_box_pack_start(GTK_BOX(top), e->shortcuts, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("espera"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("cooldown")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(top), e->shortcut_cd, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(top), gtk_label_new("s"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
@@ -491,14 +496,17 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     g_signal_connect(t, "toggled", G_CALLBACK(on_toggle_enabled), e);
     gtk_tree_view_append_column(GTK_TREE_VIEW(e->tree),
                                 gtk_tree_view_column_new_with_attributes(
-                                    "Ativo", t, "active", COL_ENABLED, NULL));
-    text_column(e, "Comando", COL_NAME, G_CALLBACK(on_name_edited), true);
-    combo_column(e, "Ação", COL_ACTION, string_list(kk_config_actions(), -1), true);
-    text_column(e, "Dado", COL_DATA, NULL, false);
-    text_column(e, "Apelidos", COL_ALIASES, NULL, false);
-    text_column(e, "Espera (s)", COL_CD, G_CALLBACK(on_cd_edited), false);
-    text_column(e, "Para todos (s)", COL_GCD, G_CALLBACK(on_gcd_edited), false);
-    combo_column(e, "Quem pode", COL_ROLE, string_list(ROLE_LABELS, 4), false);
+                                    _("Active"), t, "active", COL_ENABLED, NULL));
+    text_column(e, _("Command"), COL_NAME, G_CALLBACK(on_name_edited), true);
+    combo_column(e, _("Action"), COL_ACTION, string_list(kk_config_actions(), -1), true);
+    text_column(e, _("Data"), COL_DATA, NULL, false);
+    text_column(e, _("Aliases"), COL_ALIASES, NULL, false);
+    text_column(e, _("Cooldown (s)"), COL_CD, G_CALLBACK(on_cd_edited), false);
+    text_column(e, _("Global (s)"), COL_GCD, G_CALLBACK(on_gcd_edited), false);
+    const char *roles[4];
+    for (int i = 0; i < 4; i++)
+        roles[i] = _(ROLE_LABELS[i]);
+    combo_column(e, _("Who can"), COL_ROLE, string_list(roles, 4), false);
 
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
@@ -509,10 +517,10 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
 
     GtkWidget *hint = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(hint),
-                         "<small>Clique duas vezes numa célula para editar. Apelidos "
-                         "separados por vírgula. \"Dado\" é o argumento fixo do comando "
-                         "(o som de um !buzina, o avatar de um !pika); vazio, vale o que "
-                         "a pessoa digitou. O dono do canal nunca espera.</small>");
+                         _("<small>Double-click a cell to edit it. Aliases separated by "
+                           "commas. \"Data\" is the command's fixed argument (the sound of "
+                           "a !horn, the avatar of a !pika); empty, whatever the person typed "
+                           "is used. The channel owner never waits.</small>"));
     gtk_label_set_line_wrap(GTK_LABEL(hint), TRUE);
     gtk_misc_set_alignment(GTK_MISC(hint), 0, 0);
     gtk_box_pack_start(GTK_BOX(box), hint, FALSE, FALSE, 0);
@@ -520,9 +528,9 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     GtkWidget *buttons = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_START);
     gtk_box_set_spacing(GTK_BOX(buttons), 6);
-    GtkWidget *add = icon_button(GTK_STOCK_ADD, "_Adicionar");
-    GtkWidget *rm = icon_button(GTK_STOCK_REMOVE, "_Remover");
-    GtkWidget *restore = gtk_button_new_with_mnemonic("Restaurar _padrão");
+    GtkWidget *add = icon_button(GTK_STOCK_ADD, _("_Add"));
+    GtkWidget *rm = icon_button(GTK_STOCK_REMOVE, _("_Remove"));
+    GtkWidget *restore = gtk_button_new_with_mnemonic(_("Restore _defaults"));
     g_signal_connect(add, "clicked", G_CALLBACK(on_add), e);
     g_signal_connect(rm, "clicked", G_CALLBACK(on_remove), e);
     g_signal_connect(restore, "clicked", G_CALLBACK(on_restore), e);
@@ -596,7 +604,7 @@ int spin_int(GtkWidget *w)
 static kk_role role_of_label(const char *label)
 {
     for (int i = 0; i < 4; i++)
-        if (strcmp(label, ROLE_LABELS[i]) == 0)
+        if (strcmp(label, _(ROLE_LABELS[i])) == 0)
             return (kk_role)i;
     return KK_ROLE_ANYONE;
 }
@@ -727,7 +735,7 @@ static void count_warning(void *ud, int line, const char *msg)
     if (s->len)
         return; /* the first one is enough for the status line */
     if (line > 0)
-        g_string_append_printf(s, "linha %d: ", line);
+        g_string_append_printf(s, _("line %d: "), line);
     g_string_append(s, msg);
 }
 
@@ -746,14 +754,14 @@ static bool save(editor *e)
     }
     free(text);
     if (kk_ini_save(e->ini, e->path) < 0) {
-        status(e, "Não consegui gravar %s: %s", e->path, g_strerror(errno));
+        status(e, _("Could not write %s: %s"), e->path, g_strerror(errno));
         g_string_free(first, TRUE);
         return false;
     }
     if (first->len)
-        status(e, "Salvo em %s, mas com um problema: %s", e->path, first->str);
+        status(e, _("Saved to %s, but with a problem: %s"), e->path, first->str);
     else
-        status(e, "Salvo em %s.", e->path);
+        status(e, _("Saved to %s."), e->path);
     g_string_free(first, TRUE);
     return true;
 }
@@ -787,15 +795,15 @@ void editor_refresh_kikarinhas_version(editor *e)
 {
     char reply[256], text[160];
     if (!editor_request(e, "{\"type\":\"ping\"}", reply, sizeof reply)) {
-        snprintf(text, sizeof text, "kikarinhas: não está rodando");
+        snprintf(text, sizeof text, _("kikarinhas: not running"));
     } else {
         cJSON *r = cJSON_Parse(reply);
         const char *v =
             cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(r, "version"));
         if (v)
-            snprintf(text, sizeof text, "kikarinhas rodando: v%s", v);
+            snprintf(text, sizeof text, _("kikarinhas running: v%s"), v);
         else
-            snprintf(text, sizeof text, "kikarinhas rodando");
+            snprintf(text, sizeof text, _("kikarinhas running"));
         cJSON_Delete(r);
     }
     gtk_label_set_text(GTK_LABEL(e->version_label), text);
@@ -819,11 +827,11 @@ static void on_apply(GtkButton *b, gpointer ud)
         return;
     char sock[KK_PATH_MAX], reply[8192];
     if (!editor_socket(e, sock, sizeof sock)) {
-        status(e, "Salvo. O socket está desligado: reinicie o kikarinhas para aplicar.");
+        status(e, _("Saved. The socket is off: restart kikarinhas to apply."));
         return;
     }
     if (!editor_request(e, "{\"type\":\"reload\"}", reply, sizeof reply)) {
-        status(e, "Salvo. O kikarinhas não está aberto (%s); vale quando ele abrir.", sock);
+        status(e, _("Saved. kikarinhas is not running (%s); it takes effect when it starts."), sock);
         editor_refresh_kikarinhas_version(e);
         return;
     }
@@ -832,13 +840,13 @@ static void on_apply(GtkButton *b, gpointer ud)
     const cJSON *warnings = cJSON_GetObjectItemCaseSensitive(r, "warnings");
     int n = cJSON_GetArraySize(warnings);
     if (!cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(r, "ok")))
-        status(e, "Salvo, mas o kikarinhas não aplicou: %s",
+        status(e, _("Saved, but kikarinhas did not apply it: %s"),
                cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(r, "error")));
     else if (n > 0)
-        status(e, "Aplicado, com %d aviso(s): %s", n,
+        status(e, _("Applied, with %d warning(s): %s"), n,
                cJSON_GetStringValue(cJSON_GetArrayItem(warnings, 0)));
     else
-        status(e, "Salvo e aplicado.");
+        status(e, _("Saved and applied."));
     cJSON_Delete(r);
 }
 
@@ -848,7 +856,7 @@ static void build(editor *e, const kk_config *cfg)
 {
     e->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     char title[64];
-    snprintf(title, sizeof title, "Kikarinhas v%s — configuração", KK_VERSION);
+    snprintf(title, sizeof title, _("Kikarinhas v%s — settings"), KK_VERSION);
     gtk_window_set_title(GTK_WINDOW(e->window), title);
     gtk_window_set_default_size(GTK_WINDOW(e->window), 860, 560);
     g_signal_connect(e->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -859,14 +867,14 @@ static void build(editor *e, const kk_config *cfg)
     GtkWidget *nb = gtk_notebook_new();
     gtk_box_pack_start(GTK_BOX(vbox), nb, TRUE, TRUE, 0);
 
-    GtkWidget *t = page(nb, "Janela");
+    GtkWidget *t = page(nb, _("Window"));
     e->mode = gtk_combo_box_text_new();
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->mode), "obs");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->mode), "desktop");
     gtk_combo_box_set_active(GTK_COMBO_BOX(e->mode), cfg->desktop ? 1 : 0);
-    row(t, "Modo", e->mode,
-        "obs: janela comum para a Captura de janela (Xcomposite) do OBS. "
-        "desktop: por cima da área de trabalho, o clique atravessa.");
+    row(t, _("Mode"), e->mode,
+        _("obs: ordinary window for OBS's Window Capture (Xcomposite). "
+          "desktop: over the desktop, clicks go through."));
     GtkWidget *size = gtk_hbox_new(FALSE, 6);
     e->width = spin(1, 16384, 1, 0);
     e->height = spin(1, 16384, 1, 0);
@@ -875,74 +883,74 @@ static void build(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(size), e->width, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(size), gtk_label_new("×"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(size), e->height, FALSE, FALSE, 0);
-    row(t, "Tamanho", size, "Só no modo obs.");
-    e->fps = row(t, "Quadros por segundo", spin(1, 240, 1, 0), NULL);
+    row(t, _("Size"), size, _("Only in obs mode."));
+    e->fps = row(t, _("Frames per second"), spin(1, 240, 1, 0), NULL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->fps), cfg->fps);
 
-    t = page(nb, "Avatares");
-    e->scale = row(t, "Escala", spin(0.1, 16, 0.1, 1), NULL);
+    t = page(nb, _("Avatars"));
+    e->scale = row(t, _("Scale"), spin(0.1, 16, 0.1, 1), NULL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->scale), cfg->scale);
-    row(t, "Chão", auto_spin(&e->ground_auto, &e->ground, 0, 16384, cfg->ground),
-        "Pixels entre os pés e a borda de baixo; automático deixa espaço para o nome.");
-    row(t, "Sorteados", auto_spin(&e->count_auto, &e->count, 0, 1000, cfg->count),
-        "Avatares que andam sem ser de ninguém do chat; automático: 6 sem chat, 0 com chat.");
-    e->show = row(t, "Sempre na tela", entry(NULL),
-                  "Nomes de avatares separados por vírgula.");
+    row(t, _("Ground"), auto_spin(&e->ground_auto, &e->ground, 0, 16384, cfg->ground),
+        _("Pixels between the feet and the bottom edge; automatic leaves room for the name."));
+    row(t, _("Random"), auto_spin(&e->count_auto, &e->count, 0, 1000, cfg->count),
+        _("Avatars that walk around without belonging to anyone in the chat; automatic: 6 without chat, 0 with chat."));
+    e->show = row(t, _("Always on screen"), entry(NULL),
+                  _("Avatar names separated by commas."));
     char shown[2048];
     join(shown, sizeof shown, (char *const *)cfg->show, cfg->n_show);
     gtk_entry_set_text(GTK_ENTRY(e->show), shown);
-    e->default_avatar = row(t, "Avatar de todos", entry(cfg->default_avatar),
-                            "Vazio: um sorteado por pessoa, sempre o mesmo.");
-    e->sa_dir = row(t, "Pasta do Stream Avatars",
+    e->default_avatar = row(t, _("Everyone's avatar"), entry(cfg->default_avatar),
+                            _("Empty: a random one per person, always the same."));
+    e->sa_dir = row(t, _("Stream Avatars folder"),
                     entry(raw_or(e, "avatars", "sa_dir", cfg->sa_dir)),
-                    "A pasta \"data\"; vazio: procura nas bibliotecas do Steam.");
+                    _("The \"data\" folder; empty: searches the Steam libraries."));
 
     e->name_position = gtk_combo_box_text_new();
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), "embaixo");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), "em cima");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), _("below"));
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), _("above"));
     gtk_combo_box_set_active(GTK_COMBO_BOX(e->name_position), cfg->name_above ? 1 : 0);
-    row(t, "Nome do avatar",
-        check_with(&e->show_names, "Mostrar nomes", cfg->show_names, e->name_position),
-        "Em cima ou embaixo do avatar.");
-    e->show_bubbles = row(t, "Mensagens",
-                          check("Mostrar balão com a mensagem", cfg->show_bubbles), NULL);
+    row(t, _("Avatar name"),
+        check_with(&e->show_names, _("Show names"), cfg->show_names, e->name_position),
+        _("Above or below the avatar."));
+    e->show_bubbles = row(t, _("Messages"),
+                          check(_("Show a speech bubble with the message"), cfg->show_bubbles), NULL);
 
     e->name_font = entry(cfg->name_font);
     e->name_size = spin(4, 200, 1, 1);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->name_size), cfg->name_size);
-    row(t, "Fonte do nome", font_row(e->name_font, e->name_size),
-        "Família e estilo do Pango (ex.: Sans Bold) e tamanho em pontos; vazio: Sans Bold. "
-        "Só muda reiniciando o kikarinhas.");
+    row(t, _("Name font"), font_row(e->name_font, e->name_size),
+        _("Pango family and style (e.g. Sans Bold) and size in points; empty: Sans Bold. "
+          "Only changes when kikarinhas restarts."));
     e->bubble_font = entry(cfg->bubble_font);
     e->bubble_size = spin(4, 200, 1, 1);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->bubble_size), cfg->bubble_size);
-    row(t, "Fonte do balão", font_row(e->bubble_font, e->bubble_size),
-        "Vazio: Sans. Vale para os próximos balões.");
+    row(t, _("Bubble font"), font_row(e->bubble_font, e->bubble_size),
+        _("Empty: Sans. Applies to the next bubbles."));
 
-    t = page(nb, "Chat");
+    t = page(nb, _("Chat"));
     e->youtube = row(t, "YouTube", entry(cfg->youtube),
-                     "Link da live ou do canal, @handle ou id do vídeo. Com um canal, "
-                     "espera ele entrar ao vivo.");
-    e->demo = row(t, NULL, check("Chat de mentira (para testar sem live)", cfg->demo), NULL);
-    e->max = row(t, "Avatares ao mesmo tempo", spin(1, 1000, 1, 0), NULL);
+                     _("Link to the stream or channel, @handle or video id. With a channel, "
+                       "it waits for it to go live."));
+    e->demo = row(t, NULL, check(_("Fake chat (to test without a stream)"), cfg->demo), NULL);
+    e->max = row(t, _("Avatars at the same time"), spin(1, 1000, 1, 0), NULL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->max), cfg->max_avatars);
-    e->despawn = row(t, "Some depois de", spin(5, 86400, 10, 0),
-                     "Segundos em silêncio até o avatar sair.");
+    e->despawn = row(t, _("Leaves after"), spin(5, 86400, 10, 0),
+                     _("Seconds of silence until the avatar leaves."));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->despawn), cfg->despawn);
-    e->verbose = row(t, NULL, check("Mostrar as mensagens no terminal", cfg->verbose), NULL);
-    e->users = row(t, "Arquivo de pessoas", entry(raw_or(e, "chat", "users", cfg->users)),
-                   "Avatar, cor e acessórios de cada um; vazio: "
-                   "~/.local/share/kikarinhas/users.tsv.");
-    e->socket = row(t, "Socket de controle",
+    e->verbose = row(t, NULL, check(_("Print the messages in the terminal"), cfg->verbose), NULL);
+    e->users = row(t, _("People file"), entry(raw_or(e, "chat", "users", cfg->users)),
+                   _("Avatar, color and accessories of each person; empty: "
+                     "~/.local/share/kikarinhas/users.tsv."));
+    e->socket = row(t, _("Control socket"),
                     entry(raw_or(e, "control", "socket", cfg->socket)),
-                    "Para bridges e para o botão Aplicar; vazio: o padrão; off: desligado.");
+                    _("For bridges and the Apply button; empty: the default; off: disabled."));
 
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), commands_page(e, cfg),
-                             gtk_label_new("Comandos"));
+                             gtk_label_new(_("Commands")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), sounds_page(e, cfg),
-                             gtk_label_new("Sons"));
+                             gtk_label_new(_("Sounds")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
-                             gtk_label_new("Espectadores"));
+                             gtk_label_new(_("Viewers")));
 
     GtkWidget *footer = gtk_hbox_new(FALSE, 12);
     e->status = gtk_label_new(NULL);
@@ -961,9 +969,9 @@ static void build(editor *e, const kk_config *cfg)
     GtkWidget *buttons = gtk_hbutton_box_new();
     gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_END);
     gtk_box_set_spacing(GTK_BOX(buttons), 6);
-    GtkWidget *close_b = icon_button(GTK_STOCK_CLOSE, "_Fechar");
-    GtkWidget *save_b = icon_button(GTK_STOCK_SAVE, "_Salvar");
-    GtkWidget *apply_b = icon_button(GTK_STOCK_APPLY, "Salvar e _aplicar");
+    GtkWidget *close_b = icon_button(GTK_STOCK_CLOSE, _("_Close"));
+    GtkWidget *save_b = icon_button(GTK_STOCK_SAVE, _("_Save"));
+    GtkWidget *apply_b = icon_button(GTK_STOCK_APPLY, _("Save and _apply"));
     g_signal_connect_swapped(close_b, "clicked", G_CALLBACK(gtk_widget_destroy), e->window);
     g_signal_connect(save_b, "clicked", G_CALLBACK(on_save), e);
     g_signal_connect(apply_b, "clicked", G_CALLBACK(on_apply), e);
@@ -973,9 +981,31 @@ static void build(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(vbox), buttons, FALSE, FALSE, 0);
 }
 
+/* Translations: ../locale next to the executable (a build tree), else the
+ * installed ones. */
+static void setup_gettext(void)
+{
+    char dir[KK_PATH_MAX], self[KK_PATH_MAX];
+    const char *localedir = LOCALEDIR;
+    ssize_t n = readlink("/proc/self/exe", self, sizeof self - 1);
+    if (n > 0) {
+        self[n] = '\0';
+        char *slash = strrchr(self, '/');
+        if (slash) {
+            *slash = '\0';
+            if (kk_pathf(dir, sizeof dir, "%s/locale", self) && g_file_test(dir, G_FILE_TEST_IS_DIR))
+                localedir = dir;
+        }
+    }
+    bindtextdomain(GETTEXT_DOMAIN, localedir);
+    bind_textdomain_codeset(GETTEXT_DOMAIN, "UTF-8");
+    textdomain(GETTEXT_DOMAIN);
+}
+
 int main(int argc, char **argv)
 {
-    gtk_init(&argc, &argv);
+    gtk_init(&argc, &argv); /* also does setlocale(LC_ALL, "") */
+    setup_gettext();
     /* The file uses "1.5", whatever the language of the desktop. */
     setlocale(LC_NUMERIC, "C");
 
@@ -985,28 +1015,28 @@ int main(int argc, char **argv)
         return 0;
     }
     if (argc > 2 || (argc == 2 && argv[1][0] == '-')) {
-        fprintf(stderr, "Uso: kikarinhas-config [ARQUIVO]\n"
-                        "      kikarinhas-config -V, --version\n"
-                        "Edita ~/.config/kikarinhas/kikarinhas.ini (ou ARQUIVO).\n");
+        fprintf(stderr, _("Usage: kikarinhas-config [FILE]\n"
+                          "       kikarinhas-config -V, --version\n"
+                          "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"));
         return 2;
     }
     if (argc == 2)
         snprintf(e.path, sizeof e.path, "%s", argv[1]);
     else if (!kk_config_default_path(e.path, sizeof e.path)) {
-        fprintf(stderr, "kikarinhas-config: sem $HOME\n");
+        fprintf(stderr, _("kikarinhas-config: no $HOME\n"));
         return 1;
     }
 
     GString *problem = g_string_new(NULL);
     char *text = kk_read_file(e.path, NULL);
     if (!text && errno != ENOENT) {
-        fprintf(stderr, "kikarinhas-config: não consegui ler %s: %s\n", e.path,
+        fprintf(stderr, _("kikarinhas-config: could not read %s: %s\n"), e.path,
                 g_strerror(errno));
         return 1;
     }
     e.ini = kk_ini_parse(text ? text
-                              : "# Kikarinhas: gerado pelo kikarinhas-config. Pode "
-                                "editar à mão;\n# comentários são mantidos.\n",
+                              : _("# Kikarinhas: generated by kikarinhas-config. You may "
+                                  "edit it by hand;\n# comments are kept.\n"),
                          count_warning, problem);
     free(text);
     kk_config cfg;
@@ -1014,7 +1044,7 @@ int main(int argc, char **argv)
     if (e.ini)
         kk_config_apply(&cfg, e.ini, count_warning, problem);
     if (!e.ini) {
-        fprintf(stderr, "kikarinhas-config: sem memória\n");
+        fprintf(stderr, _("kikarinhas-config: out of memory\n"));
         return 1;
     }
 

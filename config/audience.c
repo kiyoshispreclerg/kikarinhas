@@ -13,6 +13,7 @@
 
 #include "cJSON.h"
 #include "editor.h"
+#include "i18n.h"
 #include "sa.h"
 #include "users.h"
 
@@ -51,7 +52,7 @@ static void format_time(char *out, size_t size, long long t)
 {
     struct tm tm;
     time_t tt = (time_t)t;
-    if (t <= 0 || !localtime_r(&tt, &tm) || !strftime(out, size, "%d/%m/%Y %H:%M", &tm))
+    if (t <= 0 || !localtime_r(&tt, &tm) || !strftime(out, size, _("%Y-%m-%d %H:%M"), &tm))
         snprintf(out, size, "—");
 }
 
@@ -81,9 +82,9 @@ static void update_count(editor *e)
     int shown = gtk_tree_model_iter_n_children(t->filter, NULL);
     char s[64];
     if (shown == all)
-        snprintf(s, sizeof s, "%d espectadores", all);
+        snprintf(s, sizeof s, ngettext("%d viewer", "%d viewers", all), all);
     else
-        snprintf(s, sizeof s, "%d de %d espectadores", shown, all);
+        snprintf(s, sizeof s, _("%d of %d viewers"), shown, all);
     gtk_label_set_text(GTK_LABEL(t->count), s);
 }
 
@@ -98,7 +99,7 @@ static void refresh(editor *e)
     gtk_list_store_clear(t->store);
     kk_users *u = path[0] ? kk_users_open(path) : NULL;
     if (!u) {
-        status(e, "Não consegui ler o arquivo de pessoas %s.", path);
+        status(e, _("Could not read the people file %s."), path);
         return;
     }
     for (int i = 0; i < kk_users_count(u); i++) {
@@ -124,7 +125,7 @@ static void refresh(editor *e)
     kk_users_free(u);
     update_count(e);
     status(e, "%s%s", path,
-           running ? " (lido agora do kikarinhas aberto)" : "");
+           running ? _(" (just read from the running kikarinhas)") : "");
 }
 
 static void on_refresh(GtkButton *b, gpointer ud)
@@ -182,7 +183,7 @@ static void load_avatars(editor *e)
     t->avatars_loaded = true;
     char sa[KK_PATH_MAX];
     if (!editor_sa_dir(e, sa, sizeof sa)) {
-        status(e, "Não achei o Stream Avatars: sem a lista de avatares para escolher.");
+        status(e, _("Could not find Stream Avatars: no avatar list to choose from."));
         return;
     }
     GdkCursor *busy = gdk_cursor_new(GDK_WATCH);
@@ -268,7 +269,7 @@ static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
     /* Typed names must be one of the list (as written there). */
     gchar *known = known_avatar(t, g_strstrip(text));
     if (!known) {
-        status(e, "Não existe o avatar \"%s\" no Stream Avatars.", text);
+        status(e, _("There is no avatar \"%s\" in Stream Avatars."), text);
         goto out;
     }
     text = known;
@@ -290,16 +291,16 @@ static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
         const char *err = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(rep, "error"));
         if (ok) {
             gtk_list_store_set(t->store, &it, A_AVATAR, text, -1);
-            status(e, "%s agora é %s (já valendo no kikarinhas aberto).", name, text);
+            status(e, _("%s is now %s (already in effect in the running kikarinhas)."), name, text);
         } else {
-            status(e, "O kikarinhas recusou: %s", err ? err : reply);
+            status(e, _("kikarinhas refused: %s"), err ? err : reply);
         }
         cJSON_Delete(rep);
     } else if (write_directly(e, key, text)) {
         gtk_list_store_set(t->store, &it, A_AVATAR, text, -1);
-        status(e, "%s agora é %s (gravado no arquivo; vale na próxima vez).", name, text);
+        status(e, _("%s is now %s (saved to the file; takes effect next time)."), name, text);
     } else {
-        status(e, "Não consegui gravar o arquivo de pessoas.");
+        status(e, _("Could not write the people file."));
     }
 out:
     g_free(known);
@@ -319,13 +320,13 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     g_signal_connect(box, "map", G_CALLBACK(on_map), e);
 
     GtkWidget *top = gtk_hbox_new(FALSE, 6);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("Procurar"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("Search")), FALSE, FALSE, 0);
     t->search = gtk_entry_new();
     g_signal_connect(t->search, "changed", G_CALLBACK(on_search), e);
     gtk_box_pack_start(GTK_BOX(top), t->search, TRUE, TRUE, 0);
     t->count = gtk_label_new(NULL);
     gtk_box_pack_start(GTK_BOX(top), t->count, FALSE, FALSE, 0);
-    GtkWidget *reload = icon_button(GTK_STOCK_REFRESH, "A_tualizar");
+    GtkWidget *reload = icon_button(GTK_STOCK_REFRESH, _("_Refresh"));
     g_signal_connect(reload, "clicked", G_CALLBACK(on_refresh), e);
     gtk_box_pack_start(GTK_BOX(top), reload, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
@@ -349,15 +350,15 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
         const char *title;
         int text, sort;
     } cols[] = {
-        {"Nome", A_NAME, A_NAME},
-        {"Plataforma", A_PLATFORM, A_PLATFORM},
-        {"Primeira vez", A_FIRST_TEXT, A_FIRST},
-        {"Mais recente", A_LAST_TEXT, A_LAST},
+        {N_("Name"), A_NAME, A_NAME},
+        {N_("Platform"), A_PLATFORM, A_PLATFORM},
+        {N_("First seen"), A_FIRST_TEXT, A_FIRST},
+        {N_("Latest"), A_LAST_TEXT, A_LAST},
     };
     for (size_t i = 0; i < sizeof cols / sizeof cols[0]; i++) {
         GtkCellRenderer *r = gtk_cell_renderer_text_new();
         GtkTreeViewColumn *c =
-            gtk_tree_view_column_new_with_attributes(cols[i].title, r, "text", cols[i].text, NULL);
+            gtk_tree_view_column_new_with_attributes(_(cols[i].title), r, "text", cols[i].text, NULL);
         if (cols[i].text == A_NAME) {
             g_object_set(r, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
             gtk_tree_view_column_set_expand(c, TRUE);
@@ -371,7 +372,7 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
                  "editable", TRUE, NULL);
     g_signal_connect(combo, "edited", G_CALLBACK(on_avatar_edited), e);
     GtkTreeViewColumn *c =
-        gtk_tree_view_column_new_with_attributes("Avatar", combo, "text", A_AVATAR, NULL);
+        gtk_tree_view_column_new_with_attributes(_("Avatar"), combo, "text", A_AVATAR, NULL);
     gtk_tree_view_column_set_resizable(c, TRUE);
     gtk_tree_view_column_set_sort_column_id(c, A_AVATAR);
     gtk_tree_view_column_set_min_width(c, 160);
@@ -384,11 +385,11 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_container_add(GTK_CONTAINER(scroll), t->tree);
     gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(box),
-                       hint_label("Clique duas vezes no avatar para trocar (dá para digitar "
-                                  "o nome). Com o kikarinhas aberto, a troca vale na hora. "
-                                  "Avatar vazio: um sorteado, sempre o mesmo. Quem veio do "
-                                  "Stream Avatars sem nome ou datas: rode uma vez "
-                                  "kikarinhas --import-sa-users."),
+                       hint_label(_("Double-click the avatar to change it (you can type the "
+                                    "name). With kikarinhas running, the change takes effect at "
+                                    "once. Empty avatar: a random one, always the same. People "
+                                    "from Stream Avatars without a name or dates: run "
+                                    "kikarinhas --import-sa-users once.")),
                        FALSE, FALSE, 0);
 
     return box;

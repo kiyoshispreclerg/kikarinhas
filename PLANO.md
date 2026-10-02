@@ -322,6 +322,16 @@ data/         avatar padrão original, exemplo de .ini
      reiniciando: a etiqueta é renderizada uma vez por avatar e o `ground`
      automático é medido com a fonte dela; o reload avisa e mantém a fonte
      em uso (mesmo esquema de `scale` e `ground`).
+   - **Idiomas do configurador**: gettext com msgids em inglês
+     (`config/i18n.h`: `_()`, `N_()`, `ngettext()`), traduções em `po/`
+     (`pt_BR` e `en`, listadas em `po/LINGUAS`; `make pot` atualiza). Os
+     `.mo` saem em `build/locale`, achado ao lado do executável, ou em
+     `$(LOCALEDIR)` depois do `make install`. O `kikarinhas` em si segue em
+     português, sem tradução. Rótulos de papéis e títulos de colunas
+     ficam em tabelas `N_()` e são traduzidos onde aparecem. A string
+     de data da aba Espectadores também é traduzida (`%Y-%m-%d` em inglês).
+     Clique direito na janela abre o configurador (`open_config` em
+     `main.c`).
    - **Versão**: `config.mk` em 0.1.0; `-V`/`--version` também no
      `kikarinhas-config` (antes só o `kikarinhas` tinha). O rodapé do
      configurador ganhou um rótulo fixo (separado da linha de status, que

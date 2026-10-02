@@ -6,6 +6,7 @@ VERSION = 0.1.0
 PREFIX  ?= /usr/local
 BINDIR  ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
+LOCALEDIR ?= $(DATADIR)/locale
 DESTDIR ?=
 
 PKG_CONFIG ?= pkg-config
