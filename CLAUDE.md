@@ -62,6 +62,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/sprite.c` | folhas: recorte, recolor, escala (pixel art fica 1x e amplia com nearest) |
 | `src/sa.c` | leitura do Stream Avatars: avatares, gear, pivôs, paletas, userData |
 | `src/youtube.c`, `src/http.c` | chat do YouTube (InnerTube) sobre libcurl multi |
+| `src/twitch.c` | chat da Twitch (IRC anônimo sobre TLS), emotes do BTTV/FFZ/7TV |
 | `src/commands.c` | registro genérico de comandos: aliases, papéis, esperas |
 | `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
 | `src/users.c` | `users.tsv`: escolhas de cada pessoa, gravação atômica |
@@ -95,7 +96,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 
 ## Próximas fases (ver PLANO.md)
 
-5. Twitch (IRC anônimo) e Odysee; podem nascer como bridges no socket.
+5. Odysee (a Twitch já foi); pode nascer como bridge no socket.
 6. Camadas HTML (WPE WebKit), opcional.
 7. Extras que faltam: fundos e zips do SA, emotes como imagem no balão,
    emotes animados. (Mesa de som, espectadores e emote wall já feitos.)

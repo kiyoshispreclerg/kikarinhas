@@ -700,6 +700,8 @@ static void collect(editor *e)
             gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->bubble_size)), d.bubble_size);
     /* [chat] */
     put(e, "chat", "youtube", text_of(e->youtube), NULL);
+    put(e, "chat", "twitch", text_of(e->twitch), NULL);
+    put_bool(e, "chat", "third_party_emotes", e->extra_emotes, d.extra_emotes);
     put_bool(e, "chat", "demo", e->demo, d.demo);
     put_int(e, "chat", "max", spin_int(e->max), d.max_avatars);
     put_int(e, "chat", "despawn", spin_int(e->despawn), (int)d.despawn);
@@ -958,6 +960,12 @@ static void build(editor *e, const kk_config *cfg)
     e->youtube = row(t, "YouTube", entry(cfg->youtube),
                      _("Link to the stream or channel, @handle or video id. With a channel, "
                        "it waits for it to go live."));
+    e->twitch = row(t, "Twitch", entry(cfg->twitch),
+                    _("Channel name or twitch.tv link. The chat is read without logging in."));
+    e->extra_emotes = row(t, NULL,
+                          check(_("BTTV, FFZ and 7TV emotes on Twitch"), cfg->extra_emotes),
+                          _("Downloads the global lists and the channel's, so those emotes "
+                            "also fly on the emote wall."));
     e->demo = row(t, NULL, check(_("Fake chat (to test without a stream)"), cfg->demo), NULL);
     e->max = row(t, _("Avatars at the same time"), spin(1, 1000, 1, 0), NULL);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->max), cfg->max_avatars);

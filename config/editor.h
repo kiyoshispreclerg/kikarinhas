@@ -33,7 +33,7 @@ typedef struct {
         *name_font, *name_size, *bubble_font, *bubble_size, *bubble_auto,
         *bubble_secs;
     /* [chat] */
-    GtkWidget *youtube, *demo, *max, *despawn, *verbose, *users;
+    GtkWidget *youtube, *twitch, *extra_emotes, *demo, *max, *despawn, *verbose, *users;
     /* [control] */
     GtkWidget *socket;
     /* [commands] */

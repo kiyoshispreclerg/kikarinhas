@@ -55,7 +55,8 @@ GtkWidget *wall_page(editor *e, const kk_config *cfg)
                      check(_("Emoji and emotes from the chat fly over the stage"),
                            cfg->wall_enabled),
                      _("Common emoji come from the colour emoji font (Noto Color Emoji); "
-                       "YouTube member emotes are downloaded and kept in "
+                       "YouTube member emotes and Twitch emotes (also BTTV, FFZ and 7TV) are "
+                       "downloaded and kept in "
                        "~/.cache/kikarinhas/emotes."));
 
     w->style = gtk_combo_box_text_new();

@@ -23,7 +23,8 @@
  *              name_position = below|above, show_bubbles = yes|no,
  *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
- *   [chat]     youtube, demo, max, despawn, verbose, users
+ *   [chat]     youtube, twitch, third_party_emotes = yes|no, demo, max,
+ *              despawn, verbose, users
  *   [control]  socket = PATH|off
  *   [commands] shortcuts = yes|no, shortcut_cooldown = 5,
  *              help_bubbles = yes|no, help_count = 3,
@@ -100,6 +101,8 @@ typedef struct {
     double bubble_size;    /* points */
     /* [chat] */
     char *youtube;
+    char *twitch;       /* channel name or link */
+    bool extra_emotes;  /* BTTV/FFZ/7TV on Twitch */
     bool demo;
     int max_avatars;
     double despawn;

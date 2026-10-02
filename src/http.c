@@ -1,9 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "http.h"
 
+#include <fcntl.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <unistd.h>
 
 #include <curl/curl.h>
 
@@ -31,6 +35,7 @@ struct request {
     size_t len, cap;
     bool too_big;
     kk_http_cb cb;
+    kk_http_connect_cb connect_cb; /* set for kk_http_connect */
     void *ud;
     char err[CURL_ERROR_SIZE];
 };
@@ -121,6 +126,19 @@ void kk_http_cancel(kk_http *h, void *ud)
     }
 }
 
+static int add_request(kk_http *h, request *r)
+{
+    if (curl_multi_add_handle(h->multi, r->easy) != CURLM_OK) {
+        request_free(r);
+        return -1;
+    }
+    r->next = h->active;
+    if (h->active)
+        h->active->prev = r;
+    h->active = r;
+    return 0;
+}
+
 static int start(kk_http *h, const char *url, const char *json, kk_http_cb cb,
                  void *ud)
 {
@@ -170,15 +188,7 @@ static int start(kk_http *h, const char *url, const char *json, kk_http_cb cb,
     curl_easy_setopt(e, CURLOPT_ERRORBUFFER, r->err);
     curl_easy_setopt(e, CURLOPT_PRIVATE, r);
 
-    if (curl_multi_add_handle(h->multi, e) != CURLM_OK) {
-        request_free(r);
-        return -1;
-    }
-    r->next = h->active;
-    if (h->active)
-        h->active->prev = r;
-    h->active = r;
-    return 0;
+    return add_request(h, r);
 }
 
 int kk_http_get(kk_http *h, const char *url, kk_http_cb cb, void *ud)
@@ -192,10 +202,55 @@ int kk_http_post_json(kk_http *h, const char *url, const char *json,
     return start(h, url, json, cb, ud);
 }
 
+int kk_http_connect(kk_http *h, const char *host, int port,
+                    kk_http_connect_cb cb, void *ud)
+{
+    char url[300];
+    if (snprintf(url, sizeof url, "http://%s:%d/", host, port) >= (int)sizeof url)
+        return -1;
+    request *r = calloc(1, sizeof *r);
+    if (!r)
+        return -1;
+    r->connect_cb = cb;
+    r->ud = ud;
+    r->easy = curl_easy_init();
+    if (!r->easy) {
+        free(r);
+        return -1;
+    }
+    CURL *e = r->easy;
+    curl_easy_setopt(e, CURLOPT_URL, url);
+    /* Only DNS and TCP: nothing is sent, and no http_proxy in between. */
+    curl_easy_setopt(e, CURLOPT_CONNECT_ONLY, 1L);
+    curl_easy_setopt(e, CURLOPT_PROXY, "");
+    curl_easy_setopt(e, CURLOPT_CONNECTTIMEOUT, 15L);
+    curl_easy_setopt(e, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(e, CURLOPT_ERRORBUFFER, r->err);
+    curl_easy_setopt(e, CURLOPT_PRIVATE, r);
+    return add_request(h, r);
+}
+
+/* The socket of a finished CONNECT_ONLY request, duplicated: curl keeps
+ * (and later closes) its own copy. */
+static int take_socket(CURL *e)
+{
+    curl_socket_t s = CURL_SOCKET_BAD;
+    if (curl_easy_getinfo(e, CURLINFO_ACTIVESOCKET, &s) != CURLE_OK ||
+        s == CURL_SOCKET_BAD)
+        return -1;
+    int fd = fcntl(s, F_DUPFD_CLOEXEC, 0);
+    if (fd >= 0 && fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) < 0) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
 static void finish(kk_http *h, CURL *e, CURLcode result)
 {
     request *r;
     curl_easy_getinfo(e, CURLINFO_PRIVATE, (char **)&r);
+    int fd = r->connect_cb && result == CURLE_OK ? take_socket(e) : -1;
     curl_multi_remove_handle(h->multi, e);
     if (r->prev)
         r->prev->next = r->next;
@@ -203,6 +258,16 @@ static void finish(kk_http *h, CURL *e, CURLcode result)
         h->active = r->next;
     if (r->next)
         r->next->prev = r->prev;
+
+    if (r->connect_cb) {
+        const char *err = fd >= 0             ? NULL
+                          : result == CURLE_OK ? "sem socket"
+                          : r->err[0]          ? r->err
+                                               : curl_easy_strerror(result);
+        r->connect_cb(r->ud, fd, err);
+        request_free(r);
+        return;
+    }
 
     long status = 0;
     const char *err = NULL;

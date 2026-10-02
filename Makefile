@@ -14,6 +14,7 @@ LIB_SRC = src/log.c \
       src/json.c \
       src/http.c \
       src/youtube.c \
+      src/twitch.c \
       src/demochat.c \
       src/users.c \
       src/commands.c \

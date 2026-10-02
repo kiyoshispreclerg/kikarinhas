@@ -8,7 +8,7 @@ e leve: C, Xlib, Cairo e Pango, com GTK2 apenas no configurador.
 
 - Janela ARGB que o OBS captura com transparência (Xcomposite).
 - Um avatar por pessoa do chat, andando à toa, reagindo a mensagens e comandos.
-- Chat: **YouTube primeiro**; depois Twitch e Odysee.
+- Chat: YouTube e Twitch; depois Odysee.
 - Ler os avatares do Stream Avatars já instalados pelo usuário.
 - Opcional: camadas HTML num processo à parte, para aposentar alguns
   obs-browser.
@@ -116,7 +116,7 @@ frequente, então fica só como reserva.
 Risco: InnerTube muda sem aviso. O conector fica isolado num arquivo e com
 testes sobre respostas gravadas.
 
-### Twitch (depois)
+### Twitch (feita, ver fase 5)
 
 IRC em `irc.chat.twitch.tv:6697` (TLS), login anônimo `justinfanNNNN`, só
 leitura, sem token. Tags IRCv3 (`user-id`, `display-name`, `badges`,
@@ -307,9 +307,38 @@ data/         avatar padrão original, exemplo de .ini
    (abre, salva sem mudar nada do arquivo, aplica no programa aberto e
    grava um campo alterado); não deu para capturar a tela aqui, então a
    edição da lista de comandos pela interface ficou sem teste.
-5. **Twitch** (IRC anônimo) e **Odysee** (Commentron). *Adiada*: cada
-   conector é isolado e entrega o mesmo `kk_chat_msg`, então nada depende
-   dela; pode começar como bridge no socket.
+5. **Twitch** *(feita)*, **Odysee** *(adiada)*. `src/twitch.c`: IRC sobre
+   TLS em `irc.chat.twitch.tv:6697` como `justinfanNNNNN`, com
+   `twitch.tv/tags` e `twitch.tv/commands`. Nada bloqueia: o
+   `kk_http_connect` pede ao libcurl só DNS + TCP (`CONNECT_ONLY`) e
+   devolve uma cópia do socket (`CURLINFO_ACTIVESOCKET` + `dup`); o OpenSSL
+   roda em BIOs de memória e nós fazemos `recv`/`send` com `MSG_NOSIGNAL`
+   (socket caído vira erro, não SIGPIPE), com o fd no `poll()` do laço.
+   Mensagens: PRIVMSG (`bits` e Hype Chat viram pagas), USERNOTICE de
+   sub/resub/presentes viram de membro (com a mensagem, ou o `system-msg`
+   se não houver), raid e announcement viram comuns. Selos: broadcaster =
+   dono, moderator = mod, subscriber/founder = membro, partner =
+   verificado. `user-id` é a chave (`twitch:ID`, o mesmo do `userData` do
+   SA). PING/PONG, `RECONNECT`, PING nosso após 4 min calado e queda após
+   5 min; reconexão com espera crescente até 60 s. Emotes: a tag `emotes`
+   (posições em code points, convertidas para bytes) e, com
+   `[chat] third_party_emotes` (padrão sim), as listas do BTTV, FFZ e 7TV
+   (globais e do canal, pelo `room-id` do ROOMSTATE) procuradas palavra a
+   palavra; em conflito vale canal > global e 7TV > BTTV > FFZ. 8 testes
+   com linhas sintéticas. Testado na live da ironmouse (~6,8 mil
+   espectadores), também com ASan e `reload` desligando e religando.
+   Lições:
+   - imagens estáticas em PNG: Twitch `.../static/dark/2.0`; BTTV
+     `/emote/ID/2x.png` (mesmo animado, vem o 1º quadro); FFZ `urls["2"]`;
+     7TV `2x.png` nos estáticos e `2x_static.png` nos animados (cada um dá
+     404 no outro caso), apesar de a lista só citar WebP/AVIF/GIF;
+   - BTTV responde 404 para canal sem cadastro: lista vazia, não erro;
+     7TV dá `"emote_set": null`;
+   - a lista do 7TV de canal grande chega a 1000 emotes: busca binária na
+     tabela ordenada.
+   Não verificado ao vivo: bits, Hype Chat, subs e raids (só nos testes).
+   Fora: espectadores calados (JOIN/PART só dão o login, sem `user-id`) e
+   responder no chat (precisa de OAuth).
 6. **kikarinhas-web** (WPE) como camadas. *Adiada* (opcional).
 7. **Extras**. Feitos:
    - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na

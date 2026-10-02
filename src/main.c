@@ -26,6 +26,7 @@
 #include "sa.h"
 #include "soundboard.h"
 #include "stage.h"
+#include "twitch.h"
 #include "users.h"
 #include "window.h"
 #include "youtube.h"
@@ -54,6 +55,7 @@ static void usage(FILE *out)
             "Chat:\n"
             "  -y, --youtube ALVO  link da live ou do canal, @handle ou id do vídeo;\n"
             "                      com um canal, espera ele entrar ao vivo\n"
+            "  -t, --twitch CANAL  canal da Twitch (nome ou link twitch.tv/canal)\n"
             "      --demo-chat     chat de mentira, para testar sem live\n"
             "      --max N         avatares do chat ao mesmo tempo (padrão 30)\n"
             "      --despawn S     segundos em silêncio até o avatar sair (padrão 300)\n"
@@ -124,6 +126,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         {"list", no_argument, NULL, OPT_LIST},
         {"check", no_argument, NULL, OPT_CHECK},
         {"youtube", required_argument, NULL, 'y'},
+        {"twitch", required_argument, NULL, 't'},
         {"demo-chat", no_argument, NULL, OPT_DEMO_CHAT},
         {"max", required_argument, NULL, OPT_MAX},
         {"despawn", required_argument, NULL, OPT_DESPAWN},
@@ -144,7 +147,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
     long v;
     double d;
     optind = 0; /* GNU: start over, this runs more than once */
-    while ((c = getopt_long(argc, argv, "m:s:f:n:a:y:d:c:vhV", longopts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "m:s:f:n:a:y:t:d:c:vhV", longopts, NULL)) != -1) {
         switch (c) {
         case 'm':
             if (strcmp(optarg, "obs") == 0) {
@@ -219,6 +222,9 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
             break;
         case 'y':
             kk_config_set_str(&cfg->youtube, optarg);
+            break;
+        case 't':
+            kk_config_set_str(&cfg->twitch, optarg);
             break;
         case OPT_DEMO_CHAT:
             cfg->demo = true;
@@ -586,6 +592,7 @@ typedef struct {
     kk_emotes *emotes;
     kk_emotewall *wall;
     kk_youtube *youtube;  /* NULL if not used */
+    kk_twitch *twitch;    /* NULL if not used */
     kk_demochat demo;
     bool demo_on;
     kk_users *users;      /* NULL if not used */
@@ -631,6 +638,19 @@ static int connect_chats(app *a, const kk_config *cfg)
         if (cfg->youtube) {
             a->youtube = kk_youtube_new(a->http, cfg->youtube, &a->chat);
             if (!a->youtube)
+                return -1;
+        }
+    }
+
+    old = a->twitch ? a->cfg.twitch : NULL;
+    same = old && cfg->twitch && strcmp(old, cfg->twitch) == 0 &&
+           a->cfg.extra_emotes == cfg->extra_emotes;
+    if (!same) {
+        kk_twitch_free(a->twitch);
+        a->twitch = NULL;
+        if (cfg->twitch) {
+            a->twitch = kk_twitch_new(a->http, cfg->twitch, &a->chat, cfg->extra_emotes);
+            if (!a->twitch)
                 return -1;
         }
     }
@@ -887,6 +907,9 @@ static void run(app *a)
         int nfds = FD_FIXED;
         int n_audio = kk_soundboard_pollfds(a->sounds, fds + nfds, 8);
         nfds += n_audio;
+        int tw_at = nfds;
+        if (a->twitch)
+            nfds += kk_twitch_pollfd(a->twitch, &fds[nfds]);
         int ctl_at = nfds;
         if (a->control)
             nfds += kk_control_pollfds(a->control, fds + nfds, MAX_FDS - nfds);
@@ -911,6 +934,8 @@ static void run(app *a)
         kk_soundboard_pump(a->sounds, fds + FD_FIXED, n_audio, t);
         if (a->youtube)
             kk_youtube_tick(a->youtube, t);
+        if (a->twitch)
+            kk_twitch_tick(a->twitch, ctl_at > tw_at ? &fds[tw_at] : NULL, t);
         if (a->demo_on)
             kk_demochat_tick(&a->demo, t);
         if (a->users && t >= next_save) {
@@ -957,7 +982,7 @@ static void spawn_avatars(kk_stage *stage, const kk_sa_library *lib,
 
     int count = cfg->count;
     if (count < 0)
-        count = cfg->n_show || cfg->youtube || cfg->demo ? 0 : 6;
+        count = cfg->n_show || cfg->youtube || cfg->twitch || cfg->demo ? 0 : 6;
 
     /* Random distinct avatars: shuffle the indices, take the first usable. */
     int *order = malloc((size_t)lib->count * sizeof *order);
@@ -1155,10 +1180,13 @@ int main(int argc, char **argv)
     }
 
     /* connect_chats compares with a.cfg: start from "nothing connected". */
-    char *youtube = a.cfg.youtube;
-    a.cfg.youtube = NULL;
-    int rc = connect_chats(&a, &(kk_config){.youtube = youtube, .demo = a.cfg.demo});
+    char *youtube = a.cfg.youtube, *twitch = a.cfg.twitch;
+    a.cfg.youtube = a.cfg.twitch = NULL;
+    int rc = connect_chats(&a, &(kk_config){.youtube = youtube, .twitch = twitch,
+                                            .extra_emotes = a.cfg.extra_emotes,
+                                            .demo = a.cfg.demo});
     a.cfg.youtube = youtube;
+    a.cfg.twitch = twitch;
     if (rc == 0)
         run(&a);
     else
@@ -1167,6 +1195,7 @@ int main(int argc, char **argv)
     kk_control_close(a.control);
     /* The connectors cancel their requests, so they go before the client. */
     kk_youtube_free(a.youtube);
+    kk_twitch_free(a.twitch);
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
     kk_emotewall_free(a.wall);
     kk_emotes_free(a.emotes);

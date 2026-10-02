@@ -23,6 +23,15 @@ int kk_http_get(kk_http *h, const char *url, kk_http_cb cb, void *ud);
 int kk_http_post_json(kk_http *h, const char *url, const char *json,
                       kk_http_cb cb, void *ud);
 
+/* A plain TCP connection, made without blocking (curl resolves the name and
+ * connects); for protocols curl doesn't speak, like Twitch's IRC. */
+typedef void (*kk_http_connect_cb)(void *ud, int fd, const char *err);
+
+/* Calls back once with a connected, non-blocking socket the caller now owns
+ * (close it), or with fd -1 and err. */
+int kk_http_connect(kk_http *h, const char *host, int port,
+                    kk_http_connect_cb cb, void *ud);
+
 /* Drops the pending requests made with ud, without calling back: the owner
  * of ud is about to go away. */
 void kk_http_cancel(kk_http *h, void *ud);

@@ -7,13 +7,14 @@ gets a little character that strolls, jumps and reacts in a transparent
 window that OBS captures. Similar to Stream Avatars and Desktop Ponies, but
 native to Linux (X11) and light on resources: C, Cairo and Pango.
 
-> **Phases 4 and 7 (partly).** Reads the public chat of a YouTube livestream
-> (no login or key needed): each person who talks gets a Stream Avatars
+> **Phases 4, 5 and 7 (partly).** Reads the public chat of a YouTube or
+> Twitch livestream (no login or key needed): each person who talks gets a Stream Avatars
 > avatar that jumps and shows the message in a speech bubble. Through the
 > chat, everyone picks an avatar, a color and accessories (saved for the next
 > stream), makes the avatar dance, sit, hug or attack, and plays sounds from
-> the sound board. Chat emoji, member emotes and YouTube reactions fly
-> across the screen (emote wall). Everything is configured in an `.ini` file
+> the sound board. Chat emoji, YouTube member emotes, Twitch emotes (BTTV,
+> FFZ and 7TV included) and YouTube reactions fly across the screen (emote
+> wall). Everything is configured in an `.ini` file
 > or in `kikarinhas-config`, which also lists the viewers. Other programs
 > send messages through a unix socket. See [PLANO.md](PLANO.md) (in Portuguese).
 
@@ -23,7 +24,8 @@ Dependencies (Debian/Ubuntu):
 
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
-    libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev
+    libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev \
+    libssl-dev
 sudo apt install libgtk2.0-dev   # optional: only for kikarinhas-config
 sudo apt install fonts-noto-color-emoji   # colour emoji (emote wall and bubbles)
 ```
@@ -64,6 +66,7 @@ not found, point to it with `--sa-dir`. Nothing there is copied or changed.
 ```sh
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # a livestream's chat
 build/kikarinhas -y @YourChannel        # waits for the channel to go live
+build/kikarinhas -t yourchannel         # Twitch chat
 build/kikarinhas --demo-chat            # fake chat, for testing
 build/kikarinhas                        # 6 random avatars, 1280x720 window
 build/kikarinhas -n 20 -s 1920x1080     # 20 avatars at 1080p
@@ -79,6 +82,7 @@ build/kikarinhas --check                # checks every spritesheet
 | `-s, --size WxH` | window size in `obs` mode (default `1280x720`) |
 | `-f, --fps N` | frames per second (default 30) |
 | `-y, --youtube TARGET` | livestream or channel link, `@handle` or video id |
+| `-t, --twitch CHANNEL` | Twitch channel: the name or the `twitch.tv/channel` link |
 | `--demo-chat` | fake chat with made-up people |
 | `--max N` | chat avatars on screen at once (default 30); whoever has been silent the longest leaves first |
 | `--despawn S` | seconds of silence until the avatar leaves (default 300) |
@@ -132,7 +136,8 @@ of the bubble.
 
 To apply changes without closing the program: **Save and apply**,
 `kikarinhas --reload` or `kill -HUP`. Commands, default avatar, avatar limit,
-despawn time, fps, fake chat, `verbose`, the YouTube target, name
+despawn time, fps, fake chat, `verbose`, the YouTube and Twitch
+targets, name
 visibility/position, bubbles and the bubble font change on the spot. Size,
 mode, scale, ground, fixed avatars, the name font, the Stream Avatars folder,
 the people file and the socket only change on restart, and the log warns
@@ -210,8 +215,10 @@ changing any choice.
 ### Emote wall
 
 Chat emoji fly across the screen, over the avatars: common emoji (drawn
-from the emoji font), the channel's YouTube member emotes (downloaded once
-and kept in `~/.cache/kikarinhas/emotes`) and, if you want, YouTube
+from the emoji font), the channel's YouTube member emotes, Twitch emotes and
+the channel's BTTV, FFZ and 7TV emotes (downloaded once and kept in
+`~/.cache/kikarinhas/emotes`; `third_party_emotes = no` in `[chat]` turns
+off the last three) and, if you want, YouTube
 reactions (the floating hearts), mixed in with the rest. Three effects:
 `rise` (they rise in waves), `bounce` (diagonals bouncing off the edges,
 like the DVD logo) and `fly` (they cross the screen).
@@ -329,7 +336,7 @@ transparent on screen too.
 
 ## Planned
 
-- Twitch and Odysee.
+- Odysee.
 - Stream Avatars .zip packs, emotes as images inside the bubbles, animated
   emotes (GIF).
 - Optional HTML layers (WPE WebKit) to replace some obs-browser sources.
@@ -341,6 +348,7 @@ GPL-3.0-or-later. See [LICENSE](LICENSE). Includes
 domain or MIT-0) and [stb_vorbis](vendor/stb) (public domain or MIT).
 
 YouTube chat is read from the same endpoints the browser's pop-out chat
-window uses; it is not an official API and may change.
+window uses; it is not an official API and may change. Twitch chat is read
+over IRC, as an anonymous guest.
 
 The avatar artwork belongs to its authors and is not part of Kikarinhas.
