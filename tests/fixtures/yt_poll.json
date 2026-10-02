@@ -304,5 +304,70 @@
    ]
   }
  },
- "trackingParams": "x"
+ "trackingParams": "x",
+ "frameworkUpdates": {
+  "entityBatchUpdate": {
+   "mutations": [
+    {
+     "entityKey": "KEY1",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "emojiFountainDataEntity": {
+       "key": "KEY1",
+       "reactionBuckets": [
+        {
+         "totalReactions": 3,
+         "duration": {
+          "seconds": "1"
+         },
+         "intensityScore": 0.75,
+         "reactionsData": [
+          {
+           "unicodeEmojiId": "❤",
+           "reactionCount": 3
+          }
+         ]
+        },
+        {
+         "totalReactions": 0,
+         "duration": {
+          "seconds": "1"
+         },
+         "intensityScore": 0.75
+        },
+        {
+         "totalReactions": 3,
+         "duration": {
+          "seconds": "1"
+         },
+         "intensityScore": 0.75,
+         "reactionsData": [
+          {
+           "unicodeEmojiId": "💯",
+           "reactionCount": 1
+          },
+          {
+           "unicodeEmojiId": "❤",
+           "reactionCount": 2
+          }
+         ]
+        }
+       ],
+       "updateTimeUsec": "1790858480000000"
+      }
+     }
+    },
+    {
+     "entityKey": "KEY2",
+     "type": "ENTITY_MUTATION_TYPE_REPLACE",
+     "payload": {
+      "liveViewerLeaderboardChatEntryPointStateEntity": {
+       "key": "KEY2",
+       "state": "LIVE_VIEWER_LEADERBOARD_CHAT_ENTRY_POINT_STATE_DISABLED"
+      }
+     }
+    }
+   ]
+  }
+ }
 }

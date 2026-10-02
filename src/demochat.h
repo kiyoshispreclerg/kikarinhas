@@ -6,15 +6,15 @@
 #include "util.h"
 
 /* Fake chat for trying things without a live: a dozen invented people
- * saying random lines every second or two, with the odd Super Chat. */
+ * saying random lines every second or two, with the odd Super Chat, emoji
+ * bursts and floating-heart reactions. */
 typedef struct {
-    kk_chat_cb cb;
-    void *ud;
+    kk_chat_sink sink;
     kk_rng rng;
-    double next_at;
+    double next_at, next_reaction;
 } kk_demochat;
 
-void kk_demochat_init(kk_demochat *d, kk_chat_cb cb, void *ud, uint64_t seed);
+void kk_demochat_init(kk_demochat *d, const kk_chat_sink *sink, uint64_t seed);
 void kk_demochat_tick(kk_demochat *d, double now);
 
 #endif

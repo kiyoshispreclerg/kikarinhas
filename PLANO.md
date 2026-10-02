@@ -51,6 +51,7 @@ kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 | cJSON (embutido) | JSON do SA e das APIs |
 | miniz (embutido, ainda não incluído) | ler os zips do SA/workshop |
 | GTK2 | só o `kikarinhas-config` |
+| fonte de emoji colorido (Noto Color Emoji) | só ao rodar: emojis do emote wall e dos balões |
 
 Build com Makefile + `config.mk` + pkg-config, no mesmo esquema do kisnitch.
 
@@ -120,7 +121,14 @@ testes sobre respostas gravadas.
 IRC em `irc.chat.twitch.tv:6697` (TLS), login anônimo `justinfanNNNN`, só
 leitura, sem token. Tags IRCv3 (`user-id`, `display-name`, `badges`,
 `emotes`). Enviar mensagens (respostas a comandos) exige OAuth: fica para
-depois.
+depois. Emotes: a tag `emotes=25:0-4,12-16/1902:6-10` dá id e posições
+(em code points, converter para bytes) de todos os nativos (globais, de
+inscrito, de seguidor); a imagem é
+`https://static-cdn.jtvnw.net/emoticons/v2/{id}/static/dark/2.0` (PNG; com
+`default` no lugar de `static` vem GIF se for animado), sem chave. Viram
+`kk_emote` na mensagem. BTTV/FFZ/7TV não vêm marcados: baixar a lista do
+canal pelo `room-id` (tag do ROOMSTATE) e procurar as palavras no texto;
+7TV serve WebP/AVIF por padrão, pedir PNG/GIF.
 
 ### Odysee (depois)
 
@@ -139,7 +147,19 @@ Protocolo no socket unix, uma linha JSON por evento:
 ```
 
 Serve para plataformas que não valem ir para o núcleo e para testes
-(`echo ... | socat - UNIX-CONNECT:...`).
+(`echo ... | socat - UNIX-CONNECT:...`). Emotes de imagem vão em
+`"emotes":[{"id","name","url","start","len"}]` e reações em
+`{"type":"reaction","emoji":"❤","count":3}` (ver `src/control.h`).
+
+### Ligar uma plataforma nova
+
+Todo conector recebe um `kk_chat_sink` (`src/chat.h`) e só entrega eventos
+neutros: `kk_chat_msg` (com emojis Unicode no próprio texto e os emotes de
+imagem da plataforma em `emotes`, com URL https de um PNG e a posição no
+texto) e, se houver, `kk_reaction` (contagens agregadas, com `delay` para
+espalhar um lote no tempo). Dali para a frente nada sabe de onde veio: o
+`emoji.c` acha os emojis no texto, o `emotes.c` baixa e guarda as imagens
+(cache em disco por plataforma e id) e o `emotewall.c` decide o que sobe.
 
 ## Comportamento dos avatares
 
@@ -226,12 +246,20 @@ data/         avatar padrão original, exemplo de .ini
      `replaceChatItemAction`;
    - fontes CJK são mais altas: a margem do chão mede "Ág日本語".
    Não verificado ao vivo: selos (nenhum apareceu nas amostras), Super
-   Chat e membros (só nas fixtures). Pendente: emojis de canal viram
-   `:atalho:` em texto (imagens na fase 7).
-   Ideia anotada: as **reações** do YouTube (coração, 100, risada...)
-   parecem vir em `frameworkUpdates` da mesma resposta, como contagens
-   agregadas por emoji, não por pessoa; dariam um "emote wall" de ícones
-   subindo. Falta confirmar o formato numa live com reações.
+   Chat e membros (só nas fixtures). Emojis de canal viram `:atalho:` no
+   texto dos balões; no emote wall já são imagem (fase 7).
+   **Reações** do YouTube (confirmado numa live em 2026-10-02): vêm em
+   toda resposta do `get_live_chat` (e no `ytInitialData`), em
+   `frameworkUpdates.entityBatchUpdate.mutations[].payload.emojiFountainDataEntity`:
+   `reactionBuckets[]` com `totalReactions`, `duration.seconds` (sempre 1),
+   `intensityScore` e `reactionsData[]` de `{unicodeEmojiId, reactionCount}`,
+   mais `updateTimeUsec`. Um balde por segundo desde a leitura anterior,
+   sem repetir entre leituras (6 s entre leituras = 6 baldes): dá para
+   tocar um balde por segundo, atrasado de um intervalo. Agregado por
+   emoji, nunca por pessoa. Vistos: ❤ (sem FE0F), 🎉 💯 😄 😳.
+   Emojis de canal (`isCustomEmoji`) trazem `image.thumbnails[]` em
+   yt3.ggpht.com com sufixo `=w48-h48-c-k-nd`; trocar por `=w96-h96...`
+   dá outro tamanho, sempre PNG RGBA (mesmo pedindo WebP).
 3. **Interações** *(feita)*: registro de comandos genérico
    (`src/commands.c`: nome, aliases, papel mínimo, espera por pessoa e
    global, dado opcional; `!` e `！`; atalho `!nome` para avatar, peça ou
@@ -352,7 +380,33 @@ data/         avatar padrão original, exemplo de .ini
      atualizado a cada `ping`: no abrir da janela, depois de "Salvar e
      aplicar" e sempre que a aba Espectadores atualiza (que já fala com o
      socket). A barra de título leva a própria versão do configurador.
+   - **Emote wall** (`src/emoji.c`, `src/emotes.c`, `src/emotewall.c`,
+     aba em `config/wall.c`): emojis do chat, emotes de membros e reações
+     do YouTube voando sobre o palco, como uma camada (`src/layer.h`) que
+     o palco pinta por cima dos avatares sem saber o que é. Emoji Unicode
+     é achado no texto por uma tabela gerada do `emoji-data.txt`
+     (`tools/gen_emoji_table.py` → `src/emoji_table.h`: pictográficos
+     sozinhos, os de texto só com FE0F, ZWJ, bandeiras, keycaps, tom de
+     pele) e desenhado uma vez pelo Pango com a fonte de emoji. Emotes de
+     imagem são PNG baixados pelo `kk_http` (6 de cada vez), guardados em
+     `~/.cache/kikarinhas/emotes/<plataforma>/<hash do id>.png`. Regras:
+     mínimo por mensagem ou combo (o mesmo emoji em N mensagens em X s;
+     enquanto dura, cada mensagem com ele também sobe), blacklist (❤ = ❤️;
+     `:_oi:` = `:oi:` = `oi`), teto por mensagem e na tela. Efeitos: `rise`
+     (ondas de baixo para cima), `bounce` (diagonal quicando, o logo do
+     DVD) e `fly` (de borda a borda). Reações: um balde por segundo,
+     tocados um segundo depois do outro, misturadas com o resto. Medido
+     com 150 emojis na tela, 30 avatares e balões o tempo todo, 1280x720 a
+     30 fps: ~9% de CPU (sem o wall, ~4%).
    Lições:
+   - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
+     rápido do pixman: com escala aleatória por emote o mesmo wall custava
+     o dobro; escala só no "pop" de entrada (0,2 s);
+   - rajadas nascem no mesmo instante e à mesma velocidade viram
+     fileiras: espalhar a saída (0,05 a 0,2 s) e variar a duração (±20%);
+   - com muitos retângulos de dano espalhados o limite de 16 junta tudo
+     num só, mas subir o limite (64, 128) não ajudou: o custo era o
+     desenho, não a área;
    - nivelar pela intensidade com porta de silêncio, e não pelo pico, é o
      que iguala sons curtos e longos; o teto é o pico (nunca estoura);
      meta −18 dBFS;
@@ -363,6 +417,7 @@ data/         avatar padrão original, exemplo de .ini
      rótulos próprios com o ícone pronto.
    Não verificado: o som no OBS (só conferido que o fluxo aparece no
    PipeWire e some parado) e mp3 com taxa variável longos.
-   Pendentes: fundos do SA, emojis/emotes como imagem no balão, plugin de
+   Pendentes: fundos do SA, emotes como imagem dentro do balão (o cache do
+   `emotes.c` já serve), emotes animados (GIF), BTTV/FFZ/7TV, plugin de
    OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
-   (layer-shell) no futuro, reações do YouTube.
+   (layer-shell) no futuro.

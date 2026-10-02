@@ -16,6 +16,7 @@
 
 typedef struct sounds_tab sounds_tab;
 typedef struct audience_tab audience_tab;
+typedef struct wall_tab wall_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -42,6 +43,7 @@ typedef struct {
 
     sounds_tab *sounds;
     audience_tab *audience;
+    wall_tab *wall;
 } editor;
 
 /* The line at the bottom of the window. */
@@ -68,6 +70,8 @@ void fmt_num(char *out, size_t size, double v);
 void put(editor *e, const char *section, const char *key, const char *value,
          const char *dflt);
 void put_int(editor *e, const char *section, const char *key, int v, int dflt);
+void put_num(editor *e, const char *section, const char *key, double v,
+             double dflt);
 void put_bool(editor *e, const char *section, const char *key, GtkWidget *w,
               bool dflt);
 
@@ -87,6 +91,11 @@ void editor_refresh_kikarinhas_version(editor *e);
 GtkWidget *sounds_page(editor *e, const kk_config *cfg);
 void sounds_collect(editor *e);
 void sounds_free(editor *e);
+
+/* The "Emote wall" tab (wall.c). */
+GtkWidget *wall_page(editor *e, const kk_config *cfg);
+void wall_collect(editor *e);
+void wall_free(editor *e);
 
 /* The "Espectadores" tab (audience.c). */
 GtkWidget *audience_page(editor *e, const kk_config *cfg);

@@ -23,7 +23,10 @@ LIB_SRC = src/log.c \
       src/control.c \
       src/sample.c \
       src/audio.c \
-      src/soundboard.c
+      src/soundboard.c \
+      src/emoji.c \
+      src/emotes.c \
+      src/emotewall.c
 VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c
 LIBKK = $(BUILD)/libkk.a
 
@@ -64,7 +67,7 @@ pot update-po:
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-CONFIG_SRC = config/main.c config/sounds.c config/audience.c
+CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c
 CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c

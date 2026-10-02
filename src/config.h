@@ -34,6 +34,12 @@
  *   [soundboard] enabled, volume = 100 (%), device = default,
  *              voices = 8, commands = yes
  *   [sound.NAME] file, aliases = a, b, volume = 100 (%)
+ *   [emote_wall] enabled, duration = 5, size = 48,
+ *              style = rise|bounce|fly,
+ *              min_per_message = 3, combo_count = 3, combo_window = 10,
+ *              max_per_message = 10, max_on_screen = 150,
+ *              reactions = yes, reactions_per_icon = 1,
+ *              blacklist = 😂, :_hello:, Kappa
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -64,6 +70,12 @@ typedef struct {
     int n_aliases;
     int volume; /* percent, 0..400 */
 } kk_config_sound;
+
+typedef enum {
+    KK_CONFIG_WALL_RISE,
+    KK_CONFIG_WALL_BOUNCE,
+    KK_CONFIG_WALL_FLY,
+} kk_config_wall_style;
 
 typedef struct {
     /* [window] */
@@ -111,6 +123,19 @@ typedef struct {
     bool sound_commands;
     kk_config_sound *sounds;
     int n_sounds;
+    /* [emote_wall] */
+    bool wall_enabled;
+    double wall_duration;    /* seconds on screen */
+    int wall_size;           /* pixels */
+    kk_config_wall_style wall_style;
+    int wall_min_message;    /* emotes in one message; 0 = rule off */
+    int wall_combo;          /* messages with the same emote; 0 = rule off */
+    double wall_combo_window; /* seconds */
+    int wall_max_message;
+    int wall_max_screen;
+    bool wall_reactions;
+    int wall_reactions_per_icon;
+    char *wall_blacklist;    /* comma-separated; NULL = none */
 } kk_config;
 
 /* Called for each problem found; line is 0 when not from the file. */

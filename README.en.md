@@ -12,9 +12,10 @@ native to Linux (X11) and light on resources: C, Cairo and Pango.
 > avatar that jumps and shows the message in a speech bubble. Through the
 > chat, everyone picks an avatar, a color and accessories (saved for the next
 > stream), makes the avatar dance, sit, hug or attack, and plays sounds from
-> the sound board. Everything is configured in an `.ini` file or in
-> `kikarinhas-config`, which also lists the viewers. Other programs send
-> messages through a unix socket. See [PLANO.md](PLANO.md) (in Portuguese).
+> the sound board. Chat emoji, member emotes and YouTube reactions fly
+> across the screen (emote wall). Everything is configured in an `.ini` file
+> or in `kikarinhas-config`, which also lists the viewers. Other programs
+> send messages through a unix socket. See [PLANO.md](PLANO.md) (in Portuguese).
 
 ## Building
 
@@ -24,7 +25,14 @@ Dependencies (Debian/Ubuntu):
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
     libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev
 sudo apt install libgtk2.0-dev   # optional: only for kikarinhas-config
+sudo apt install fonts-noto-color-emoji   # colour emoji (emote wall and bubbles)
 ```
+
+The emoji font is only needed at run time; without it (or another colour
+emoji font), emoji show up white, without colour. For developers:
+`tools/gen_emoji_table.py` regenerates `src/emoji_table.h` from the
+`emoji-data.txt` of the `unicode-data` package (only when a new Unicode
+version comes out).
 
 ```sh
 make            # builds build/kikarinhas (and build/kikarinhas-config, with GTK2)
@@ -199,6 +207,47 @@ dates in the file: with kikarinhas **closed**, run
 (`displayName`, `firstTimeSpawned` and `lastTimeUsed` from there) without
 changing any choice.
 
+### Emote wall
+
+Chat emoji fly across the screen, over the avatars: common emoji (drawn
+from the emoji font), the channel's YouTube member emotes (downloaded once
+and kept in `~/.cache/kikarinhas/emotes`) and, if you want, YouTube
+reactions (the floating hearts), mixed in with the rest. Three effects:
+`rise` (they rise in waves), `bounce` (diagonals bouncing off the edges,
+like the DVD logo) and `fly` (they cross the screen).
+
+What goes up is decided per message, and one rule is enough:
+- **per message**: a message with at least `min_per_message` emoji sends
+  all of them;
+- **combo**: the same emoji in `combo_count` messages within
+  `combo_window` seconds starts a combo, and while it lasts every message
+  with that emoji goes up too.
+
+```ini
+[emote_wall]
+enabled = yes
+# rise, bounce or fly
+style = rise
+# seconds on screen and size in pixels
+duration = 5
+size = 48
+# 0 turns a rule off; with both at 0, every emoji goes up
+min_per_message = 3
+combo_count = 3
+combo_window = 10
+max_per_message = 10
+max_on_screen = 150
+# YouTube reactions
+reactions = yes
+reactions_per_icon = 1
+# emoji, shortcuts or names that never go up
+blacklist = 🍆, :_spam:, Kappa
+```
+
+All of this is also in the **Emote wall** tab of `kikarinhas-config`. In
+the blacklist, `❤` and `❤️` are the same emoji, and `:_hi:`, `:hi:` and `hi`
+are the same shortcut.
+
 ### Control socket and bridges
 
 kikarinhas listens on `$XDG_RUNTIME_DIR/kikarinhas.sock` (only your user can
@@ -222,6 +271,17 @@ In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
 `mod`, `member`, `verified`, and also `broadcaster`, `moderator` and
 `subscriber`) are optional. That way a platform kikarinhas does not know can
 become a bridge written in any language.
+
+Common emoji go in the `text` itself. Emotes that are images (Twitch's,
+member emotes, 7TV...) go in `emotes`, with the URL of a PNG (`https` only)
+and, optionally, where they are in the text (`start` and `len`, in bytes).
+Reactions go on their own:
+
+```sh
+echo '{"type":"message","platform":"twitch","user_id":"123","text":"hi Kappa","emotes":[{"id":"25","name":"Kappa","url":"https://static-cdn.jtvnw.net/emoticons/v2/25/static/dark/2.0","start":3,"len":5}]}' \
+    | socat - UNIX-CONNECT:$S
+echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX-CONNECT:$S
+```
 
 ### Chat commands
 
@@ -270,7 +330,8 @@ transparent on screen too.
 ## Planned
 
 - Twitch and Odysee.
-- Stream Avatars .zip packs, emojis as images.
+- Stream Avatars .zip packs, emotes as images inside the bubbles, animated
+  emotes (GIF).
 - Optional HTML layers (WPE WebKit) to replace some obs-browser sources.
 
 ## License

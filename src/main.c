@@ -19,6 +19,8 @@
 #include "config.h"
 #include "control.h"
 #include "demochat.h"
+#include "emotes.h"
+#include "emotewall.h"
 #include "http.h"
 #include "log.h"
 #include "sa.h"
@@ -468,12 +470,14 @@ typedef struct {
     kk_stage *stage;
     kk_commands *commands;
     kk_actions *actions;
+    kk_emotewall *wall;
     bool verbose;
 } chat_sink;
 
 static void on_chat(void *ud, const kk_chat_msg *m)
 {
     chat_sink *sink = ud;
+    kk_emotewall_message(sink->wall, m, now_seconds());
     kk_avatar *a = kk_stage_chatter(sink->stage, m);
     kk_cmd_result r = KK_CMD_NONE;
     if (a) {
@@ -492,6 +496,31 @@ static void on_chat(void *ud, const kk_chat_msg *m)
                 kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
                 m->text, results[r]);
     }
+}
+
+static void on_reaction(void *ud, const kk_reaction *r)
+{
+    chat_sink *sink = ud;
+    kk_emotewall_reaction(sink->wall, r, now_seconds());
+}
+
+static kk_wall_config wall_config(const kk_config *c)
+{
+    return (kk_wall_config){
+        .enabled = c->wall_enabled,
+        .duration = c->wall_duration,
+        .min_per_message = c->wall_min_message,
+        .combo_count = c->wall_combo,
+        .combo_window = c->wall_combo_window,
+        .max_per_message = c->wall_max_message,
+        .max_on_screen = c->wall_max_screen,
+        .style = c->wall_style == KK_CONFIG_WALL_FLY      ? KK_WALL_FLY
+                 : c->wall_style == KK_CONFIG_WALL_BOUNCE ? KK_WALL_BOUNCE
+                                                          : KK_WALL_RISE,
+        .reactions = c->wall_reactions,
+        .reactions_per_icon = c->wall_reactions_per_icon,
+        .blacklist = c->wall_blacklist,
+    };
 }
 
 static bool on_sound(void *ud, const kk_chat_msg *m, const char *sound)
@@ -553,6 +582,9 @@ typedef struct {
     kk_http *http;
     kk_actions *actions;
     chat_sink sink;
+    kk_chat_sink chat;    /* what every connector feeds: on_chat, on_reaction */
+    kk_emotes *emotes;
+    kk_emotewall *wall;
     kk_youtube *youtube;  /* NULL if not used */
     kk_demochat demo;
     bool demo_on;
@@ -597,13 +629,13 @@ static int connect_chats(app *a, const kk_config *cfg)
         kk_youtube_free(a->youtube);
         a->youtube = NULL;
         if (cfg->youtube) {
-            a->youtube = kk_youtube_new(a->http, cfg->youtube, on_chat, &a->sink);
+            a->youtube = kk_youtube_new(a->http, cfg->youtube, &a->chat);
             if (!a->youtube)
                 return -1;
         }
     }
     if (cfg->demo && !a->demo_on)
-        kk_demochat_init(&a->demo, on_chat, &a->sink, a->seed);
+        kk_demochat_init(&a->demo, &a->chat, a->seed);
     a->demo_on = cfg->demo;
     return 0;
 }
@@ -691,6 +723,9 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.show_bubbles = cfg.show_bubbles;
     a->stage->cfg.bubble_seconds = cfg.bubble_seconds;
     kk_stage_set_bubble_font(a->stage, cfg.bubble_font, cfg.bubble_size);
+    kk_emotes_set_size(a->emotes, cfg.wall_size);
+    kk_wall_config wc = wall_config(&cfg);
+    kk_emotewall_configure(a->wall, &wc);
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
 
@@ -766,13 +801,6 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
     }
 }
 
-/* Bridges on the control socket feed the same path as the connectors. */
-static void on_bridge(void *ud, const kk_chat_msg *m)
-{
-    app *a = ud;
-    on_chat(&a->sink, m);
-}
-
 /* False when it is time to quit. */
 static bool handle_signals(app *a)
 {
@@ -846,8 +874,10 @@ static void run(app *a)
             return;
         if (ev.open_config)
             open_config(a);
-        if (ev.resized)
+        if (ev.resized) {
             kk_stage_resize(a->stage, a->win->width, a->win->height);
+            kk_emotewall_resize(a->wall, a->win->width, a->win->height);
+        }
         if (ev.redraw)
             full = true;
 
@@ -896,6 +926,7 @@ static void run(app *a)
                 last = t;
                 /* After a stall, don't teleport everyone forward. */
                 kk_stage_update(a->stage, dt > 0.1 ? 0.1 : dt);
+                kk_emotewall_update(a->wall, t);
                 tick = true;
             }
         }
@@ -1087,14 +1118,30 @@ int main(int argc, char **argv)
         return 1;
     }
     kk_soundboard_configure(a.sounds, &a.cfg);
+    char emote_dir[KK_PATH_MAX];
+    a.emotes = kk_emotes_new(a.http, kk_emotes_default_dir(emote_dir, sizeof emote_dir)
+                                         ? emote_dir : NULL,
+                             a.cfg.wall_size);
+    a.wall = a.emotes ? kk_emotewall_new(a.emotes, x.seed) : NULL;
+    if (!a.wall) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_wall_config wc = wall_config(&a.cfg);
+    kk_emotewall_configure(a.wall, &wc);
+    kk_emotewall_resize(a.wall, win.width, win.height);
+    kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
+
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds};
     a.actions = &actions;
     a.sink = (chat_sink){
         .stage = &stage,
         .actions = &actions,
+        .wall = a.wall,
         .verbose = a.cfg.verbose,
         .commands = build_commands(&a, &a.cfg, &warn),
     };
+    a.chat = (kk_chat_sink){.on_msg = on_chat, .on_reaction = on_reaction, .ud = &a.sink};
     if (!a.sink.commands) {
         kk_log_error("sem memória");
         return 1;
@@ -1102,7 +1149,7 @@ int main(int argc, char **argv)
 
     char sock[KK_PATH_MAX];
     if (socket_path(&a.cfg, sock, sizeof sock)) {
-        a.control = kk_control_open(sock, on_bridge, on_request, &a);
+        a.control = kk_control_open(sock, &a.chat, on_request, &a);
         if (a.control)
             kk_log_info("socket de controle em %s", sock);
     }
@@ -1120,6 +1167,9 @@ int main(int argc, char **argv)
     kk_control_close(a.control);
     /* The connectors cancel their requests, so they go before the client. */
     kk_youtube_free(a.youtube);
+    kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
+    kk_emotewall_free(a.wall);
+    kk_emotes_free(a.emotes);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);
     kk_soundboard_free(a.sounds);

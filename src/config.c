@@ -222,6 +222,7 @@ void kk_config_free(kk_config *c)
     for (int i = 0; i < c->n_sounds; i++)
         sound_free(&c->sounds[i]);
     free(c->sounds);
+    free(c->wall_blacklist);
     memset(c, 0, sizeof *c);
 }
 
@@ -250,6 +251,16 @@ void kk_config_defaults(kk_config *c)
         .help_seconds = -1,
         .name_size = 11,
         .bubble_size = 10,
+        .wall_enabled = true,
+        .wall_duration = 5,
+        .wall_size = 48,
+        .wall_min_message = 3,
+        .wall_combo = 3,
+        .wall_combo_window = 10,
+        .wall_max_message = 10,
+        .wall_max_screen = 150,
+        .wall_reactions = true,
+        .wall_reactions_per_icon = 1,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -271,6 +282,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->sound_device = NULL;
     dst->sounds = NULL;
     dst->n_sounds = 0;
+    dst->wall_blacklist = NULL;
     bool ok = true;
     memset(dst->show, 0, sizeof dst->show);
     for (int i = 0; i < src->n_show; i++)
@@ -282,6 +294,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->youtube, src->youtube) && ok;
     ok = kk_config_set_str(&dst->users, src->users) && ok;
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
+    ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
     for (int i = 0; i < src->n_commands && ok; i++) {
         kk_config_command *k = add_command(dst);
         ok = k && command_copy(k, &src->commands[i]);
@@ -684,6 +697,43 @@ static void apply_soundboard(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void apply_wall(kk_config *c, const warner *w)
+{
+    if (key_is(w, "enabled"))
+        get_bool(w, &c->wall_enabled);
+    else if (key_is(w, "duration"))
+        get_double(w, &c->wall_duration, 0.5, 60);
+    else if (key_is(w, "size"))
+        get_int(w, &c->wall_size, 8, 512, false);
+    else if (key_is(w, "style")) {
+        if (strcasecmp(w->value, "rise") == 0)
+            c->wall_style = KK_CONFIG_WALL_RISE;
+        else if (strcasecmp(w->value, "bounce") == 0)
+            c->wall_style = KK_CONFIG_WALL_BOUNCE;
+        else if (strcasecmp(w->value, "fly") == 0)
+            c->wall_style = KK_CONFIG_WALL_FLY;
+        else
+            bad_value(w, "rise, bounce ou fly");
+    } else if (key_is(w, "min_per_message"))
+        get_int(w, &c->wall_min_message, 0, 64, false);
+    else if (key_is(w, "combo_count"))
+        get_int(w, &c->wall_combo, 0, 50, false);
+    else if (key_is(w, "combo_window"))
+        get_double(w, &c->wall_combo_window, 1, 600);
+    else if (key_is(w, "max_per_message"))
+        get_int(w, &c->wall_max_message, 1, 64, false);
+    else if (key_is(w, "max_on_screen"))
+        get_int(w, &c->wall_max_screen, 1, 1000, false);
+    else if (key_is(w, "reactions"))
+        get_bool(w, &c->wall_reactions);
+    else if (key_is(w, "reactions_per_icon"))
+        get_int(w, &c->wall_reactions_per_icon, 1, 1000, false);
+    else if (key_is(w, "blacklist"))
+        get_str(w, &c->wall_blacklist);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -761,6 +811,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_commands(c, &w);
         } else if (strcasecmp(s, "soundboard") == 0) {
             apply_soundboard(c, &w);
+        } else if (strcasecmp(s, "emote_wall") == 0) {
+            apply_wall(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {
             char name[MAX_NAME];
             if (normalize_word(name, sizeof name, s + strlen(SOUND_PREFIX)))

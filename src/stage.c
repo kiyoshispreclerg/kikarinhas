@@ -719,6 +719,12 @@ static bool near(kk_rect a, kk_rect b)
 
 static void add_damage(kk_stage *s, kk_rect r)
 {
+    /* Layers may report areas partly off screen. */
+    int x1 = r.x + r.w, y1 = r.y + r.h;
+    r.x = r.x < 0 ? 0 : r.x;
+    r.y = r.y < 0 ? 0 : r.y;
+    r.w = (x1 > s->width ? s->width : x1) - r.x;
+    r.h = (y1 > s->height ? s->height : y1) - r.y;
     if (kk_rect_empty(r))
         return;
     /* Merge with every rectangle it touches, repeating as the union grows. */
@@ -739,6 +745,30 @@ static void add_damage(kk_stage *s, kk_rect r)
     s->damage[s->n_damage++] = r;
 }
 
+static void layer_damage(void *to, kk_rect r)
+{
+    add_damage(to, r);
+}
+
+bool kk_stage_add_layer(kk_stage *s, const kk_layer *l)
+{
+    if (s->n_layers == KK_MAX_LAYERS)
+        return false;
+    s->layers[s->n_layers++] = l;
+    return true;
+}
+
+void kk_stage_remove_layer(kk_stage *s, const kk_layer *l)
+{
+    for (int i = 0; i < s->n_layers; i++)
+        if (s->layers[i] == l) {
+            memmove(&s->layers[i], &s->layers[i + 1],
+                    (size_t)(s->n_layers - i - 1) * sizeof s->layers[0]);
+            s->n_layers--;
+            return;
+        }
+}
+
 int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
                     const kk_rect **rects)
 {
@@ -756,6 +786,8 @@ int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
             add_damage(s, a->drawn);
             add_damage(s, kk_avatar_bounds(a, &v));
         }
+        for (int i = 0; i < s->n_layers; i++)
+            s->layers[i]->damage(s->layers[i]->ud, layer_damage, s);
     }
     s->removed = (kk_rect){0, 0, 0, 0};
 
@@ -777,11 +809,15 @@ int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
                 else
                     kk_avatar_draw_bubble(a, cr, &v);
             }
+        for (int i = 0; i < s->n_layers; i++)
+            s->layers[i]->draw(s->layers[i]->ud, cr, r);
         cairo_restore(cr);
     }
 
     for (int i = 0; i < s->count; i++)
         kk_avatar_mark_drawn(&s->avatars[i], &v);
+    for (int i = 0; i < s->n_layers; i++)
+        s->layers[i]->painted(s->layers[i]->ud);
 
     *rects = s->damage;
     return s->n_damage;

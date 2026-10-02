@@ -10,12 +10,14 @@
 
 #include "avatar.h"
 #include "chat.h"
+#include "layer.h"
 #include "sa.h"
 #include "sprite.h"
 #include "users.h"
 #include "util.h"
 
 #define KK_MAX_DAMAGE 16
+#define KK_MAX_LAYERS 4
 
 typedef struct {
     double scale;
@@ -67,6 +69,9 @@ typedef struct {
     PangoFontDescription *tag_font;
     PangoFontDescription *bubble_font;
 
+    const kk_layer *layers[KK_MAX_LAYERS]; /* drawn over the avatars */
+    int n_layers;
+
     kk_rect removed; /* area of avatars removed since the last paint */
     kk_rect damage[KK_MAX_DAMAGE];
     int n_damage;
@@ -114,6 +119,11 @@ kk_avatar *kk_stage_random_other(kk_stage *s, const kk_avatar *not);
 
 /* a walks to b and hugs/attacks it. */
 bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act);
+
+/* Paints l over the avatars from now on (l must outlive the stage, or be
+ * removed first). False if there are KK_MAX_LAYERS already. */
+bool kk_stage_add_layer(kk_stage *s, const kk_layer *l);
+void kk_stage_remove_layer(kk_stage *s, const kk_layer *l);
 
 void kk_stage_update(kk_stage *s, double dt);
 

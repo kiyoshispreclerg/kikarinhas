@@ -13,6 +13,9 @@ typedef struct {
     char platform[16], user[64], name[64], text[512], amount[32];
     unsigned badges;
     kk_msg_kind kind;
+    int n_emotes;
+    char emote_id[64], emote_name[64], emote_url[256];
+    size_t emote_start, emote_len;
 } msg_copy;
 
 static msg_copy got[MAX_MSGS];
@@ -31,7 +34,38 @@ static void collect(void *ud, const kk_chat_msg *m)
     snprintf(c->amount, sizeof c->amount, "%s", m->amount ? m->amount : "");
     c->badges = m->badges;
     c->kind = m->kind;
+    c->n_emotes = m->n_emotes;
+    if (m->n_emotes > 0) {
+        const kk_emote *e = &m->emotes[0];
+        snprintf(c->emote_id, sizeof c->emote_id, "%s", e->id);
+        snprintf(c->emote_name, sizeof c->emote_name, "%s", e->name ? e->name : "");
+        snprintf(c->emote_url, sizeof c->emote_url, "%s", e->url);
+        c->emote_start = e->start;
+        c->emote_len = e->len;
+    }
 }
+
+#define MAX_REACTIONS 8
+
+static struct {
+    char emoji[16];
+    int count;
+    double delay;
+} reactions[MAX_REACTIONS];
+static int n_reactions;
+
+static void collect_reaction(void *ud, const kk_reaction *r)
+{
+    (void)ud;
+    if (n_reactions == MAX_REACTIONS)
+        return;
+    snprintf(reactions[n_reactions].emoji, sizeof reactions[0].emoji, "%s", r->emote.text);
+    reactions[n_reactions].count = r->count;
+    reactions[n_reactions].delay = r->delay;
+    n_reactions++;
+}
+
+static const kk_chat_sink sink = {collect, collect_reaction, NULL};
 
 static char *fixture(const char *name)
 {
@@ -155,8 +189,8 @@ TEST(poll_messages)
     char *json = fixture("yt_poll.json");
     char *next = NULL;
     int delay = 0;
-    n_got = 0;
-    kk_yt_poll r = kk_yt_parse_poll(json, true, collect, NULL, &next, &delay);
+    n_got = n_reactions = 0;
+    kk_yt_poll r = kk_yt_parse_poll(json, true, &sink, &next, &delay);
     free(json);
 
     CHECK_INT_EQ(r, KK_YT_POLL_OK);
@@ -173,6 +207,14 @@ TEST(poll_messages)
     CHECK_STR_EQ(got[0].text, "oi chat 😂:hand-pink-waving:");
     CHECK_INT_EQ(got[0].kind, KK_MSG_TEXT);
     CHECK_INT_EQ(got[0].badges, 0);
+    /* Only the channel emoji is an image emote; 😂 stays in the text. */
+    CHECK_INT_EQ(got[0].n_emotes, 1);
+    CHECK_STR_EQ(got[0].emote_id, "UCxx/abc");
+    CHECK_STR_EQ(got[0].emote_name, ":hand-pink-waving:");
+    CHECK_STR_EQ(got[0].emote_url, "https://example.invalid/c.png");
+    CHECK_INT_EQ(got[0].emote_start, strlen("oi chat 😂"));
+    CHECK_INT_EQ(got[0].emote_len, strlen(":hand-pink-waving:"));
+    CHECK_INT_EQ(got[1].n_emotes, 0);
 
     CHECK_INT_EQ(got[1].badges, KK_BADGE_OWNER);
     CHECK_INT_EQ(got[2].badges, KK_BADGE_MOD | KK_BADGE_MEMBER);
@@ -187,6 +229,33 @@ TEST(poll_messages)
     CHECK_INT_EQ(got[5].kind, KK_MSG_MEMBER);
     CHECK_STR_EQ(got[5].text, "Boas-vindas a Canal!");
     CHECK_INT_EQ(got[5].badges, KK_BADGE_MEMBER);
+
+    /* Three one-second buckets (the middle one empty), a second apart. */
+    CHECK_INT_EQ(n_reactions, 3);
+    CHECK_STR_EQ(reactions[0].emoji, "❤");
+    CHECK_INT_EQ(reactions[0].count, 3);
+    CHECK(reactions[0].delay == 0.0);
+    CHECK_STR_EQ(reactions[1].emoji, "💯");
+    CHECK_INT_EQ(reactions[1].count, 1);
+    CHECK(reactions[1].delay == 2.0);
+    CHECK_STR_EQ(reactions[2].emoji, "❤");
+    CHECK_INT_EQ(reactions[2].count, 2);
+    CHECK(reactions[2].delay == 2.0);
+}
+
+TEST(emote_url_size)
+{
+    char out[256];
+    CHECK(kk_yt_emote_url("https://yt3.ggpht.com/abc-_x=w48-h48-c-k-nd", 96, out, sizeof out));
+    CHECK_STR_EQ(out, "https://yt3.ggpht.com/abc-_x=w96-h96-c-k-nd");
+    CHECK(kk_yt_emote_url("https://yt3.ggpht.com/abc=w24-h24", 96, out, sizeof out));
+    CHECK_STR_EQ(out, "https://yt3.ggpht.com/abc=w96-h96");
+    /* Anything else is left alone. */
+    CHECK(kk_yt_emote_url("https://example.invalid/c.png", 96, out, sizeof out));
+    CHECK_STR_EQ(out, "https://example.invalid/c.png");
+    CHECK(kk_yt_emote_url("https://x.invalid/a?q=w1-h1/b.png", 96, out, sizeof out));
+    CHECK_STR_EQ(out, "https://x.invalid/a?q=w1-h1/b.png");
+    CHECK(!kk_yt_emote_url("https://example.invalid/c.png", 96, out, 8));
 }
 
 TEST(poll_skip_backlog)
@@ -194,12 +263,13 @@ TEST(poll_skip_backlog)
     char *json = fixture("yt_poll.json");
     char *next = NULL;
     int delay = 0;
-    n_got = 0;
-    kk_yt_poll r = kk_yt_parse_poll(json, false, collect, NULL, &next, &delay);
+    n_got = n_reactions = 0;
+    kk_yt_poll r = kk_yt_parse_poll(json, false, &sink, &next, &delay);
     free(json);
     free(next);
     CHECK_INT_EQ(r, KK_YT_POLL_OK);
     CHECK_INT_EQ(n_got, 0);
+    CHECK_INT_EQ(n_reactions, 0);
 }
 
 TEST(poll_timed_and_ended)
@@ -208,10 +278,10 @@ TEST(poll_timed_and_ended)
     char *ended = fixture("yt_poll_ended.json");
     char *next = NULL;
     int delay = 0;
-    kk_yt_poll r1 = kk_yt_parse_poll(timed, true, collect, NULL, &next, &delay);
+    kk_yt_poll r1 = kk_yt_parse_poll(timed, true, &sink, &next, &delay);
     char *next1 = next;
-    kk_yt_poll r2 = kk_yt_parse_poll(ended, true, collect, NULL, &next, &delay);
-    kk_yt_poll r3 = kk_yt_parse_poll("{not json", true, collect, NULL, &next, &delay);
+    kk_yt_poll r2 = kk_yt_parse_poll(ended, true, &sink, &next, &delay);
+    kk_yt_poll r3 = kk_yt_parse_poll("{not json", true, &sink, &next, &delay);
     free(timed);
     free(ended);
 
@@ -239,7 +309,7 @@ TEST(long_text_is_cut_cleanly)
     cJSON *root = cJSON_Parse(big);
     CHECK(root != NULL);
     n_got = 0;
-    kk_yt_emit_actions(cJSON_GetObjectItem(root, "actions"), collect, NULL);
+    kk_yt_emit_actions(cJSON_GetObjectItem(root, "actions"), &sink);
     cJSON_Delete(root);
     CHECK_INT_EQ(n_got, 1);
     size_t len = strlen(got[0].text);
@@ -277,6 +347,7 @@ int main(void)
     RUN(chat_page);
     RUN(chat_page_without_chat);
     RUN(poll_messages);
+    RUN(emote_url_size);
     RUN(poll_skip_backlog);
     RUN(poll_timed_and_ended);
     RUN(long_text_is_cut_cleanly);

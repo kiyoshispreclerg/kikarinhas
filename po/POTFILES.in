@@ -1,3 +1,4 @@
 config/main.c
 config/sounds.c
+config/wall.c
 config/audience.c

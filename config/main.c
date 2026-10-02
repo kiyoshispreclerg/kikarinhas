@@ -8,7 +8,8 @@
  * needs this program.
  *
  * This file has the window and the Janela/Avatares/Chat/Comandos tabs;
- * sounds.c and audience.c have the Sons and Espectadores ones. */
+ * sounds.c, wall.c and audience.c have the Sons, Emote wall and
+ * Espectadores ones. */
 #include <errno.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -581,8 +582,8 @@ void put_int(editor *e, const char *section, const char *key, int v, int dflt)
     put(e, section, key, s, d);
 }
 
-static void put_num(editor *e, const char *section, const char *key, double v,
-                    double dflt)
+void put_num(editor *e, const char *section, const char *key, double v,
+             double dflt)
 {
     char s[32], d[32];
     fmt_num(s, sizeof s, v);
@@ -729,6 +730,7 @@ static void collect(editor *e)
         more = gtk_tree_model_iter_next(GTK_TREE_MODEL(e->commands), &it);
     }
     sounds_collect(e);
+    wall_collect(e);
 
     /* What is in the file now counts as loaded. */
     for (int i = 0; i < e->n_loaded_custom; i++)
@@ -974,6 +976,8 @@ static void build(editor *e, const kk_config *cfg)
                              gtk_label_new(_("Commands")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), sounds_page(e, cfg),
                              gtk_label_new(_("Sounds")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), wall_page(e, cfg),
+                             gtk_label_new(_("Emote wall")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
                              gtk_label_new(_("Viewers")));
 
@@ -1085,6 +1089,7 @@ int main(int argc, char **argv)
     gtk_main();
     sounds_free(&e);
     audience_free(&e);
+    wall_free(&e);
     kk_ini_free(e.ini);
     for (int i = 0; i < e.n_loaded_custom; i++)
         g_free(e.loaded_custom[i]);

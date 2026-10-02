@@ -42,16 +42,40 @@ static const char *const lines[] = {
     "!avatar random",
     "!cor random",
     "!som buzina",
+    "🔥🔥🔥🔥",
+    "GG 🎉🎉🎉",
+    "😂😂😂😂😂",
+    "amei ❤️❤️❤️",
+    "👏👏👏",
+    "🇧🇷🇧🇷🇧🇷",
 };
 
-void kk_demochat_init(kk_demochat *d, kk_chat_cb cb, void *ud, uint64_t seed)
+static const char *const reactions[] = {"❤", "❤", "❤", "🎉", "💯", "😄", "😳"};
+
+void kk_demochat_init(kk_demochat *d, const kk_chat_sink *sink, uint64_t seed)
 {
-    *d = (kk_demochat){.cb = cb, .ud = ud};
+    *d = (kk_demochat){.sink = *sink};
     kk_rng_seed(&d->rng, seed ^ 0xdeadbeefULL);
+}
+
+static void react(kk_demochat *d, double now)
+{
+    if (d->next_reaction == 0.0)
+        d->next_reaction = now + 1.0;
+    if (now < d->next_reaction || !d->sink.on_reaction)
+        return;
+    d->next_reaction = now + 1.0;
+    int n = kk_rng_int(&d->rng, 5);
+    if (n == 0)
+        return;
+    const char *e = reactions[kk_rng_int(&d->rng, (int)(sizeof reactions / sizeof reactions[0]))];
+    kk_reaction r = {.platform = "demo", .emote = {.id = e, .text = e}, .count = n};
+    d->sink.on_reaction(d->sink.ud, &r);
 }
 
 void kk_demochat_tick(kk_demochat *d, double now)
 {
+    react(d, now);
     if (d->next_at == 0.0)
         d->next_at = now + 0.5;
     if (now < d->next_at)
@@ -78,5 +102,5 @@ void kk_demochat_tick(kk_demochat *d, double now)
         m.kind = KK_MSG_MEMBER;
         m.text = "Boas-vindas ao clube!";
     }
-    d->cb(d->ud, &m);
+    d->sink.on_msg(d->sink.ud, &m);
 }

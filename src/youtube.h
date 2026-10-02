@@ -14,6 +14,11 @@
  *     seconds; each answer has new actions and the next token. The first
  *     answer repeats the backlog and is skipped.
  *
+ * Channel (member) emoji go out as image emotes of the message; reactions
+ * (the floating hearts) come in every answer as per-second totals, in
+ * frameworkUpdates...emojiFountainDataEntity.reactionBuckets, and go out
+ * one bucket per second.
+ *
  * Not an official API: YouTube may change it. The parsing lives in the pure
  * functions below, tested against recorded shapes in tests/. */
 
@@ -27,9 +32,10 @@
 typedef struct kk_youtube kk_youtube;
 
 /* target: video link or id, channel link, @handle or UC... channel id.
- * Free it before the http client (it cancels its pending requests). */
-kk_youtube *kk_youtube_new(kk_http *http, const char *target, kk_chat_cb cb,
-                           void *ud);
+ * sink is copied. Free it before the http client (it cancels its pending
+ * requests). */
+kk_youtube *kk_youtube_new(kk_http *http, const char *target,
+                           const kk_chat_sink *sink);
 void kk_youtube_free(kk_youtube *yt);
 
 /* Starts the next request when it is due. now: monotonic seconds. */
@@ -58,8 +64,17 @@ bool kk_yt_config_string(const char *html, const char *key, char *out,
 /* Continuation of the "Live chat" view in the pop-out page data; malloc'd. */
 char *kk_yt_live_continuation(const cJSON *initial);
 
-/* Sends every chat message in an actions array to cb. Returns how many. */
-int kk_yt_emit_actions(const cJSON *actions, kk_chat_cb cb, void *ud);
+/* Sends every chat message in an actions array to the sink. Returns how
+ * many. */
+int kk_yt_emit_actions(const cJSON *actions, const kk_chat_sink *sink);
+
+/* Sends the reactions in a get_live_chat answer (or ytInitialData) to the
+ * sink, bucket i with a delay of i seconds. Returns how many. */
+int kk_yt_emit_reactions(const cJSON *root, const kk_chat_sink *sink);
+
+/* An emoji thumbnail URL ("...=w48-h48-c-k-nd") asking for px x px. Other
+ * URLs are copied as they are. False if out is too small. */
+bool kk_yt_emote_url(const char *url, int px, char *out, size_t size);
 
 typedef enum {
     KK_YT_POLL_OK,
@@ -67,9 +82,10 @@ typedef enum {
     KK_YT_POLL_ERROR,
 } kk_yt_poll;
 
-/* Parses a get_live_chat answer. With emit false the actions are skipped.
+/* Parses a get_live_chat answer. With emit false the actions and reactions
+ * are skipped.
  * On OK, *next (malloc'd) and *delay_ms say when and how to poll again. */
-kk_yt_poll kk_yt_parse_poll(const char *json, bool emit, kk_chat_cb cb,
-                            void *ud, char **next, int *delay_ms);
+kk_yt_poll kk_yt_parse_poll(const char *json, bool emit,
+                            const kk_chat_sink *sink, char **next, int *delay_ms);
 
 #endif

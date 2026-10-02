@@ -13,8 +13,14 @@
  * running kikarinhas, one JSON object per line, each answered by one line.
  *
  *   {"type":"message","platform":"twitch","user_id":"123","name":"Fulano",
- *    "text":"oi !jump","badges":["member"],"kind":"text","amount":null}
- *     → a chat message, as if it came from a built-in connector (bridges)
+ *    "text":"oi Kappa !jump","badges":["member"],"kind":"text","amount":null,
+ *    "emotes":[{"id":"25","name":"Kappa","url":"https://...","start":3,"len":5}]}
+ *     → a chat message, as if it came from a built-in connector (bridges).
+ *       "emotes" lists the platform's image emotes (https PNGs; start/len
+ *       are bytes of text, optional); Unicode emoji stay in the text.
+ *   {"type":"reaction","platform":"x","emoji":"❤","count":3}
+ *     → viewers reacting (the emote wall shows them); an image reaction
+ *       gives "id"/"name"/"url" instead of "emoji"
  *   {"type":"reload"} → reread the config file
  *   {"type":"ping"}   → {"ok":true,"version":"..."}
  *   {"type":"quit"}
@@ -29,15 +35,16 @@
 
 typedef struct kk_control kk_control;
 
-/* Handles every type but "message". reply already holds "ok": true; set it
- * to false and add "error", or add other fields. */
+/* Handles every type but "message" and "reaction". reply already holds
+ * "ok": true; set it to false and add "error", or add other fields. */
 typedef void (*kk_control_fn)(void *ud, const char *type, const cJSON *req,
                               cJSON *reply);
 
 /* Creates the socket at path. If another kikarinhas answers there, fails
- * (NULL) and leaves it alone; a stale socket file is replaced. With path
+ * (NULL) and leaves it alone; a stale socket file is replaced. Messages
+ * and reactions go to chat (copied; may be NULL). With path
  * NULL there is no socket, only kk_control_handle_line (for tests). */
-kk_control *kk_control_open(const char *path, kk_chat_cb on_msg,
+kk_control *kk_control_open(const char *path, const kk_chat_sink *chat,
                             kk_control_fn on_request, void *ud);
 /* Closes the clients and removes the socket file. */
 void kk_control_close(kk_control *c);

@@ -19,6 +19,9 @@
 #define INVALIDATION_POLL_MS 2500
 #define OFFLINE_RETRY_S 60.0
 #define MAX_TEXT 400
+#define MAX_EMOTES 32
+/* Channel emoji come as 24/48 px thumbnails; ask for this size instead. */
+#define EMOTE_PX 96
 
 /* ---- target -------------------------------------------------------------- */
 
@@ -189,9 +192,46 @@ static void text_add(text_buf *t, const char *s)
     t->buf[t->len] = '\0';
 }
 
+/* Channel emoji of a message, pointing into the parsed JSON. */
+typedef struct {
+    kk_emote list[MAX_EMOTES];
+    char urls[MAX_EMOTES][512];
+    int n;
+} emote_buf;
+
+bool kk_yt_emote_url(const char *url, int px, char *out, size_t size)
+{
+    /* ".../abc=w48-h48-c-k-nd": the size sits after the last "=". */
+    const char *eq = strrchr(url, '=');
+    int w, h, used = 0;
+    if (eq && strchr(eq, '/') == NULL &&
+        sscanf(eq, "=w%d-h%d%n", &w, &h, &used) == 2 && used > 0)
+        return kk_pathf(out, size, "%.*s=w%d-h%d%s", (int)(eq - url), url, px,
+                        px, eq + used);
+    return kk_pathf(out, size, "%s", url);
+}
+
+/* Lists a channel emoji (one with an image) that stands for t[start..]. */
+static void add_emote(emote_buf *eb, const cJSON *emoji, const char *name,
+                      const text_buf *t, size_t start)
+{
+    const cJSON *thumbs = kk_json_path(emoji, "image.thumbnails");
+    const cJSON *last = NULL, *th;
+    cJSON_ArrayForEach(th, thumbs) last = th;
+    const char *url = last ? kk_json_str(last, "url") : NULL;
+    const char *id = kk_json_str(emoji, "emojiId");
+    if (!eb || eb->n == MAX_EMOTES || !url || !id ||
+        !kk_yt_emote_url(url, EMOTE_PX, eb->urls[eb->n], sizeof eb->urls[0]))
+        return;
+    eb->list[eb->n] = (kk_emote){.id = id, .name = name, .url = eb->urls[eb->n],
+                                 .start = start, .len = t->len - start};
+    eb->n++;
+}
+
 /* Text of a {simpleText} or {runs:[{text}|{emoji}]} object. Standard emoji
- * become their Unicode character; channel emoji their :shortcut:. */
-static void runs_text(const cJSON *obj, text_buf *t)
+ * become their Unicode character; channel emoji their :shortcut:, and go
+ * to eb (when given) with their image. */
+static void runs_text(const cJSON *obj, text_buf *t, emote_buf *eb)
 {
     const char *simple = kk_json_str(obj, "simpleText");
     if (simple) {
@@ -202,16 +242,21 @@ static void runs_text(const cJSON *obj, text_buf *t)
     cJSON_ArrayForEach(run, cJSON_GetObjectItemCaseSensitive(obj, "runs"))
     {
         const char *s = kk_json_str(run, "text");
+        const cJSON *emoji = NULL;
+        bool custom = false;
         if (!s) {
-            const cJSON *emoji = cJSON_GetObjectItemCaseSensitive(run, "emoji");
-            bool custom = cJSON_IsTrue(
+            emoji = cJSON_GetObjectItemCaseSensitive(run, "emoji");
+            custom = cJSON_IsTrue(
                 cJSON_GetObjectItemCaseSensitive(emoji, "isCustomEmoji"));
             s = custom ? kk_json_str(emoji, "shortcuts[0]") : NULL;
             if (!s)
                 s = kk_json_str(emoji, "emojiId");
         }
+        size_t start = t->len;
         if (s)
             text_add(t, s);
+        if (custom && t->len > start)
+            add_emote(eb, emoji, s, t, start);
     }
 }
 
@@ -237,46 +282,50 @@ static unsigned parse_badges(const cJSON *item)
 }
 
 /* One chat item (the value inside "item"); false if not a message. */
-static bool emit_item(const cJSON *item, kk_chat_cb cb, void *ud)
+static bool emit_item(const cJSON *item, const kk_chat_sink *sink)
 {
     const cJSON *r;
     kk_chat_msg m = {.platform = "youtube"};
     text_buf text = {0};
     text_buf amount = {0};
+    emote_buf emotes;
+    emotes.n = 0;
 
     if ((r = cJSON_GetObjectItemCaseSensitive(item, "liveChatTextMessageRenderer"))) {
         m.kind = KK_MSG_TEXT;
-        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text);
+        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text, &emotes);
     } else if ((r = cJSON_GetObjectItemCaseSensitive(item, "liveChatPaidMessageRenderer")) ||
                (r = cJSON_GetObjectItemCaseSensitive(item, "liveChatPaidStickerRenderer"))) {
         m.kind = KK_MSG_PAID;
-        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text);
-        runs_text(cJSON_GetObjectItemCaseSensitive(r, "purchaseAmountText"), &amount);
+        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text, &emotes);
+        runs_text(cJSON_GetObjectItemCaseSensitive(r, "purchaseAmountText"), &amount, NULL);
         m.amount = amount.buf;
     } else if ((r = cJSON_GetObjectItemCaseSensitive(item, "liveChatMembershipItemRenderer"))) {
         m.kind = KK_MSG_MEMBER;
         /* Milestones carry a message; new members only the header. */
-        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text);
+        runs_text(cJSON_GetObjectItemCaseSensitive(r, "message"), &text, &emotes);
         if (text.len == 0)
-            runs_text(cJSON_GetObjectItemCaseSensitive(r, "headerSubtext"), &text);
+            runs_text(cJSON_GetObjectItemCaseSensitive(r, "headerSubtext"), &text, NULL);
     } else {
         return false;
     }
 
     m.user_id = kk_json_str(r, "authorExternalChannelId");
     text_buf name = {0};
-    runs_text(cJSON_GetObjectItemCaseSensitive(r, "authorName"), &name);
+    runs_text(cJSON_GetObjectItemCaseSensitive(r, "authorName"), &name, NULL);
     if (!m.user_id || name.len == 0)
         return false;
     /* Handles come as "@name": the @ is noise above an avatar. */
     m.name = name.buf[0] == '@' && name.buf[1] ? name.buf + 1 : name.buf;
     m.text = text.buf;
     m.badges = parse_badges(r);
-    cb(ud, &m);
+    m.emotes = emotes.list;
+    m.n_emotes = emotes.n;
+    sink->on_msg(sink->ud, &m);
     return true;
 }
 
-int kk_yt_emit_actions(const cJSON *actions, kk_chat_cb cb, void *ud)
+int kk_yt_emit_actions(const cJSON *actions, const kk_chat_sink *sink)
 {
     int count = 0;
     const cJSON *a;
@@ -286,14 +335,52 @@ int kk_yt_emit_actions(const cJSON *actions, kk_chat_cb cb, void *ud)
         /* Held messages appear as placeholders, later replaced. */
         if (!item)
             item = kk_json_path(a, "replaceChatItemAction.replacementItem");
-        if (item && emit_item(item, cb, ud))
+        if (item && emit_item(item, sink))
             count++;
     }
     return count;
 }
 
-kk_yt_poll kk_yt_parse_poll(const char *json, bool emit, kk_chat_cb cb,
-                            void *ud, char **next, int *delay_ms)
+int kk_yt_emit_reactions(const cJSON *root, const kk_chat_sink *sink)
+{
+    int count = 0;
+    const cJSON *mut;
+    cJSON_ArrayForEach(mut, kk_json_path(root, "frameworkUpdates.entityBatchUpdate.mutations"))
+    {
+        const cJSON *fountain = kk_json_path(mut, "payload.emojiFountainDataEntity");
+        if (!fountain || !sink->on_reaction)
+            continue;
+        /* One bucket per second since the last poll, oldest first: replay
+         * them a second apart. */
+        double delay = 0;
+        const cJSON *bucket;
+        cJSON_ArrayForEach(bucket, cJSON_GetObjectItemCaseSensitive(fountain, "reactionBuckets"))
+        {
+            const cJSON *d;
+            cJSON_ArrayForEach(d, cJSON_GetObjectItemCaseSensitive(bucket, "reactionsData"))
+            {
+                const char *emoji = kk_json_str(d, "unicodeEmojiId");
+                int n = (int)kk_json_num(d, "reactionCount", 0);
+                if (!emoji || !emoji[0] || n <= 0)
+                    continue;
+                kk_reaction r = {
+                    .platform = "youtube",
+                    .emote = {.id = emoji, .text = emoji},
+                    .count = n,
+                    .delay = delay,
+                };
+                sink->on_reaction(sink->ud, &r);
+                count++;
+            }
+            double secs = kk_json_num(bucket, "duration.seconds", 1);
+            delay += secs > 0 && secs < 60 ? secs : 1;
+        }
+    }
+    return count;
+}
+
+kk_yt_poll kk_yt_parse_poll(const char *json, bool emit,
+                            const kk_chat_sink *sink, char **next, int *delay_ms)
 {
     *next = NULL;
     cJSON *root = cJSON_Parse(json);
@@ -310,8 +397,10 @@ kk_yt_poll kk_yt_parse_poll(const char *json, bool emit, kk_chat_cb cb,
                      : KK_YT_POLL_ERROR;
         goto out;
     }
-    if (emit)
-        kk_yt_emit_actions(cJSON_GetObjectItemCaseSensitive(lcc, "actions"), cb, ud);
+    if (emit) {
+        kk_yt_emit_actions(cJSON_GetObjectItemCaseSensitive(lcc, "actions"), sink);
+        kk_yt_emit_reactions(root, sink);
+    }
 
     const cJSON *first = kk_json_path(lcc, "continuations[0]");
     const cJSON *data = first ? first->child : NULL;
@@ -347,8 +436,7 @@ typedef enum {
 
 struct kk_youtube {
     kk_http *http;
-    kk_chat_cb cb;
-    void *ud;
+    kk_chat_sink sink;
 
     char channel_url[512]; /* empty when started from a video */
     char video[12];
@@ -363,8 +451,8 @@ struct kk_youtube {
     int failures;
 };
 
-kk_youtube *kk_youtube_new(kk_http *http, const char *target, kk_chat_cb cb,
-                           void *ud)
+kk_youtube *kk_youtube_new(kk_http *http, const char *target,
+                           const kk_chat_sink *sink)
 {
     kk_youtube *yt = calloc(1, sizeof *yt);
     if (!yt)
@@ -387,8 +475,7 @@ kk_youtube *kk_youtube_new(kk_http *http, const char *target, kk_chat_cb cb,
         return NULL;
     }
     yt->http = http;
-    yt->cb = cb;
-    yt->ud = ud;
+    yt->sink = *sink;
     snprintf(yt->client_version, sizeof yt->client_version, "%s",
              FALLBACK_CLIENT_VERSION);
     return yt;
@@ -501,7 +588,7 @@ static void on_poll(void *ud, long status, const char *body, size_t len,
     }
     char *next;
     int delay_ms = 3000;
-    switch (kk_yt_parse_poll(body, !yt->skip_backlog, yt->cb, yt->ud, &next,
+    switch (kk_yt_parse_poll(body, !yt->skip_backlog, &yt->sink, &next,
                              &delay_ms)) {
     case KK_YT_POLL_OK:
         free(yt->continuation);

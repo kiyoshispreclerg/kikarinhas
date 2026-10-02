@@ -28,7 +28,7 @@ typedef struct {
 struct kk_control {
     int fd; /* -1 without a socket (tests) */
     char path[sizeof(((struct sockaddr_un *)0)->sun_path)];
-    kk_chat_cb on_msg;
+    kk_chat_sink chat;
     kk_control_fn on_request;
     void *ud;
     client clients[MAX_CLIENTS];
@@ -60,14 +60,15 @@ static bool someone_listens(const struct sockaddr_un *sa)
     return yes;
 }
 
-kk_control *kk_control_open(const char *path, kk_chat_cb on_msg,
+kk_control *kk_control_open(const char *path, const kk_chat_sink *chat,
                             kk_control_fn on_request, void *ud)
 {
     kk_control *c = calloc(1, sizeof *c);
     if (!c)
         return NULL;
     c->fd = -1;
-    c->on_msg = on_msg;
+    if (chat)
+        c->chat = *chat;
     c->on_request = on_request;
     c->ud = ud;
     if (!path)
@@ -156,6 +157,30 @@ static void fail(cJSON *reply, const char *error)
     cJSON_AddStringToObject(reply, "error", error);
 }
 
+#define MAX_EMOTES 32
+
+/* {"id","name","url","start","len"}: an image emote. url must be https;
+ * start/len (bytes of text) are optional. False if it is not usable. */
+static bool parse_emote(const cJSON *j, size_t text_len, kk_emote *out)
+{
+    *out = (kk_emote){
+        .id = str_or(j, "id", NULL),
+        .name = str_or(j, "name", NULL),
+        .url = str_or(j, "url", NULL),
+    };
+    if (!out->url || strncmp(out->url, "https://", 8) != 0)
+        return false;
+    if (!out->id || !out->id[0])
+        out->id = out->url;
+    double start = cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(j, "start"));
+    double len = cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(j, "len"));
+    if (start >= 0 && len > 0 && start + len <= (double)text_len) {
+        out->start = (size_t)start;
+        out->len = (size_t)len;
+    }
+    return true;
+}
+
 static void handle_message(kk_control *c, const cJSON *req, cJSON *reply)
 {
     kk_chat_msg m = {
@@ -194,8 +219,36 @@ static void handle_message(kk_control *c, const cJSON *req, cJSON *reply)
         for (size_t i = 0; cJSON_IsString(b) && i < sizeof badges / sizeof badges[0]; i++)
             if (strcasecmp(b->valuestring, badges[i].name) == 0)
                 m.badges |= badges[i].bit;
-    if (c->on_msg)
-        c->on_msg(c->ud, &m);
+    kk_emote emotes[MAX_EMOTES];
+    const cJSON *e;
+    cJSON_ArrayForEach(e, cJSON_GetObjectItemCaseSensitive(req, "emotes"))
+        if (m.n_emotes < MAX_EMOTES && parse_emote(e, strlen(m.text), &emotes[m.n_emotes]))
+            m.n_emotes++;
+    m.emotes = emotes;
+    if (c->chat.on_msg)
+        c->chat.on_msg(c->chat.ud, &m);
+}
+
+/* {"emoji":"❤"} or an image emote's {"id","name","url"}, plus "count". */
+static void handle_reaction(kk_control *c, const cJSON *req, cJSON *reply)
+{
+    kk_reaction r = {.platform = str_or(req, "platform", "bridge")};
+    const char *emoji = str_or(req, "emoji", NULL);
+    if (emoji && emoji[0]) {
+        r.emote = (kk_emote){.id = emoji, .text = emoji};
+    } else if (!parse_emote(req, 0, &r.emote)) {
+        fail(reply, "faltou \"emoji\" ou uma \"url\" https");
+        return;
+    }
+    const cJSON *n = cJSON_GetObjectItemCaseSensitive(req, "count");
+    double count = cJSON_IsNumber(n) ? n->valuedouble : 1;
+    if (count < 1 || count > 1000) {
+        fail(reply, "\"count\" deve ir de 1 a 1000");
+        return;
+    }
+    r.count = (int)count;
+    if (c->chat.on_reaction)
+        c->chat.on_reaction(c->chat.ud, &r);
 }
 
 char *kk_control_handle_line(kk_control *c, const char *line)
@@ -230,6 +283,8 @@ char *kk_control_handle_line(kk_control *c, const char *line)
         fail(reply, "faltou \"type\"");
     else if (strcmp(type, "message") == 0)
         handle_message(c, req, reply);
+    else if (strcmp(type, "reaction") == 0)
+        handle_reaction(c, req, reply);
     else if (c->on_request)
         c->on_request(c->ud, type, req, reply);
     else

@@ -27,7 +27,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ```
 
 - Os vazamentos do fontconfig são esperados e estão em `tools/lsan.supp`.
-- `make lint` precisa do cppcheck (não instalado aqui); funções proibidas:
+- `make lint` roda o cppcheck (instalado aqui) e procura funções proibidas:
   strcpy, strcat, sprintf, vsprintf, gets.
 - Testes com arquivos de usuário: use `--users` apontando para um arquivo
   temporário já existente (vazio evita importar o SA), nunca o
@@ -72,10 +72,14 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
+| `src/chat.h` | eventos neutros de todas as plataformas: mensagem, emote, reação, `kk_chat_sink` |
+| `src/emoji.c`, `src/emoji_table.h` | acha emojis Unicode no texto (tabela gerada por `tools/gen_emoji_table.py`) |
+| `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG baixado + cache em `~/.cache/kikarinhas/emotes` |
+| `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
 | `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas e o ícone |
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
-| `config/sounds.c`, `config/audience.c` | abas Sons e Espectadores |
+| `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
 
 ## Convenções
 
@@ -93,5 +97,5 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 
 5. Twitch (IRC anônimo) e Odysee; podem nascer como bridges no socket.
 6. Camadas HTML (WPE WebKit), opcional.
-7. Extras que faltam: fundos e zips do SA, emojis como imagem, reações do
-   YouTube. (Mesa de som e espectadores já feitos.)
+7. Extras que faltam: fundos e zips do SA, emotes como imagem no balão,
+   emotes animados. (Mesa de som, espectadores e emote wall já feitos.)

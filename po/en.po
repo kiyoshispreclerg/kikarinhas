@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-02 09:54-0300\n"
+"POT-Creation-Date: 2026-10-02 13:15-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -17,45 +17,45 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: config/main.c:45
+#: config/main.c:46
 msgid "anyone"
 msgstr "anyone"
 
-#: config/main.c:45
+#: config/main.c:46
 msgid "members"
 msgstr "members"
 
-#: config/main.c:45
+#: config/main.c:46
 msgid "moderators"
 msgstr "moderators"
 
-#: config/main.c:45
+#: config/main.c:46
 msgid "owner"
 msgstr "owner"
 
-#: config/main.c:159
+#: config/main.c:160
 msgid "automatic"
 msgstr "automatic"
 
-#: config/main.c:302
+#: config/main.c:303
 msgid "Invalid command name: use a single word, no spaces."
 msgstr "Invalid command name: use a single word, no spaces."
 
-#: config/main.c:308
+#: config/main.c:309
 #, c-format
 msgid "A command !%s already exists."
 msgstr "A command !%s already exists."
 
-#: config/main.c:319
+#: config/main.c:320
 #, c-format
 msgid "Invalid cooldown: \"%s\" (seconds, 0 to 86400)."
 msgstr "Invalid cooldown: \"%s\" (seconds, 0 to 86400)."
 
-#: config/main.c:402
+#: config/main.c:403
 msgid "new"
 msgstr "new"
 
-#: config/main.c:418
+#: config/main.c:419
 msgid ""
 "New command: give it a name, pick the action and, for \"sound\", the sound "
 "in \"Data\"."
@@ -63,71 +63,71 @@ msgstr ""
 "New command: give it a name, pick the action and, for \"sound\", the sound "
 "in \"Data\"."
 
-#: config/main.c:427 config/main.c:445
+#: config/main.c:428 config/main.c:446
 msgid "Pick a command in the list."
 msgstr "Pick a command in the list."
 
-#: config/main.c:433
+#: config/main.c:434
 msgid "Default commands cannot be removed: untick \"Active\" to turn one off."
 msgstr "Default commands cannot be removed: untick \"Active\" to turn one off."
 
-#: config/main.c:453
+#: config/main.c:454
 msgid "Only default commands have default values."
 msgstr "Only default commands have default values."
 
-#: config/main.c:471
+#: config/main.c:472
 msgid "Shortcut \"!name\" for an avatar, accessory or palette;"
 msgstr "Shortcut \"!name\" for an avatar, accessory or palette;"
 
-#: config/main.c:475
+#: config/main.c:476
 msgid "cooldown"
 msgstr "cooldown"
 
-#: config/main.c:481
+#: config/main.c:482
 msgid "Help bubble (!help), even with message bubbles off;"
 msgstr "Help bubble (!help), even with message bubbles off;"
 
-#: config/main.c:486
+#: config/main.c:487
 msgid "random commands per bubble"
 msgstr "random commands per bubble"
 
-#: config/main.c:489
+#: config/main.c:490
 msgid "staying"
 msgstr "staying"
 
-#: config/main.c:515
+#: config/main.c:516
 msgid "Active"
 msgstr "Active"
 
-#: config/main.c:516 config/sounds.c:618
+#: config/main.c:517 config/sounds.c:618
 msgid "Command"
 msgstr "Command"
 
-#: config/main.c:517
+#: config/main.c:518
 msgid "Action"
 msgstr "Action"
 
-#: config/main.c:518
+#: config/main.c:519
 msgid "Data"
 msgstr "Data"
 
-#: config/main.c:519 config/sounds.c:619
+#: config/main.c:520 config/sounds.c:619
 msgid "Aliases"
 msgstr "Aliases"
 
-#: config/main.c:520
+#: config/main.c:521
 msgid "Cooldown (s)"
 msgstr "Cooldown (s)"
 
-#: config/main.c:521
+#: config/main.c:522
 msgid "Global (s)"
 msgstr "Global (s)"
 
-#: config/main.c:525
+#: config/main.c:526
 msgid "Who can"
 msgstr "Who can"
 
-#: config/main.c:536
+#: config/main.c:537
 msgid ""
 "<small>Double-click a cell to edit it. Aliases separated by commas. \"Data\" "
 "is the command's fixed argument (the sound of a !horn, the avatar of a !"
@@ -139,90 +139,90 @@ msgstr ""
 "pika); empty, whatever the person typed is used. The channel owner never "
 "waits.</small>"
 
-#: config/main.c:547 config/sounds.c:431
+#: config/main.c:548 config/sounds.c:431
 msgid "_Add"
 msgstr "_Add"
 
-#: config/main.c:548 config/sounds.c:665
+#: config/main.c:549 config/sounds.c:665
 msgid "_Remove"
 msgstr "_Remove"
 
-#: config/main.c:549
+#: config/main.c:550
 msgid "Restore _defaults"
 msgstr "Restore _defaults"
 
-#: config/main.c:758
+#: config/main.c:760
 #, c-format
 msgid "line %d: "
 msgstr "line %d: "
 
-#: config/main.c:777
+#: config/main.c:779
 #, c-format
 msgid "Could not write %s: %s"
 msgstr "Could not write %s: %s"
 
-#: config/main.c:782
+#: config/main.c:784
 #, c-format
 msgid "Saved to %s, but with a problem: %s"
 msgstr "Saved to %s, but with a problem: %s"
 
-#: config/main.c:784
+#: config/main.c:786
 #, c-format
 msgid "Saved to %s."
 msgstr "Saved to %s."
 
-#: config/main.c:818
+#: config/main.c:820
 #, c-format
 msgid "kikarinhas: not running"
 msgstr "kikarinhas: not running"
 
-#: config/main.c:824
+#: config/main.c:826
 #, c-format
 msgid "kikarinhas running: v%s"
 msgstr "kikarinhas running: v%s"
 
-#: config/main.c:826
+#: config/main.c:828
 #, c-format
 msgid "kikarinhas running"
 msgstr "kikarinhas running"
 
-#: config/main.c:850
+#: config/main.c:852
 msgid "Saved. The socket is off: restart kikarinhas to apply."
 msgstr "Saved. The socket is off: restart kikarinhas to apply."
 
-#: config/main.c:854
+#: config/main.c:856
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 msgstr "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 
-#: config/main.c:863
+#: config/main.c:865
 #, c-format
 msgid "Saved, but kikarinhas did not apply it: %s"
 msgstr "Saved, but kikarinhas did not apply it: %s"
 
-#: config/main.c:866
+#: config/main.c:868
 #, c-format
 msgid "Applied, with %d warning(s): %s"
 msgstr "Applied, with %d warning(s): %s"
 
-#: config/main.c:869
+#: config/main.c:871
 msgid "Saved and applied."
 msgstr "Saved and applied."
 
-#: config/main.c:879
+#: config/main.c:881
 #, c-format
 msgid "Kikarinhas v%s — settings"
 msgstr "Kikarinhas v%s — settings"
 
-#: config/main.c:890
+#: config/main.c:892
 msgid "Window"
 msgstr "Window"
 
-#: config/main.c:895
+#: config/main.c:897
 msgid "Mode"
 msgstr "Mode"
 
-#: config/main.c:896
+#: config/main.c:898
 msgid ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
@@ -230,31 +230,31 @@ msgstr ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 
-#: config/main.c:906
+#: config/main.c:908 config/wall.c:70
 msgid "Size"
 msgstr "Size"
 
-#: config/main.c:906
+#: config/main.c:908
 msgid "Only in obs mode."
 msgstr "Only in obs mode."
 
-#: config/main.c:907
+#: config/main.c:909
 msgid "Frames per second"
 msgstr "Frames per second"
 
-#: config/main.c:910
+#: config/main.c:912
 msgid "Avatars"
 msgstr "Avatars"
 
-#: config/main.c:911
+#: config/main.c:913
 msgid "Scale"
 msgstr "Scale"
 
-#: config/main.c:913
+#: config/main.c:915
 msgid "Ground"
 msgstr "Ground"
 
-#: config/main.c:914
+#: config/main.c:916
 msgid ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
@@ -262,11 +262,11 @@ msgstr ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
 
-#: config/main.c:915
+#: config/main.c:917
 msgid "Random"
 msgstr "Random"
 
-#: config/main.c:916
+#: config/main.c:918
 msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
@@ -274,71 +274,71 @@ msgstr ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 
-#: config/main.c:917
+#: config/main.c:919
 msgid "Always on screen"
 msgstr "Always on screen"
 
-#: config/main.c:918
+#: config/main.c:920
 msgid "Avatar names separated by commas."
 msgstr "Avatar names separated by commas."
 
-#: config/main.c:922
+#: config/main.c:924
 msgid "Everyone's avatar"
 msgstr "Everyone's avatar"
 
-#: config/main.c:923
+#: config/main.c:925
 msgid "Empty: a random one per person, always the same."
 msgstr "Empty: a random one per person, always the same."
 
-#: config/main.c:924
+#: config/main.c:926
 msgid "Stream Avatars folder"
 msgstr "Stream Avatars folder"
 
-#: config/main.c:926
+#: config/main.c:928
 msgid "The \"data\" folder; empty: searches the Steam libraries."
 msgstr "The \"data\" folder; empty: searches the Steam libraries."
 
-#: config/main.c:929
+#: config/main.c:931
 msgid "below"
 msgstr "below"
 
-#: config/main.c:930
+#: config/main.c:932
 msgid "above"
 msgstr "above"
 
-#: config/main.c:932
+#: config/main.c:934
 msgid "Avatar name"
 msgstr "Avatar name"
 
-#: config/main.c:933
+#: config/main.c:935
 msgid "Show names"
 msgstr "Show names"
 
-#: config/main.c:934
+#: config/main.c:936
 msgid "Above or below the avatar."
 msgstr "Above or below the avatar."
 
-#: config/main.c:935
+#: config/main.c:937
 msgid "Messages"
 msgstr "Messages"
 
-#: config/main.c:936
+#: config/main.c:938
 msgid "Show a speech bubble with the message"
 msgstr "Show a speech bubble with the message"
 
-#: config/main.c:938
+#: config/main.c:940
 msgid "Message bubble stays"
 msgstr "Message bubble stays"
 
-#: config/main.c:941
+#: config/main.c:943
 msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 msgstr "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 
-#: config/main.c:946
+#: config/main.c:948
 msgid "Name font"
 msgstr "Name font"
 
-#: config/main.c:947
+#: config/main.c:949
 msgid ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
@@ -346,19 +346,19 @@ msgstr ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
 
-#: config/main.c:952
+#: config/main.c:954
 msgid "Bubble font"
 msgstr "Bubble font"
 
-#: config/main.c:953
+#: config/main.c:955
 msgid "Empty: Sans. Applies to the next bubbles."
 msgstr "Empty: Sans. Applies to the next bubbles."
 
-#: config/main.c:955
+#: config/main.c:957
 msgid "Chat"
 msgstr "Chat"
 
-#: config/main.c:957
+#: config/main.c:959
 msgid ""
 "Link to the stream or channel, @handle or video id. With a channel, it waits "
 "for it to go live."
@@ -366,31 +366,31 @@ msgstr ""
 "Link to the stream or channel, @handle or video id. With a channel, it waits "
 "for it to go live."
 
-#: config/main.c:959
+#: config/main.c:961
 msgid "Fake chat (to test without a stream)"
 msgstr "Fake chat (to test without a stream)"
 
-#: config/main.c:960
+#: config/main.c:962
 msgid "Avatars at the same time"
 msgstr "Avatars at the same time"
 
-#: config/main.c:962
+#: config/main.c:964
 msgid "Leaves after"
 msgstr "Leaves after"
 
-#: config/main.c:963
+#: config/main.c:965
 msgid "Seconds of silence until the avatar leaves."
 msgstr "Seconds of silence until the avatar leaves."
 
-#: config/main.c:965
+#: config/main.c:967
 msgid "Print the messages in the terminal"
 msgstr "Print the messages in the terminal"
 
-#: config/main.c:966
+#: config/main.c:968
 msgid "People file"
 msgstr "People file"
 
-#: config/main.c:967
+#: config/main.c:969
 msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
@@ -398,39 +398,43 @@ msgstr ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 
-#: config/main.c:969
+#: config/main.c:971
 msgid "Control socket"
 msgstr "Control socket"
 
-#: config/main.c:971
+#: config/main.c:973
 msgid "For bridges and the Apply button; empty: the default; off: disabled."
 msgstr "For bridges and the Apply button; empty: the default; off: disabled."
 
-#: config/main.c:974
+#: config/main.c:976
 msgid "Commands"
 msgstr "Commands"
 
-#: config/main.c:976
+#: config/main.c:978
 msgid "Sounds"
 msgstr "Sounds"
 
-#: config/main.c:978
+#: config/main.c:980
+msgid "Emote wall"
+msgstr "Emote wall"
+
+#: config/main.c:982
 msgid "Viewers"
 msgstr "Viewers"
 
-#: config/main.c:997
+#: config/main.c:1001
 msgid "_Close"
 msgstr "_Close"
 
-#: config/main.c:998
+#: config/main.c:1002
 msgid "_Save"
 msgstr "_Save"
 
-#: config/main.c:999
+#: config/main.c:1003
 msgid "Save and _apply"
 msgstr "Save and _apply"
 
-#: config/main.c:1043
+#: config/main.c:1047
 #, c-format
 msgid ""
 "Usage: kikarinhas-config [FILE]\n"
@@ -441,17 +445,17 @@ msgstr ""
 "       kikarinhas-config -V, --version\n"
 "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
 
-#: config/main.c:1051
+#: config/main.c:1055
 #, c-format
 msgid "kikarinhas-config: no $HOME\n"
 msgstr "kikarinhas-config: no $HOME\n"
 
-#: config/main.c:1058
+#: config/main.c:1062
 #, c-format
 msgid "kikarinhas-config: could not read %s: %s\n"
 msgstr "kikarinhas-config: could not read %s: %s\n"
 
-#: config/main.c:1063
+#: config/main.c:1067
 msgid ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
@@ -459,7 +463,7 @@ msgstr ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
 
-#: config/main.c:1072
+#: config/main.c:1076
 #, c-format
 msgid "kikarinhas-config: out of memory\n"
 msgstr "kikarinhas-config: out of memory\n"
@@ -640,6 +644,112 @@ msgstr "Level _all"
 #: config/sounds.c:680
 msgid "_Import from Stream Avatars"
 msgstr "_Import from Stream Avatars"
+
+#: config/wall.c:17
+msgid "Rise in waves"
+msgstr "Rise in waves"
+
+#: config/wall.c:18
+msgid "Bounce off the edges (DVD logo)"
+msgstr "Bounce off the edges (DVD logo)"
+
+#: config/wall.c:19
+msgid "Fly across the screen"
+msgstr "Fly across the screen"
+
+#: config/wall.c:55
+msgid "Emoji and emotes from the chat fly over the stage"
+msgstr "Emoji and emotes from the chat fly over the stage"
+
+#: config/wall.c:57
+msgid ""
+"Common emoji come from the colour emoji font (Noto Color Emoji); YouTube "
+"member emotes are downloaded and kept in ~/.cache/kikarinhas/emotes."
+msgstr ""
+"Common emoji come from the colour emoji font (Noto Color Emoji); YouTube "
+"member emotes are downloaded and kept in ~/.cache/kikarinhas/emotes."
+
+#: config/wall.c:65
+msgid "Effect"
+msgstr "Effect"
+
+#: config/wall.c:68
+msgid "On screen for"
+msgstr "On screen for"
+
+#: config/wall.c:68 config/wall.c:79
+msgid "seconds"
+msgstr "seconds"
+
+#: config/wall.c:70
+msgid "pixels"
+msgstr "pixels"
+
+#: config/wall.c:73
+msgid "Per message"
+msgstr "Per message"
+
+#: config/wall.c:73
+msgid "emoji or more"
+msgstr "emoji or more"
+
+#: config/wall.c:74
+msgid "A message with at least this many sends all of them up. 0: rule off."
+msgstr "A message with at least this many sends all of them up. 0: rule off."
+
+#: config/wall.c:77
+msgid "Combo"
+msgstr "Combo"
+
+#: config/wall.c:78
+msgid "messages with the same emoji within"
+msgstr "messages with the same emoji within"
+
+#: config/wall.c:80
+msgid ""
+"Starts a combo: those go up together, and so does every further message with "
+"it while it lasts. 0: rule off. One rule is enough; with both off, every "
+"emoji goes up."
+msgstr ""
+"Starts a combo: those go up together, and so does every further message "
+"with it while it lasts. 0: rule off. One rule is enough; with both off, "
+"every emoji goes up."
+
+#: config/wall.c:84
+msgid "At most"
+msgstr "At most"
+
+#: config/wall.c:84
+msgid "per message"
+msgstr "per message"
+
+#: config/wall.c:86
+msgid "on screen at once"
+msgstr "on screen at once"
+
+#: config/wall.c:88
+msgid "YouTube reactions (the floating hearts)"
+msgstr "YouTube reactions (the floating hearts)"
+
+#: config/wall.c:90
+msgid "Reactions"
+msgstr "Reactions"
+
+#: config/wall.c:90
+msgid "one icon every"
+msgstr "one icon every"
+
+#: config/wall.c:91
+msgid "reactions"
+msgstr "reactions"
+
+#: config/wall.c:95
+msgid "Never show"
+msgstr "Never show"
+
+#: config/wall.c:96
+msgid "Emoji, shortcuts (:_hello:) or emote names, separated by commas."
+msgstr "Emoji, shortcuts (:_hello:) or emote names, separated by commas."
 
 #: config/audience.c:55
 msgid "%Y-%m-%d %H:%M"

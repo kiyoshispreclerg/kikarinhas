@@ -326,6 +326,9 @@ static int n_msgs;
 static char msg_text[256], msg_name[64], msg_platform[32];
 static unsigned msg_badges;
 static kk_msg_kind msg_kind;
+static int n_reactions, reaction_count, msg_emotes;
+static char reaction_text[32], reaction_url[128], emote_name[32];
+static size_t emote_start, emote_len;
 
 static void on_msg(void *ud, const kk_chat_msg *m)
 {
@@ -336,7 +339,25 @@ static void on_msg(void *ud, const kk_chat_msg *m)
     snprintf(msg_platform, sizeof msg_platform, "%s", m->platform);
     msg_badges = m->badges;
     msg_kind = m->kind;
+    msg_emotes = m->n_emotes;
+    if (m->n_emotes) {
+        snprintf(emote_name, sizeof emote_name, "%s", m->emotes[0].name);
+        emote_start = m->emotes[0].start;
+        emote_len = m->emotes[0].len;
+    }
 }
+
+
+static void on_reaction(void *ud, const kk_reaction *r)
+{
+    (void)ud;
+    n_reactions++;
+    reaction_count = r->count;
+    snprintf(reaction_text, sizeof reaction_text, "%s", r->emote.text ? r->emote.text : "");
+    snprintf(reaction_url, sizeof reaction_url, "%s", r->emote.url ? r->emote.url : "");
+}
+
+static const kk_chat_sink bridge = {on_msg, on_reaction, NULL};
 
 static int n_reloads;
 
@@ -365,7 +386,7 @@ static const char *ask(kk_control *c, const char *line)
 
 TEST(control_messages_from_bridges)
 {
-    kk_control *c = kk_control_open(NULL, on_msg, on_req, NULL);
+    kk_control *c = kk_control_open(NULL, &bridge, on_req, NULL);
     CHECK(c);
     n_msgs = 0;
     CHECK_STR_EQ(ask(c, "{\"type\":\"message\",\"platform\":\"twitch\",\"user_id\":\"42\","
@@ -393,9 +414,45 @@ TEST(control_messages_from_bridges)
     kk_control_close(c);
 }
 
+TEST(control_emotes_and_reactions)
+{
+    kk_control *c = kk_control_open(NULL, &bridge, on_req, NULL);
+    CHECK(c);
+    n_msgs = n_reactions = 0;
+    /* Image emotes: non-https and out-of-text ranges are dropped/ignored. */
+    CHECK_STR_EQ(ask(c, "{\"type\":\"message\",\"platform\":\"twitch\",\"user_id\":\"1\","
+                        "\"text\":\"oi Kappa\",\"emotes\":["
+                        "{\"id\":\"25\",\"name\":\"Kappa\",\"url\":\"https://e.invalid/25.png\","
+                        "\"start\":3,\"len\":5},"
+                        "{\"id\":\"9\",\"url\":\"file:///etc/passwd\"},"
+                        "{\"name\":\"x\",\"url\":\"https://e.invalid/x.png\",\"start\":7,\"len\":9}]}"),
+                 "{\"ok\":true}");
+    CHECK_INT_EQ(n_msgs, 1);
+    CHECK_INT_EQ(msg_emotes, 2);
+    CHECK_STR_EQ(emote_name, "Kappa");
+    CHECK_INT_EQ(emote_start, 3);
+    CHECK_INT_EQ(emote_len, 5);
+
+    CHECK_STR_EQ(ask(c, "{\"type\":\"reaction\",\"emoji\":\"❤\",\"count\":4}"),
+                 "{\"ok\":true}");
+    CHECK_INT_EQ(n_reactions, 1);
+    CHECK_STR_EQ(reaction_text, "❤");
+    CHECK_INT_EQ(reaction_count, 4);
+    CHECK_STR_EQ(ask(c, "{\"type\":\"reaction\",\"url\":\"https://e.invalid/h.png\"}"),
+                 "{\"ok\":true}");
+    CHECK_INT_EQ(n_reactions, 2);
+    CHECK_INT_EQ(reaction_count, 1);
+    CHECK_STR_EQ(reaction_url, "https://e.invalid/h.png");
+    CHECK_STR_HAS(ask(c, "{\"type\":\"reaction\"}"), "\"ok\":false");
+    CHECK_STR_HAS(ask(c, "{\"type\":\"reaction\",\"emoji\":\"❤\",\"count\":0}"),
+                  "\"ok\":false");
+    CHECK_INT_EQ(n_reactions, 2);
+    kk_control_close(c);
+}
+
 TEST(control_requests)
 {
-    kk_control *c = kk_control_open(NULL, on_msg, on_req, NULL);
+    kk_control *c = kk_control_open(NULL, &bridge, on_req, NULL);
     n_reloads = 0;
     CHECK_STR_EQ(ask(c, "{\"type\":\"reload\"}"), "{\"ok\":true,\"warnings\":[]}");
     CHECK_STR_EQ(ask(c, "  reload"), "{\"ok\":true,\"warnings\":[]}");
@@ -437,10 +494,10 @@ TEST(control_socket_end_to_end)
     char path[KK_PATH_MAX];
     snprintf(path, sizeof path, "%s/k.sock", dir);
 
-    kk_control *c = kk_control_open(path, on_msg, on_req, NULL);
+    kk_control *c = kk_control_open(path, &bridge, on_req, NULL);
     CHECK(c);
     /* A second instance must not steal the socket. */
-    CHECK(kk_control_open(path, on_msg, on_req, NULL) == NULL);
+    CHECK(kk_control_open(path, &bridge, on_req, NULL) == NULL);
 
     int fd = connect_to(path);
     CHECK(fd >= 0);
@@ -482,14 +539,14 @@ TEST(control_socket_end_to_end)
     kk_pathf(sa.sun_path, sizeof sa.sun_path, "%s", path);
     CHECK(bind(stale, (struct sockaddr *)&sa, sizeof sa) == 0);
     close(stale);
-    c = kk_control_open(path, on_msg, on_req, NULL);
+    c = kk_control_open(path, &bridge, on_req, NULL);
     CHECK(c);
     kk_control_close(c);
 
     /* Never replaces something that is not a socket. */
     FILE *f = fopen(path, "w");
     fclose(f);
-    CHECK(kk_control_open(path, on_msg, on_req, NULL) == NULL);
+    CHECK(kk_control_open(path, &bridge, on_req, NULL) == NULL);
     CHECK(kk_file_exists(path));
     remove(path);
     rmdir(dir);
@@ -509,6 +566,7 @@ int main(void)
     RUN(config_fonts);
     RUN(config_load_file);
     RUN(control_messages_from_bridges);
+    RUN(control_emotes_and_reactions);
     RUN(control_requests);
     RUN(control_socket_end_to_end);
     return harness_report();
