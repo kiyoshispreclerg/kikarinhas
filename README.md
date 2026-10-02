@@ -87,13 +87,15 @@ for diferente do padrão.
 
 Na aba Avatares, `show_names`/`name_position` (embaixo ou em cima do
 avatar) e `show_bubbles` ligam ou desligam o nome e o balão com a mensagem
-de cada um.
+de cada um. `name_font`/`name_size` e `bubble_font`/`bubble_size` trocam a
+fonte (família e estilo do Pango, como `Sans Bold`) e o tamanho em pontos do
+nome e do balão.
 
 Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
 --reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
 tempo de sumiço, fps, chat de mentira, `verbose`, o alvo do YouTube,
-nomes/posição e balões mudam na hora. Tamanho, modo, escala, chão, avatares
-fixos, pasta do Stream Avatars, arquivo de pessoas e socket só mudam
+nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo, escala, chão, avatares
+fixos, fonte dos nomes, pasta do Stream Avatars, arquivo de pessoas e socket só mudam
 reiniciando, e o log avisa.
 Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
 

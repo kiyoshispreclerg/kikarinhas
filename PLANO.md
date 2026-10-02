@@ -315,6 +315,13 @@ data/         avatar padrão original, exemplo de .ini
      `show_bubbles` só evita criar balão (`render_bubble` devolve NULL): um
      balão já aberto quando a opção é desligada termina sozinho, não some
      na hora.
+   - **Fontes**: `[avatars] name_font`, `name_size`, `bubble_font` e
+     `bubble_size` (família/estilo do Pango + pontos; padrão `Sans Bold` 11
+     e `Sans` 10), também na aba Avatares. O balão aplica no reload a partir
+     do próximo balão (`kk_stage_set_bubble_font`). O nome só muda
+     reiniciando: a etiqueta é renderizada uma vez por avatar e o `ground`
+     automático é medido com a fonte dela; o reload avisa e mantém a fonte
+     em uso (mesmo esquema de `scale` e `ground`).
    - **Versão**: `config.mk` em 0.1.0; `-V`/`--version` também no
      `kikarinhas-config` (antes só o `kikarinhas` tinha). O rodapé do
      configurador ganhou um rótulo fixo (separado da linha de status, que

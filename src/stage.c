@@ -11,11 +11,13 @@
 
 #include "log.h"
 
-#define TAG_FONT "Sans Bold 11"
+#define TAG_FONT "Sans Bold"
+#define TAG_SIZE 11.0
 #define TAG_OUTLINE 3.0
 #define TAG_ROWS 2
 #define TAG_SPACING 4
-#define BUBBLE_FONT "Sans 10"
+#define BUBBLE_FONT "Sans"
+#define BUBBLE_SIZE 10.0
 #define BUBBLE_WIDTH 220 /* max text width, px */
 #define BUBBLE_LINES 4
 #define BUBBLE_PAD 6.0
@@ -157,12 +159,25 @@ static double bubble_seconds(const char *text)
 
 /* ---- setup --------------------------------------------------------------- */
 
+/* family may be NULL/empty (use dflt); size <= 0 uses dflt_size. */
+static PangoFontDescription *make_font(const char *family, const char *dflt,
+                                       double size, double dflt_size)
+{
+    PangoFontDescription *f = pango_font_description_from_string(
+        family && family[0] ? family : dflt);
+    if (f)
+        pango_font_description_set_size(
+            f, (int)lround((size > 0 ? size : dflt_size) * PANGO_SCALE));
+    return f;
+}
+
 int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
                   const kk_stage_config *cfg)
 {
     memset(s, 0, sizeof *s);
     s->lib = lib;
     s->cfg = *cfg;
+    s->cfg.name_font = s->cfg.bubble_font = NULL; /* only used below */
     kk_rng_seed(&s->rng, cfg->seed);
 
     size_t n = lib->count > 0 ? (size_t)lib->count : 1;
@@ -183,8 +198,11 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
     }
 
     s->pango = pango_font_map_create_context(pango_cairo_font_map_get_default());
-    s->tag_font = pango_font_description_from_string(TAG_FONT);
-    s->bubble_font = pango_font_description_from_string(BUBBLE_FONT);
+    s->tag_font = make_font(cfg->name_font, TAG_FONT, cfg->name_size, TAG_SIZE);
+    s->bubble_font = make_font(cfg->bubble_font, BUBBLE_FONT, cfg->bubble_size,
+                               BUBBLE_SIZE);
+    if (!s->tag_font || !s->bubble_font)
+        return -1;
 
     if (s->cfg.ground_margin < 0) {
         if (s->cfg.show_names && !s->cfg.name_above) {
@@ -198,6 +216,15 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
         }
     }
     return 0;
+}
+
+void kk_stage_set_bubble_font(kk_stage *s, const char *font, double size)
+{
+    PangoFontDescription *f = make_font(font, BUBBLE_FONT, size, BUBBLE_SIZE);
+    if (!f)
+        return;
+    pango_font_description_free(s->bubble_font);
+    s->bubble_font = f;
 }
 
 void kk_stage_free(kk_stage *s)

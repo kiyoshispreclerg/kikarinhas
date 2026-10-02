@@ -209,6 +209,8 @@ void kk_config_free(kk_config *c)
         free(c->show[i]);
     free(c->default_avatar);
     free(c->sa_dir);
+    free(c->name_font);
+    free(c->bubble_font);
     free(c->youtube);
     free(c->users);
     free(c->socket);
@@ -241,6 +243,8 @@ void kk_config_defaults(kk_config *c)
         .sound_commands = true,
         .show_names = true,
         .show_bubbles = true,
+        .name_size = 11,
+        .bubble_size = 10,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -256,6 +260,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     *dst = *src;
     dst->default_avatar = dst->sa_dir = dst->youtube = dst->users =
         dst->socket = NULL;
+    dst->name_font = dst->bubble_font = NULL;
     dst->commands = NULL;
     dst->n_commands = 0;
     dst->sound_device = NULL;
@@ -267,6 +272,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
         ok = kk_config_set_str(&dst->show[i], src->show[i]) && ok;
     ok = kk_config_set_str(&dst->default_avatar, src->default_avatar) && ok;
     ok = kk_config_set_str(&dst->sa_dir, src->sa_dir) && ok;
+    ok = kk_config_set_str(&dst->name_font, src->name_font) && ok;
+    ok = kk_config_set_str(&dst->bubble_font, src->bubble_font) && ok;
     ok = kk_config_set_str(&dst->youtube, src->youtube) && ok;
     ok = kk_config_set_str(&dst->users, src->users) && ok;
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
@@ -586,6 +593,14 @@ static void apply_avatars(kk_config *c, const warner *w)
             bad_value(w, "below ou above");
     } else if (key_is(w, "show_bubbles"))
         get_bool(w, &c->show_bubbles);
+    else if (key_is(w, "name_font"))
+        get_str(w, &c->name_font);
+    else if (key_is(w, "name_size"))
+        get_double(w, &c->name_size, 4, 200);
+    else if (key_is(w, "bubble_font"))
+        get_str(w, &c->bubble_font);
+    else if (key_is(w, "bubble_size"))
+        get_double(w, &c->bubble_size, 4, 200);
     else
         unknown_key(w);
 }

@@ -632,6 +632,9 @@ static bool reload(app *a, cJSON *warnings)
         {str_differs(old->sa_dir, cfg.sa_dir), "sa_dir"},
         {str_differs(old->users, cfg.users), "users"},
         {str_differs(old->socket, cfg.socket), "socket"},
+        {str_differs(old->name_font, cfg.name_font) ||
+             old->name_size != cfg.name_size,
+         "name_font/name_size"},
     };
     for (int i = 0; old->n_show == cfg.n_show && i < cfg.n_show; i++)
         restart[5].changed |= strcmp(old->show[i], cfg.show[i]) != 0;
@@ -659,6 +662,8 @@ static bool reload(app *a, cJSON *warnings)
     KEEP(sa_dir);
     KEEP(users);
     KEEP(socket);
+    KEEP(name_font);
+    KEEP(name_size);
     for (int i = 0; i < KK_CONFIG_MAX_SHOW; i++)
         KEEP(show[i]);
     KEEP(n_show);
@@ -681,6 +686,7 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.show_names = cfg.show_names;
     a->stage->cfg.name_above = cfg.name_above;
     a->stage->cfg.show_bubbles = cfg.show_bubbles;
+    kk_stage_set_bubble_font(a->stage, cfg.bubble_font, cfg.bubble_size);
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
 
@@ -1009,6 +1015,10 @@ int main(int argc, char **argv)
         .show_names = a.cfg.show_names,
         .name_above = a.cfg.name_above,
         .show_bubbles = a.cfg.show_bubbles,
+        .name_font = a.cfg.name_font,
+        .name_size = a.cfg.name_size,
+        .bubble_font = a.cfg.bubble_font,
+        .bubble_size = a.cfg.bubble_size,
     };
     kk_stage stage;
     a.http = kk_http_new();

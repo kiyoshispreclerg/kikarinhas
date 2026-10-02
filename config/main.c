@@ -113,6 +113,16 @@ GtkWidget *entry(const char *text)
     return w;
 }
 
+/* A font family entry followed by its size in points. */
+static GtkWidget *font_row(GtkWidget *family, GtkWidget *size)
+{
+    GtkWidget *box = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(box), family, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), size, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), gtk_label_new("pt"), FALSE, FALSE, 0);
+    return box;
+}
+
 /* A check box "automático" next to a spin button it disables. */
 static void on_auto_toggled(GtkToggleButton *b, gpointer spinner)
 {
@@ -656,6 +666,12 @@ static void collect(editor *e)
         gtk_combo_box_get_active(GTK_COMBO_BOX(e->name_position)) == 1 ? "above" : "below",
         d.name_above ? "above" : "below");
     put_bool(e, "avatars", "show_bubbles", e->show_bubbles, d.show_bubbles);
+    put(e, "avatars", "name_font", text_of(e->name_font), NULL);
+    put_num(e, "avatars", "name_size",
+            gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->name_size)), d.name_size);
+    put(e, "avatars", "bubble_font", text_of(e->bubble_font), NULL);
+    put_num(e, "avatars", "bubble_size",
+            gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->bubble_size)), d.bubble_size);
     /* [chat] */
     put(e, "chat", "youtube", text_of(e->youtube), NULL);
     put_bool(e, "chat", "demo", e->demo, d.demo);
@@ -890,6 +906,18 @@ static void build(editor *e, const kk_config *cfg)
         "Em cima ou embaixo do avatar.");
     e->show_bubbles = row(t, "Mensagens",
                           check("Mostrar balão com a mensagem", cfg->show_bubbles), NULL);
+
+    e->name_font = entry(cfg->name_font);
+    e->name_size = spin(4, 200, 1, 1);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->name_size), cfg->name_size);
+    row(t, "Fonte do nome", font_row(e->name_font, e->name_size),
+        "Família e estilo do Pango (ex.: Sans Bold) e tamanho em pontos; vazio: Sans Bold. "
+        "Só muda reiniciando o kikarinhas.");
+    e->bubble_font = entry(cfg->bubble_font);
+    e->bubble_size = spin(4, 200, 1, 1);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->bubble_size), cfg->bubble_size);
+    row(t, "Fonte do balão", font_row(e->bubble_font, e->bubble_size),
+        "Vazio: Sans. Vale para os próximos balões.");
 
     t = page(nb, "Chat");
     e->youtube = row(t, "YouTube", entry(cfg->youtube),

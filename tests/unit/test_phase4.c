@@ -276,6 +276,27 @@ TEST(config_commands_register)
     kk_config_free(&c);
 }
 
+TEST(config_fonts)
+{
+    kk_config c = load_text("[avatars]\nname_font = Serif Italic\nname_size = 14\n"
+                            "bubble_size = 12.5\n");
+    CHECK_INT_EQ(n_warnings, 0);
+    CHECK_STR_EQ(c.name_font, "Serif Italic");
+    CHECK(c.name_size == 14);
+    CHECK(c.bubble_font == NULL);
+    CHECK(c.bubble_size == 12.5);
+    kk_config copy;
+    CHECK(kk_config_copy(&copy, &c));
+    CHECK_STR_EQ(copy.name_font, "Serif Italic");
+    kk_config_free(&copy);
+    kk_config_free(&c);
+
+    c = load_text("[avatars]\nname_size = 1\n");
+    CHECK_INT_EQ(n_warnings, 1); /* below the 4 pt minimum */
+    CHECK(c.name_size == 11);
+    kk_config_free(&c);
+}
+
 TEST(config_load_file)
 {
     char dir[] = "/tmp/kk-test-XXXXXX";
@@ -485,6 +506,7 @@ int main(void)
     RUN(config_commands);
     RUN(every_config_action_has_a_handler);
     RUN(config_commands_register);
+    RUN(config_fonts);
     RUN(config_load_file);
     RUN(control_messages_from_bridges);
     RUN(control_requests);

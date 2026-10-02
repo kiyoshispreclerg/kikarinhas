@@ -28,6 +28,10 @@ typedef struct {
     bool show_names;   /* name tag under (or over) each avatar */
     bool name_above;   /* false: below the feet; true: above the head */
     bool show_bubbles; /* speech bubble with the chat message */
+    /* Pango family and style ("Sans Bold") plus size in points; NULL or 0
+     * keep the defaults. Copied, so the strings may go away. */
+    const char *name_font, *bubble_font;
+    double name_size, bubble_size;
 } kk_stage_config;
 
 /* A sheet recoloured with one of its avatar's palettes. */
@@ -71,6 +75,11 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
                   const kk_stage_config *cfg);
 void kk_stage_free(kk_stage *s);
 void kk_stage_resize(kk_stage *s, int width, int height);
+
+/* Changes the font of the bubbles drawn from now on (open ones keep theirs).
+ * Name tags are rendered once and the ground margin is measured from them,
+ * so their font only comes from kk_stage_init. */
+void kk_stage_set_bubble_font(kk_stage *s, const char *font, double size);
 
 /* Loads (once) the sheet of def at the stage scale; NULL if unusable. */
 const kk_sheet *kk_stage_sheet(kk_stage *s, const kk_sa_avatar *def);
