@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
 #include <time.h>
@@ -558,6 +560,7 @@ typedef struct {
     kk_control *control;  /* NULL if off */
     kk_soundboard *sounds;
     int timer_fd, signal_fd;
+    pid_t config_pid; /* kikarinhas-config, while it is running */
     uint64_t seed;
     bool quit;
 } app;
@@ -781,6 +784,50 @@ static bool handle_signals(app *a)
     return true;
 }
 
+/* Right click on the window: opens kikarinhas-config on the same .ini. It
+ * is looked up next to this executable first, then in the PATH. Only one at
+ * a time. */
+static void open_config(app *a)
+{
+    if (a->config_pid > 0) {
+        if (waitpid(a->config_pid, NULL, WNOHANG) == 0)
+            return; /* still open */
+        a->config_pid = 0;
+    }
+    char self[KK_PATH_MAX], sibling[KK_PATH_MAX] = "";
+    ssize_t n = readlink("/proc/self/exe", self, sizeof self - 1);
+    if (n > 0) {
+        self[n] = '\0';
+        char *slash = strrchr(self, '/');
+        if (slash) {
+            *slash = '\0';
+            if (!kk_pathf(sibling, sizeof sibling, "%s/kikarinhas-config", self) ||
+                access(sibling, X_OK) != 0)
+                sibling[0] = '\0';
+        }
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        kk_log_error("não consegui abrir o configurador: %s", strerror(errno));
+        return;
+    }
+    if (pid == 0) {
+        /* Undo what the main loop set up: blocked signals (signalfd) and
+         * the descriptors (X, sockets, audio). */
+        sigset_t none;
+        sigemptyset(&none);
+        sigprocmask(SIG_SETMASK, &none, NULL);
+        for (int fd = 3; fd < 1024; fd++)
+            close(fd);
+        char *argv[] = {"kikarinhas-config", (char *)a->config_path, NULL};
+        if (sibling[0])
+            execv(sibling, argv);
+        execvp("kikarinhas-config", argv);
+        _exit(127);
+    }
+    a->config_pid = pid;
+}
+
 #define MAX_FDS 32
 
 static void run(app *a)
@@ -796,6 +843,8 @@ static void run(app *a)
         kk_window_dispatch(a->win, &ev);
         if (ev.quit)
             return;
+        if (ev.open_config)
+            open_config(a);
         if (ev.resized)
             kk_stage_resize(a->stage, a->win->width, a->win->height);
         if (ev.redraw)

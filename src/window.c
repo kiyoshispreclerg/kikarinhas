@@ -223,7 +223,7 @@ int kk_window_open(kk_window *w, kk_mode mode, int width, int height)
         .colormap = w->cmap,
         .background_pixel = 0, /* fully transparent */
         .border_pixel = 0,     /* required with a non-default visual */
-        .event_mask = ExposureMask | StructureNotifyMask,
+        .event_mask = ExposureMask | StructureNotifyMask | ButtonPressMask,
         .override_redirect = mode == KK_MODE_DESKTOP,
     };
     w->win = XCreateWindow(w->dpy, root, x, y, (unsigned)width,
@@ -312,6 +312,10 @@ void kk_window_dispatch(kk_window *w, kk_window_events *ev)
             if (e.xclient.message_type == w->wm_protocols &&
                 (Atom)e.xclient.data.l[0] == w->wm_delete)
                 ev->quit = true;
+            break;
+        case ButtonPress:
+            if (e.xbutton.button == Button3)
+                ev->open_config = true;
             break;
         case DestroyNotify:
             ev->quit = true;

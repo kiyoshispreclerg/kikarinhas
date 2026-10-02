@@ -88,6 +88,9 @@ build/kikarinhas --check                # checks every spritesheet
 | `--socket PATH\|off` | control socket (default `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | asks the running kikarinhas to reread its configuration and exits |
 
+Right-click the window (`obs` mode) to open `kikarinhas-config` on the same
+`.ini`; only one is opened at a time.
+
 To quit: close the window or press Ctrl+C. In `desktop` mode, which does not
 receive clicks, use `pkill kikarinhas` or
 `echo quit | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/kikarinhas.sock`.

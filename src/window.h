@@ -44,6 +44,7 @@ typedef struct {
     bool quit;    /* window closed by the user or the WM */
     bool redraw;  /* exposed or resized: everything must be repainted */
     bool resized; /* width/height changed (buffer already recreated) */
+    bool open_config; /* right click on the window */
 } kk_window_events;
 
 int kk_window_open(kk_window *w, kk_mode mode, int width, int height);

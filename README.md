@@ -88,6 +88,9 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `--socket CAMINHO\|off` | socket de controle (padrão `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | pede ao kikarinhas aberto para reler a configuração e sai |
 
+Clique com o botão direito na janela (modo `obs`) para abrir o
+`kikarinhas-config` com o mesmo `.ini`; só abre um por vez.
+
 Para sair: feche a janela ou use Ctrl+C. No modo `desktop`, que não recebe
 cliques, use `pkill kikarinhas` ou `echo quit | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/kikarinhas.sock`.
 
