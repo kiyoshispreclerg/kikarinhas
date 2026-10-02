@@ -57,11 +57,13 @@ $(BUILD)/locale/%/LC_MESSAGES/kikarinhas.mo: po/%.po
 	@mkdir -p $(@D)
 	msgfmt -c -o $@ $<
 
-# Rebuilds the template from the sources and merges it into every .po.
+# Rebuilds the template from the sources and merges it into every .po. No
+# --package-version: config.mk's VERSION is the only place the version
+# lives, so bumping it doesn't touch the .po files too.
 pot update-po:
 	xgettext --from-code=UTF-8 -L C --keyword=_ --keyword=N_ --keyword=ngettext:1,2 \
 		--add-comments=TRANSLATORS -f po/POTFILES.in -o po/kikarinhas.pot \
-		--package-name=kikarinhas --package-version=$(VERSION) \
+		--package-name=kikarinhas \
 		--copyright-holder="Kikarinhas contributors" --msgid-bugs-address=""
 	for l in $(LINGUAS); do msgmerge -q -U --backup=none po/$$l.po po/kikarinhas.pot; done
 

@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: kikarinhas 0.1.0\n"
+"Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-02 14:21-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"

@@ -415,7 +415,9 @@ data/         avatar padrão original, exemplo de .ini
      de data da aba Espectadores também é traduzida (`%Y-%m-%d` em inglês).
      Clique direito na janela abre o configurador (`open_config` em
      `main.c`).
-   - **Versão**: `config.mk` em 0.1.0; `-V`/`--version` também no
+   - **Versão**: `config.mk` é o único lugar com o número (`VERSION`, hoje
+     0.2.0); `make pot` não grava mais em `--package-version`, então os
+     `.po` não duplicam. `-V`/`--version` também no
      `kikarinhas-config` (antes só o `kikarinhas` tinha). O rodapé do
      configurador ganhou um rótulo fixo (separado da linha de status, que
      muda a cada ação) com a versão do kikarinhas do outro lado do socket,
