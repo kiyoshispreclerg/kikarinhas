@@ -1,7 +1,7 @@
 # Kikarinhas build configuration. Override any variable on the command line,
 # e.g. `make CC=clang PREFIX=/usr`.
 
-VERSION = 0.2.0
+VERSION = 0.2.1
 
 PREFIX  ?= /usr/local
 BINDIR  ?= $(PREFIX)/bin

@@ -11,7 +11,7 @@ root=$(pwd)
 out=${1:-$root/dist}
 version=$(sed -n 's/^VERSION *= *//p' config.mk)
 arch=$(dpkg --print-architecture)
-maint=${DEB_MAINTAINER:-Kikarinhas contributors <noreply@github.com>}
+maint=${DEB_MAINTAINER:-Kiyoshi Spreclerg <kiyoshi_pip@protonmail.com>}
 
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
