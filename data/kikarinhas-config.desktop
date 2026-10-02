@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Kikarinhas Settings
+Name[pt_BR]=Configurações do Kikarinhas
+GenericName=Kikarinhas configuration
+GenericName[pt_BR]=Configurador do Kikarinhas
+Comment=Configure Kikarinhas, its sound board and viewers
+Comment[pt_BR]=Configura o Kikarinhas, a mesa de som e os espectadores
+Exec=kikarinhas-config
+Icon=kikarinhas
+Terminal=false
+Categories=Settings;GTK;
+Keywords=kikarinhas;stream;live;chat;avatar;settings;configuração;
+StartupNotify=true

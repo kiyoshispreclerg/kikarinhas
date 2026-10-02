@@ -96,10 +96,16 @@ install: $(BUILD)/kikarinhas
 	install -Dm755 $< $(DESTDIR)$(BINDIR)/kikarinhas
 	$(if $(CONFIG_BIN),install -Dm755 $(CONFIG_BIN) $(DESTDIR)$(BINDIR)/kikarinhas-config)
 	install -Dm644 data/kikarinhas.ini $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
+	install -Dm644 data/kikarinhas.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop
+	$(if $(CONFIG_BIN),install -Dm644 data/kikarinhas-config.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop)
+	install -Dm644 data/kikarinhas.svg $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/kikarinhas $(DESTDIR)$(BINDIR)/kikarinhas-config
 	rm -f $(DESTDIR)$(PREFIX)/share/doc/kikarinhas/kikarinhas.ini
+	rm -f $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop \
+	      $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop \
+	      $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg
 
 lint:
 	@if grep -nE '\b(strcpy|strcat|sprintf|vsprintf|gets)[[:space:]]*\(' src/*.c src/*.h tests/unit/*.c config/*.c; then \

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Kikarinhas
+GenericName=Chat avatars
+GenericName[pt_BR]=Avatares do chat
+Comment=Chat avatars in a transparent window for OBS
+Comment[pt_BR]=Avatares do chat numa janela transparente para o OBS
+Exec=kikarinhas
+Icon=kikarinhas
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=stream;live;chat;avatar;obs;youtube;stream avatars;
+StartupNotify=false
