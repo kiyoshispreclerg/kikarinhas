@@ -959,9 +959,12 @@ static void build(editor *e, const kk_config *cfg)
     t = page(nb, _("Chat"));
     e->youtube = row(t, "YouTube", entry(cfg->youtube),
                      _("Link to the stream or channel, @handle or video id. With a channel, "
-                       "it waits for it to go live."));
+                       "it waits for it to go live. Several at once: separate them with "
+                       "commas."));
     e->twitch = row(t, "Twitch", entry(cfg->twitch),
-                    _("Channel name or twitch.tv link. The chat is read without logging in."));
+                    _("Channel name or twitch.tv link. The chat is read without logging in. "
+                      "Several at once: separate them with commas; they also add up "
+                      "with YouTube."));
     e->extra_emotes = row(t, NULL,
                           check(_("BTTV, FFZ and 7TV emotes on Twitch"), cfg->extra_emotes),
                           _("Downloads the global lists and the channel's, so those emotes "

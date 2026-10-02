@@ -206,6 +206,45 @@ TEST(config_reads_every_section)
     kk_config_free(&copy);
 }
 
+TEST(config_chat_sources)
+{
+    kk_config c = load_text("[chat]\nyoutube = @um, https://www.youtube.com/watch?v=abcdefghijk\n"
+                            "twitch = canal_a canal_b,,  https://www.twitch.tv/canal_c\n"
+                            "third_party_emotes = no\n");
+    CHECK_INT_EQ(n_warnings, 0);
+    CHECK(!c.extra_emotes);
+    const char *p = c.youtube;
+    char item[64];
+    CHECK(kk_config_next_target(&p, item, sizeof item));
+    CHECK_STR_EQ(item, "@um");
+    CHECK(kk_config_next_target(&p, item, sizeof item));
+    CHECK_STR_EQ(item, "https://www.youtube.com/watch?v=abcdefghijk");
+    CHECK(!kk_config_next_target(&p, item, sizeof item));
+    static const char *const twitch[] = {"canal_a", "canal_b", "https://www.twitch.tv/canal_c"};
+    p = c.twitch;
+    for (int i = 0; i < 3; i++) {
+        CHECK(kk_config_next_target(&p, item, sizeof item));
+        CHECK_STR_EQ(item, twitch[i]);
+    }
+    CHECK(!kk_config_next_target(&p, item, sizeof item));
+    kk_config_free(&c);
+
+    /* Too long for the buffer: skipped, the rest still comes. */
+    p = "aaaaaaaaaaaaaaaaaaaaaaaa, b";
+    char small[8];
+    CHECK(kk_config_next_target(&p, small, sizeof small));
+    CHECK_STR_EQ(small, "b");
+    p = "";
+    CHECK(!kk_config_next_target(&p, small, sizeof small));
+
+    /* The command line's -y/-t add up. */
+    char *list = NULL;
+    CHECK(kk_config_append(&list, "@um"));
+    CHECK(kk_config_append(&list, "@dois"));
+    CHECK_STR_EQ(list, "@um, @dois");
+    free(list);
+}
+
 TEST(config_bad_values_are_skipped)
 {
     kk_config c = load_text("[window]\nfps = 1000\nsize = grande\ncor = azul\n"
@@ -559,6 +598,7 @@ int main(void)
     RUN(ini_save_is_atomic_and_rereadable);
     RUN(config_defaults);
     RUN(config_reads_every_section);
+    RUN(config_chat_sources);
     RUN(config_bad_values_are_skipped);
     RUN(config_commands);
     RUN(every_config_action_has_a_handler);

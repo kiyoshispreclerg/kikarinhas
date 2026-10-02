@@ -54,8 +54,10 @@ static void usage(FILE *out)
             "\n"
             "Chat:\n"
             "  -y, --youtube ALVO  link da live ou do canal, @handle ou id do vídeo;\n"
+            "                      pode repetir, para ler várias lives juntas\n"
             "                      com um canal, espera ele entrar ao vivo\n"
-            "  -t, --twitch CANAL  canal da Twitch (nome ou link twitch.tv/canal)\n"
+            "  -t, --twitch CANAL  canal da Twitch (nome ou link twitch.tv/canal);\n"
+            "                      pode repetir, e vale junto com -y\n"
             "      --demo-chat     chat de mentira, para testar sem live\n"
             "      --max N         avatares do chat ao mesmo tempo (padrão 30)\n"
             "      --despawn S     segundos em silêncio até o avatar sair (padrão 300)\n"
@@ -143,6 +145,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
     };
 
     bool shown = false; /* the first -a replaces the file's list */
+    bool yt_given = false, tw_given = false; /* same for -y and -t */
     int c;
     long v;
     double d;
@@ -221,10 +224,16 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
             x->list = true;
             break;
         case 'y':
-            kk_config_set_str(&cfg->youtube, optarg);
+            if (!yt_given)
+                kk_config_set_str(&cfg->youtube, NULL);
+            yt_given = true;
+            kk_config_append(&cfg->youtube, optarg);
             break;
         case 't':
-            kk_config_set_str(&cfg->twitch, optarg);
+            if (!tw_given)
+                kk_config_set_str(&cfg->twitch, NULL);
+            tw_given = true;
+            kk_config_append(&cfg->twitch, optarg);
             break;
         case OPT_DEMO_CHAT:
             cfg->demo = true;
@@ -498,7 +507,8 @@ static void on_chat(void *ud, const kk_chat_msg *m)
         static const char *const kinds[] = {"", " [pago]", " [membro]"};
         static const char *const results[] = {"", "  [comando]", "  [em espera]",
                                               "  [sem permissão]", "  [nada feito]"};
-        fprintf(stderr, "[%s] %s%s%s%s: %s%s\n", m->platform, m->name,
+        fprintf(stderr, "[%s%s%s] %s%s%s%s: %s%s\n", m->platform,
+                m->source ? " " : "", m->source ? m->source : "", m->name,
                 kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
                 m->text, results[r]);
     }
@@ -576,6 +586,16 @@ static void on_sa_user(void *ud, const kk_sa_user *u)
     ic->imported++;
 }
 
+/* One live: a YouTube video or channel, or a Twitch channel. */
+#define KK_MAX_SOURCES 16
+
+typedef struct {
+    char *target;      /* as listed in the config */
+    bool extra_emotes; /* what the Twitch one was made with */
+    kk_youtube *youtube;
+    kk_twitch *twitch;
+} source;
+
 typedef struct {
     int argc;
     char **argv;
@@ -591,8 +611,8 @@ typedef struct {
     kk_chat_sink chat;    /* what every connector feeds: on_chat, on_reaction */
     kk_emotes *emotes;
     kk_emotewall *wall;
-    kk_youtube *youtube;  /* NULL if not used */
-    kk_twitch *twitch;    /* NULL if not used */
+    source sources[KK_MAX_SOURCES]; /* the lives being read */
+    int n_sources;
     kk_demochat demo;
     bool demo_on;
     kk_users *users;      /* NULL if not used */
@@ -627,33 +647,98 @@ static kk_commands *build_commands(app *a, const kk_config *cfg, warn_sink *warn
     return c;
 }
 
-/* Starts, stops or retargets the chat connectors to match cfg. */
+/* The wanted lives, from the lists in cfg; checked before anything
+ * changes, so a typo leaves the running ones alone. */
+typedef struct {
+    bool twitch;
+    char target[512];
+    bool used; /* a running source already matches it */
+} wanted;
+
+static bool add_wanted(wanted *w, int *n, bool twitch, const char *target)
+{
+    char tmp[512];
+    bool ok = twitch ? kk_tw_parse_target(target, tmp, sizeof tmp)
+                     : kk_yt_parse_target(target, tmp, sizeof tmp) != KK_YT_TARGET_INVALID;
+    if (!ok) {
+        kk_log_error(twitch ? "Twitch: não entendi \"%s\" (use o nome do canal ou o link "
+                              "twitch.tv/canal)"
+                            : "YouTube: não entendi \"%s\" (use o link da live, do canal "
+                              "ou o @handle)",
+                     target);
+        return false;
+    }
+    for (int i = 0; i < *n; i++)
+        if (w[i].twitch == twitch && strcmp(w[i].target, target) == 0)
+            return true; /* listed twice */
+    if (*n == KK_MAX_SOURCES) {
+        kk_log_warn("no máximo %d lives ao mesmo tempo; \"%s\" ficou de fora",
+                    KK_MAX_SOURCES, target);
+        return true;
+    }
+    w[*n] = (wanted){.twitch = twitch};
+    snprintf(w[*n].target, sizeof w[*n].target, "%s", target);
+    (*n)++;
+    return true;
+}
+
+static void source_free(source *s)
+{
+    kk_youtube_free(s->youtube);
+    kk_twitch_free(s->twitch);
+    free(s->target);
+    *s = (source){0};
+}
+
+/* Starts and stops chat connectors to match cfg. Lives that stay listed
+ * keep their connection. */
 static int connect_chats(app *a, const kk_config *cfg)
 {
-    const char *old = a->youtube ? a->cfg.youtube : NULL;
-    bool same = old && cfg->youtube && strcmp(old, cfg->youtube) == 0;
-    if (!same) {
-        kk_youtube_free(a->youtube);
-        a->youtube = NULL;
-        if (cfg->youtube) {
-            a->youtube = kk_youtube_new(a->http, cfg->youtube, &a->chat);
-            if (!a->youtube)
-                return -1;
+    wanted want[KK_MAX_SOURCES];
+    int n_want = 0;
+    char item[512];
+    const char *p = cfg->youtube ? cfg->youtube : "";
+    while (kk_config_next_target(&p, item, sizeof item))
+        if (!add_wanted(want, &n_want, false, item))
+            return -1;
+    p = cfg->twitch ? cfg->twitch : "";
+    while (kk_config_next_target(&p, item, sizeof item))
+        if (!add_wanted(want, &n_want, true, item))
+            return -1;
+
+    int kept = 0;
+    for (int i = 0; i < a->n_sources; i++) {
+        source *s = &a->sources[i];
+        int match = -1;
+        for (int k = 0; k < n_want && match < 0; k++)
+            if (!want[k].used && want[k].twitch == (s->twitch != NULL) &&
+                strcmp(want[k].target, s->target) == 0 &&
+                (!s->twitch || s->extra_emotes == cfg->extra_emotes))
+                match = k;
+        if (match < 0) {
+            source_free(s);
+            continue;
         }
+        want[match].used = true;
+        a->sources[kept++] = *s;
+    }
+    a->n_sources = kept;
+
+    for (int k = 0; k < n_want; k++) {
+        if (want[k].used)
+            continue;
+        source s = {.target = strdup(want[k].target), .extra_emotes = cfg->extra_emotes};
+        if (s.target && want[k].twitch)
+            s.twitch = kk_twitch_new(a->http, s.target, &a->chat, cfg->extra_emotes);
+        else if (s.target)
+            s.youtube = kk_youtube_new(a->http, s.target, &a->chat);
+        if (!s.youtube && !s.twitch) {
+            source_free(&s);
+            return -1;
+        }
+        a->sources[a->n_sources++] = s;
     }
 
-    old = a->twitch ? a->cfg.twitch : NULL;
-    same = old && cfg->twitch && strcmp(old, cfg->twitch) == 0 &&
-           a->cfg.extra_emotes == cfg->extra_emotes;
-    if (!same) {
-        kk_twitch_free(a->twitch);
-        a->twitch = NULL;
-        if (cfg->twitch) {
-            a->twitch = kk_twitch_new(a->http, cfg->twitch, &a->chat, cfg->extra_emotes);
-            if (!a->twitch)
-                return -1;
-        }
-    }
     if (cfg->demo && !a->demo_on)
         kk_demochat_init(&a->demo, &a->chat, a->seed);
     a->demo_on = cfg->demo;
@@ -828,7 +913,8 @@ static bool handle_signals(app *a)
     while (read(a->signal_fd, &si, sizeof si) == (ssize_t)sizeof si) {
         if (si.ssi_signo != SIGHUP)
             return false;
-        reload(a, NULL);
+        if (!reload(a, NULL))
+            kk_log_warn("configuração não aplicada; segue a anterior");
     }
     return true;
 }
@@ -907,9 +993,14 @@ static void run(app *a)
         int nfds = FD_FIXED;
         int n_audio = kk_soundboard_pollfds(a->sounds, fds + nfds, 8);
         nfds += n_audio;
-        int tw_at = nfds;
-        if (a->twitch)
-            nfds += kk_twitch_pollfd(a->twitch, &fds[nfds]);
+        /* Where each Twitch socket went, -1 if it has none now. */
+        int tw_at[KK_MAX_SOURCES];
+        for (int i = 0; i < a->n_sources; i++) {
+            tw_at[i] = -1;
+            if (a->sources[i].twitch && nfds < MAX_FDS &&
+                kk_twitch_pollfd(a->sources[i].twitch, &fds[nfds]))
+                tw_at[i] = nfds++;
+        }
         int ctl_at = nfds;
         if (a->control)
             nfds += kk_control_pollfds(a->control, fds + nfds, MAX_FDS - nfds);
@@ -932,10 +1023,13 @@ static void run(app *a)
 
         double t = now_seconds();
         kk_soundboard_pump(a->sounds, fds + FD_FIXED, n_audio, t);
-        if (a->youtube)
-            kk_youtube_tick(a->youtube, t);
-        if (a->twitch)
-            kk_twitch_tick(a->twitch, ctl_at > tw_at ? &fds[tw_at] : NULL, t);
+        for (int i = 0; i < a->n_sources; i++) {
+            source *s = &a->sources[i];
+            if (s->youtube)
+                kk_youtube_tick(s->youtube, t);
+            else
+                kk_twitch_tick(s->twitch, tw_at[i] >= 0 ? &fds[tw_at[i]] : NULL, t);
+        }
         if (a->demo_on)
             kk_demochat_tick(&a->demo, t);
         if (a->users && t >= next_save) {
@@ -1179,14 +1273,7 @@ int main(int argc, char **argv)
             kk_log_info("socket de controle em %s", sock);
     }
 
-    /* connect_chats compares with a.cfg: start from "nothing connected". */
-    char *youtube = a.cfg.youtube, *twitch = a.cfg.twitch;
-    a.cfg.youtube = a.cfg.twitch = NULL;
-    int rc = connect_chats(&a, &(kk_config){.youtube = youtube, .twitch = twitch,
-                                            .extra_emotes = a.cfg.extra_emotes,
-                                            .demo = a.cfg.demo});
-    a.cfg.youtube = youtube;
-    a.cfg.twitch = twitch;
+    int rc = connect_chats(&a, &a.cfg);
     if (rc == 0)
         run(&a);
     else
@@ -1194,8 +1281,8 @@ int main(int argc, char **argv)
 
     kk_control_close(a.control);
     /* The connectors cancel their requests, so they go before the client. */
-    kk_youtube_free(a.youtube);
-    kk_twitch_free(a.twitch);
+    for (int i = 0; i < a.n_sources; i++)
+        source_free(&a.sources[i]);
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
     kk_emotewall_free(a.wall);
     kk_emotes_free(a.emotes);

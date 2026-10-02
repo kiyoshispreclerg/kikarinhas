@@ -67,6 +67,7 @@ not found, point to it with `--sa-dir`. Nothing there is copied or changed.
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # a livestream's chat
 build/kikarinhas -y @YourChannel        # waits for the channel to go live
 build/kikarinhas -t yourchannel         # Twitch chat
+build/kikarinhas -y @YourChannel -t yourchannel -t otherchannel   # several streams at once
 build/kikarinhas --demo-chat            # fake chat, for testing
 build/kikarinhas                        # 6 random avatars, 1280x720 window
 build/kikarinhas -n 20 -s 1920x1080     # 20 avatars at 1080p
@@ -99,6 +100,14 @@ build/kikarinhas --check                # checks every spritesheet
 | `-c, --config FILE` | configuration file (default `~/.config/kikarinhas/kikarinhas.ini`) |
 | `--socket PATH\|off` | control socket (default `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | asks the running kikarinhas to reread its configuration and exits |
+
+Several streams can be read at once, from one platform or both: repeat
+`-y`/`-t`, or separate them with commas in the `.ini` (`youtube = @one,
+@two`, `twitch = channel1, channel2`). The avatars and emotes of all of
+them show up together; the same person in two streams of the same platform
+is a single avatar. With `-v`, each message says where it came from
+(`[twitch #channel]`, `[youtube @handle]`). On `reload`, only the streams
+that entered or left the list connect or disconnect.
 
 Right-click the window (`obs` mode) to open `kikarinhas-config` on the same
 `.ini`; only one is opened at a time.

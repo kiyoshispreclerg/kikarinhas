@@ -23,8 +23,8 @@
  *              name_position = below|above, show_bubbles = yes|no,
  *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
- *   [chat]     youtube, twitch, third_party_emotes = yes|no, demo, max,
- *              despawn, verbose, users
+ *   [chat]     youtube = a, b, twitch = a, b, third_party_emotes = yes|no,
+ *              demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
  *   [commands] shortcuts = yes|no, shortcut_cooldown = 5,
  *              help_bubbles = yes|no, help_count = 3,
@@ -100,8 +100,8 @@ typedef struct {
     char *bubble_font;     /* NULL = "Sans" */
     double bubble_size;    /* points */
     /* [chat] */
-    char *youtube;
-    char *twitch;       /* channel name or link */
+    char *youtube;      /* lives, channels: a list (kk_config_next_target) */
+    char *twitch;       /* channel names or links: a list too */
     bool extra_emotes;  /* BTTV/FFZ/7TV on Twitch */
     bool demo;
     int max_avatars;
@@ -172,6 +172,13 @@ const kk_config_sound *kk_config_find_sound(const kk_config *c, const char *word
 /* "Buzina Alta.ogg" -> "buzina_alta": a command-safe name; false if
  * nothing usable is left. */
 bool kk_config_sound_name(char *out, size_t size, const char *file);
+
+/* youtube and twitch name several lives at once, separated by commas or
+ * white space. Copies the item at *p to out and moves *p past it; false
+ * when there is none left. Items that don't fit in out are skipped. */
+bool kk_config_next_target(const char **p, char *out, size_t size);
+/* Adds item at the end of the list in *list (NULL = empty). */
+bool kk_config_append(char **list, const char *item);
 
 /* Setters used by the command line too; they return false on bad input. */
 bool kk_config_set_str(char **dst, const char *value);

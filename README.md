@@ -66,6 +66,7 @@ achada, indique com `--sa-dir`. Nada é copiado nem alterado lá.
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # chat de uma live
 build/kikarinhas -y @SeuCanal           # espera o canal entrar ao vivo
 build/kikarinhas -t seucanal            # chat da Twitch
+build/kikarinhas -y @SeuCanal -t seucanal -t outrocanal   # várias lives juntas
 build/kikarinhas --demo-chat            # chat de mentira, para testar
 build/kikarinhas                        # 6 avatares sorteados, janela 1280x720
 build/kikarinhas -n 20 -s 1920x1080     # 20 avatares em 1080p
@@ -98,6 +99,14 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `-c, --config ARQ` | arquivo de configuração (padrão `~/.config/kikarinhas/kikarinhas.ini`) |
 | `--socket CAMINHO\|off` | socket de controle (padrão `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | pede ao kikarinhas aberto para reler a configuração e sai |
+
+Dá para ler várias lives ao mesmo tempo, de uma plataforma ou das duas:
+repita `-y`/`-t`, ou separe por vírgula no `.ini` (`youtube = @um, @dois`,
+`twitch = canal1, canal2`). Os avatares e emotes de todas aparecem juntos;
+a mesma pessoa em duas lives da mesma plataforma é um avatar só. Com `-v`,
+cada mensagem diz de onde veio (`[twitch #canal]`, `[youtube @handle]`). No
+`reload`, só as lives que entraram ou saíram da lista conectam ou
+desconectam.
 
 Clique com o botão direito na janela (modo `obs`) para abrir o
 `kikarinhas-config` com o mesmo `.ini`; só abre um por vez.

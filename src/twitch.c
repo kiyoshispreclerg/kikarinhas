@@ -559,14 +559,15 @@ static bool hype_amount(const char *tags, char *out, size_t size)
     return true;
 }
 
-static bool emit(const kk_tw_line *l, const kk_tw_emotes *extra, const kk_chat_sink *sink)
+static bool emit(const kk_tw_line *l, const kk_tw_emotes *extra, const char *source,
+                 const kk_chat_sink *sink)
 {
     bool notice = strcmp(l->command, "USERNOTICE") == 0;
     if ((!notice && strcmp(l->command, "PRIVMSG") != 0) || !l->tags)
         return false;
 
     char user_id[32], name[128], msg_id[48], system[512], amount[64], bits[16], tag[2048];
-    kk_chat_msg m = {.platform = "twitch", .kind = KK_MSG_TEXT};
+    kk_chat_msg m = {.platform = "twitch", .source = source, .kind = KK_MSG_TEXT};
     if (!kk_tw_tag(l->tags, "user-id", user_id, sizeof user_id) || !user_id[0])
         return false;
     if ((!kk_tw_tag(l->tags, "display-name", name, sizeof name) || !name[0]) &&
@@ -640,7 +641,7 @@ static bool emit(const kk_tw_line *l, const kk_tw_emotes *extra, const kk_chat_s
 bool kk_tw_emit_line(char *line, const kk_tw_emotes *extra, const kk_chat_sink *sink)
 {
     kk_tw_line l;
-    return kk_tw_split(line, &l) && emit(&l, extra, sink);
+    return kk_tw_split(line, &l) && emit(&l, extra, NULL, sink);
 }
 
 /* ---- client -------------------------------------------------------------- */
@@ -656,6 +657,7 @@ struct kk_twitch {
     kk_http *http;
     kk_chat_sink sink;
     char channel[32];
+    char label[34]; /* "#channel": the source of its messages */
 
     SSL_CTX *ctx;
     SSL *ssl;
@@ -894,7 +896,7 @@ static void handle_line(kk_twitch *tw, char *line)
     else if (strcmp(l.command, "NOTICE") == 0)
         kk_log_warn("Twitch #%s: %s", tw->channel, l.trailing);
     else
-        emit(&l, tw->extra, &tw->sink);
+        emit(&l, tw->extra, tw->label, &tw->sink);
 }
 
 /* Splits the plain text into lines and handles the whole ones. */
@@ -1030,6 +1032,7 @@ kk_twitch *kk_twitch_new(kk_http *http, const char *target,
         free(tw);
         return NULL;
     }
+    snprintf(tw->label, sizeof tw->label, "#%s", tw->channel);
     tw->http = http;
     tw->sink = *sink;
     tw->ctx = SSL_CTX_new(TLS_client_method());

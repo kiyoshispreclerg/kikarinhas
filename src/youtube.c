@@ -437,6 +437,8 @@ typedef enum {
 struct kk_youtube {
     kk_http *http;
     kk_chat_sink sink;
+    kk_chat_sink relay; /* what the parser gets: adds the source */
+    char label[64];     /* "@handle", channel id or video id, for logs */
 
     char channel_url[512]; /* empty when started from a video */
     char video[12];
@@ -451,6 +453,31 @@ struct kk_youtube {
     int failures;
 };
 
+static void relay_msg(void *ud, const kk_chat_msg *m)
+{
+    const kk_youtube *yt = ud;
+    kk_chat_msg copy = *m;
+    copy.source = yt->label;
+    yt->sink.on_msg(yt->sink.ud, &copy);
+}
+
+static void relay_reaction(void *ud, const kk_reaction *r)
+{
+    const kk_youtube *yt = ud;
+    yt->sink.on_reaction(yt->sink.ud, r);
+}
+
+/* ".../@name/live" → "@name"; ".../channel/UC.../live" → "UC...". */
+static void channel_label(const char *url, char *out, size_t size)
+{
+    size_t n = strlen(url);
+    const char *end = n > 5 && strcmp(url + n - 5, "/live") == 0 ? url + n - 5 : url + n;
+    const char *start = end;
+    while (start > url && start[-1] != '/')
+        start--;
+    snprintf(out, size, "%.*s", (int)(end - start), start);
+}
+
 kk_youtube *kk_youtube_new(kk_http *http, const char *target,
                            const kk_chat_sink *sink)
 {
@@ -461,10 +488,12 @@ kk_youtube *kk_youtube_new(kk_http *http, const char *target,
     switch (kk_yt_parse_target(target, out, sizeof out)) {
     case KK_YT_TARGET_VIDEO:
         memcpy(yt->video, out, sizeof yt->video);
+        snprintf(yt->label, sizeof yt->label, "%s", yt->video);
         yt->st = ST_CHAT_PAGE;
         break;
     case KK_YT_TARGET_CHANNEL:
         snprintf(yt->channel_url, sizeof yt->channel_url, "%s", out);
+        channel_label(out, yt->label, sizeof yt->label);
         yt->st = ST_RESOLVE;
         break;
     default:
@@ -476,6 +505,7 @@ kk_youtube *kk_youtube_new(kk_http *http, const char *target,
     }
     yt->http = http;
     yt->sink = *sink;
+    yt->relay = (kk_chat_sink){relay_msg, sink->on_reaction ? relay_reaction : NULL, yt};
     snprintf(yt->client_version, sizeof yt->client_version, "%s",
              FALLBACK_CLIENT_VERSION);
     return yt;
@@ -510,9 +540,10 @@ static void fail(kk_youtube *yt, const char *what, long status, const char *err)
     yt->failures++;
     double delay = fmin(60.0, pow(2.0, fmin(yt->failures, 6)));
     if (err)
-        kk_log_warn("YouTube: %s: %s (nova tentativa em %.0f s)", what, err, delay);
+        kk_log_warn("YouTube %s: %s: %s (nova tentativa em %.0f s)", yt->label, what,
+                    err, delay);
     else
-        kk_log_warn("YouTube: %s: HTTP %ld (nova tentativa em %.0f s)", what,
+        kk_log_warn("YouTube %s: %s: HTTP %ld (nova tentativa em %.0f s)", yt->label, what,
                     status, delay);
     /* A token that keeps failing may have expired: fetch a new one. */
     if (yt->st == ST_POLL && yt->failures >= 3)
@@ -533,9 +564,9 @@ static void on_channel(void *ud, long status, const char *body, size_t len,
     char id[12];
     if (!kk_yt_canonical_video(body, id)) {
         if (!yt->said_offline)
-            kk_log_info("YouTube: o canal não está ao vivo; tentando de novo "
+            kk_log_info("YouTube %s: o canal não está ao vivo; tentando de novo "
                         "a cada %.0f s",
-                        OFFLINE_RETRY_S);
+                        yt->label, OFFLINE_RETRY_S);
         yt->said_offline = true;
         yt->failures = 0;
         schedule(yt, OFFLINE_RETRY_S);
@@ -588,7 +619,7 @@ static void on_poll(void *ud, long status, const char *body, size_t len,
     }
     char *next;
     int delay_ms = 3000;
-    switch (kk_yt_parse_poll(body, !yt->skip_backlog, &yt->sink, &next,
+    switch (kk_yt_parse_poll(body, !yt->skip_backlog, &yt->relay, &next,
                              &delay_ms)) {
     case KK_YT_POLL_OK:
         free(yt->continuation);
@@ -598,7 +629,7 @@ static void on_poll(void *ud, long status, const char *body, size_t len,
         schedule(yt, delay_ms / 1000.0);
         break;
     case KK_YT_POLL_ENDED:
-        kk_log_info("YouTube: a live terminou");
+        kk_log_info("YouTube %s: a live terminou", yt->label);
         if (yt->channel_url[0]) {
             restart(yt, OFFLINE_RETRY_S);
         } else {

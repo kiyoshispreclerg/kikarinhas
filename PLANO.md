@@ -337,6 +337,19 @@ data/         avatar padrão original, exemplo de .ini
    - a lista do 7TV de canal grande chega a 1000 emotes: busca binária na
      tabela ordenada.
    Não verificado ao vivo: bits, Hype Chat, subs e raids (só nos testes).
+   **Várias lives ao mesmo tempo**: `[chat] youtube` e `twitch` são listas
+   (vírgula ou espaço; `kk_config_next_target`), `-y`/`-t` repetíveis (o
+   primeiro troca a lista do arquivo, os outros somam). O `main.c` guarda
+   até 16 fontes (`source`: alvo + conector); no `reload` os alvos são
+   conferidos antes (um inválido recusa tudo e mantém o que roda), as
+   fontes que continuam na lista ficam conectadas e só as novas/removidas
+   abrem/fecham. Cada mensagem leva `source` (`#canal`, `@handle` ou id do
+   vídeo), visto no `-v`; os logs do YouTube também. A chave das pessoas
+   continua `plataforma:id`, então quem aparece em duas lives da mesma
+   plataforma tem um avatar só. Testado ao vivo com ironmouse e xqc na
+   Twitch e Lofi Girl no YouTube juntos (ASan), e com `reload` tirando uma
+   e com um alvo inválido. Cada conector da Twitch baixa as listas globais
+   de emotes por conta própria (3 pedidos a mais por canal).
    Fora: espectadores calados (JOIN/PART só dão o login, sem `user-id`) e
    responder no chat (precisa de OAuth).
 6. **kikarinhas-web** (WPE) como camadas. *Adiada* (opcional).

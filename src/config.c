@@ -425,6 +425,51 @@ bool kk_config_set_show(kk_config *c, const char *list)
     return each_item(list, add_show, c);
 }
 
+static bool is_target_sep(char c)
+{
+    return c == ',' || isspace((unsigned char)c);
+}
+
+bool kk_config_next_target(const char **p, char *out, size_t size)
+{
+    const char *s = *p;
+    for (;;) {
+        while (*s && is_target_sep(*s))
+            s++;
+        if (!*s) {
+            *p = s;
+            return false;
+        }
+        size_t n = 0;
+        while (s[n] && !is_target_sep(s[n]))
+            n++;
+        const char *item = s;
+        s += n;
+        if (n < size) {
+            memcpy(out, item, n);
+            out[n] = '\0';
+            *p = s;
+            return true;
+        }
+    }
+}
+
+bool kk_config_append(char **list, const char *item)
+{
+    if (!*list || !(*list)[0])
+        return kk_config_set_str(list, item);
+    size_t a = strlen(*list), b = strlen(item);
+    char *s = malloc(a + 2 + b + 1);
+    if (!s)
+        return false;
+    memcpy(s, *list, a);
+    memcpy(s + a, ", ", 2);
+    memcpy(s + a + 2, item, b + 1);
+    free(*list);
+    *list = s;
+    return true;
+}
+
 /* Command words: lowercase ASCII, no "!", no spaces. */
 static bool normalize_word(char *out, size_t size, const char *in)
 {
