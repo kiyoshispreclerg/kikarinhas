@@ -29,13 +29,14 @@ typedef struct {
     /* [avatars] */
     GtkWidget *scale, *ground_auto, *ground, *count_auto, *count, *show,
         *default_avatar, *sa_dir, *show_names, *name_position, *show_bubbles,
-        *name_font, *name_size, *bubble_font, *bubble_size;
+        *name_font, *name_size, *bubble_font, *bubble_size, *bubble_auto,
+        *bubble_secs;
     /* [chat] */
     GtkWidget *youtube, *demo, *max, *despawn, *verbose, *users;
     /* [control] */
     GtkWidget *socket;
     /* [commands] */
-    GtkWidget *shortcuts, *shortcut_cd, *help_bubbles, *help_count;
+    GtkWidget *shortcuts, *shortcut_cd, *help_bubbles, *help_count, *help_auto, *help_secs;
     GtkListStore *commands;
     GtkWidget *tree;
 

@@ -243,6 +243,9 @@ por um). Cada pedido sorteia de novo, então quem quiser conhecer todos
 precisa pedir várias vezes. Funciona mesmo com `show_bubbles = no`. Em
 `[commands]`: `help_bubbles = no` desliga e `help_count` (padrão 3, até 20)
 muda quantos aparecem; ambos estão na aba Comandos do configurador.
+`help_seconds` e, em `[avatars]`, `bubble_seconds` definem quantos segundos
+o balão de ajuda e o de mensagem ficam na tela (`auto`, o padrão: de 4 a 12 s
+conforme o texto, e 4 s mais 1,5 s por comando na ajuda).
 
 `!` de largura total (`！`, comum em teclados japoneses) também vale. O dono
 do canal não tem espera. Comando que não faz nada (nome errado) não conta a

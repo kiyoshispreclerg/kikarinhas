@@ -165,7 +165,7 @@ static bool cmd_help(const kk_cmd_call *c)
     for (int i = 0; i < h.have && n < (int)sizeof text; i++)
         n += snprintf(text + n, sizeof text - (size_t)n, "\n%s", h.pick[i]);
     kk_stage_help_bubble(a->stage, a->self, text, title_len, h.have + 1,
-                         4.0 + 1.5 * h.have);
+                         a->help_seconds > 0 ? a->help_seconds : 4.0 + 1.5 * h.have);
     return true;
 }
 
@@ -231,6 +231,7 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
     if (self) {
         self->help_bubbles = cfg->help_bubbles;
         self->help_count = cfg->help_count;
+        self->help_seconds = cfg->help_seconds;
     }
     /* With a command per sound, those are listed instead of "!sound". */
     bool sounds_listed = cfg->sound_enabled && cfg->sound_commands && cfg->n_sounds > 0;

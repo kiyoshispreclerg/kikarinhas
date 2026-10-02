@@ -358,6 +358,16 @@ TEST(help_lists_what_a_person_may_use)
     c = load_text("[commands]\nhelp_bubbles = no\nhelp_count = 7\n");
     CHECK(!c.help_bubbles);
     CHECK_INT_EQ(c.help_count, 7);
+    CHECK(c.help_seconds < 0 && c.bubble_seconds < 0); /* auto */
+    kk_config_free(&c);
+    c = load_text("[avatars]\nbubble_seconds = 8\n[commands]\nhelp_seconds = 2.5\n");
+    CHECK(c.bubble_seconds == 8);
+    CHECK(c.help_seconds == 2.5);
+    kk_config_free(&c);
+    c = load_text("[avatars]\nbubble_seconds = auto\n[commands]\nhelp_seconds = 0\n");
+    CHECK(c.bubble_seconds < 0);
+    CHECK_INT_EQ(n_warnings, 1); /* below 0.5 s */
+    CHECK(c.help_seconds < 0);
     kk_config_free(&c);
     c = load_text("[commands]\nhelp_count = 0\n");
     CHECK_INT_EQ(n_warnings, 1);

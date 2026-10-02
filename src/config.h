@@ -21,11 +21,13 @@
  *   [avatars]  scale, ground = auto|N, count = auto|N, show = a, b
  *              default, sa_dir, show_names = yes|no,
  *              name_position = below|above, show_bubbles = yes|no,
+ *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
  *   [chat]     youtube, demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
  *   [commands] shortcuts = yes|no, shortcut_cooldown = 5,
- *              help_bubbles = yes|no, help_count = 3
+ *              help_bubbles = yes|no, help_count = 3,
+ *              help_seconds = auto|N
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
  *              role = anyone|member|mod|owner, enabled = yes|no
@@ -79,6 +81,7 @@ typedef struct {
     bool show_names;       /* name tag under (or over) each avatar */
     bool name_above;       /* false: below the feet; true: above the head */
     bool show_bubbles;     /* speech bubble with the chat message */
+    double bubble_seconds; /* how long it stays; -1 = by length */
     char *name_font;       /* Pango family and style; NULL = "Sans Bold" */
     double name_size;      /* points */
     char *bubble_font;     /* NULL = "Sans" */
@@ -95,6 +98,7 @@ typedef struct {
     /* [commands] */
     bool help_bubbles; /* !help bubbles, even with show_bubbles = no */
     int help_count;    /* commands listed per help bubble */
+    double help_seconds; /* how long it stays; -1 = by the number listed */
     bool shortcuts;
     double shortcut_cd;
     kk_config_command *commands;

@@ -28,6 +28,7 @@ typedef struct {
     bool show_names;   /* name tag under (or over) each avatar */
     bool name_above;   /* false: below the feet; true: above the head */
     bool show_bubbles; /* speech bubble with the chat message */
+    double bubble_seconds; /* how long a chat bubble stays; <= 0: by length */
     /* Pango family and style ("Sans Bold") plus size in points; NULL or 0
      * keep the defaults. Copied, so the strings may go away. */
     const char *name_font, *bubble_font;

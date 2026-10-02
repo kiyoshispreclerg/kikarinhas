@@ -332,6 +332,9 @@ data/         avatar padrão original, exemplo de .ini
      pedido dá outra lista. Balão azul à parte (`kk_stage_help_bubble`,
      `render_text_bubble`), que ignora `show_bubbles`; `[commands]
      help_bubbles` desliga e `help_count` (1 a 20) define a quantidade.
+     Duração: `[avatars] bubble_seconds` (mensagens) e `[commands]
+     help_seconds` (ajuda), `auto` ou 0,5 a 600 s; `auto` é a fórmula
+     antiga. Aplicam no reload, a partir do próximo balão.
    - **Idiomas do configurador**: gettext com msgids em inglês
      (`config/i18n.h`: `_()`, `N_()`, `ngettext()`), traduções em `po/`
      (`pt_BR` e `en`, listadas em `po/LINGUAS`; `make pot` atualiza). Os

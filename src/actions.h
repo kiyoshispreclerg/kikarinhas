@@ -19,6 +19,7 @@ typedef struct {
     kk_avatar *self; /* the sender's avatar, set before each dispatch */
     bool help_bubbles; /* set by kk_actions_register from the config */
     int help_count;
+    double help_seconds; /* -1: by the number of lines */
 } kk_actions;
 
 /* Handler for an "action =" name of the config, or NULL. */

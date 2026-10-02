@@ -245,6 +245,9 @@ Every request draws again, so whoever wants to learn them all has to ask
 many times. It works even with `show_bubbles = no`. In `[commands]`:
 `help_bubbles = no` turns it off and `help_count` (default 3, up to 20)
 sets how many show; both are in the configurator's Commands tab.
+`help_seconds` and, in `[avatars]`, `bubble_seconds` set how many seconds the
+help bubble and the message bubble stay on screen (`auto`, the default: 4 to
+12 s by the text length, and 4 s plus 1.5 s per command for help).
 
 A full-width `!` (`！`, common on Japanese keyboards) works too. The channel
 owner never waits. A command that does nothing (wrong name) does not start

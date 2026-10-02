@@ -155,9 +155,11 @@ static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
     return render_text_bubble(s, text, bold_len, fill, BUBBLE_LINES);
 }
 
-/* Long messages stay up longer, within limits. */
-static double bubble_seconds(const char *text)
+/* Fixed by the config, else long messages stay up longer, within limits. */
+static double bubble_seconds(const kk_stage *s, const char *text)
 {
+    if (s->cfg.bubble_seconds > 0)
+        return s->cfg.bubble_seconds;
     double t = 3.5 + 0.06 * (double)strlen(text);
     return t < 4.0 ? 4.0 : t > 12.0 ? 12.0 : t;
 }
@@ -562,7 +564,7 @@ void kk_stage_say(kk_stage *s, kk_avatar *a, const kk_chat_msg *m)
     kk_avatar_jump(a);
     bool has_text = m->text[0] || (m->kind == KK_MSG_PAID && m->amount && m->amount[0]);
     kk_avatar_say(a, has_text ? render_bubble(s, m) : NULL,
-                  bubble_seconds(m->text));
+                  bubble_seconds(s, m->text));
 }
 
 void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,

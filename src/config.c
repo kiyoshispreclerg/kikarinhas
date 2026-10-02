@@ -246,6 +246,8 @@ void kk_config_defaults(kk_config *c)
         .sound_commands = true,
         .show_names = true,
         .show_bubbles = true,
+        .bubble_seconds = -1,
+        .help_seconds = -1,
         .name_size = 11,
         .bubble_size = 10,
     };
@@ -525,6 +527,15 @@ static void get_double(const warner *w, double *dst, double lo, double hi)
         bad_value(w, "um número");
 }
 
+/* "auto" (stored as -1) or seconds. */
+static void get_auto_seconds(const warner *w, double *dst)
+{
+    if (strcasecmp(w->value, "auto") == 0)
+        *dst = -1;
+    else if (!kk_parse_double(w->value, 0.5, 600, dst))
+        bad_value(w, "\"auto\" ou segundos (de 0,5 a 600)");
+}
+
 static void get_bool(const warner *w, bool *dst)
 {
     if (!kk_parse_bool(w->value, dst))
@@ -596,6 +607,8 @@ static void apply_avatars(kk_config *c, const warner *w)
             bad_value(w, "below ou above");
     } else if (key_is(w, "show_bubbles"))
         get_bool(w, &c->show_bubbles);
+    else if (key_is(w, "bubble_seconds"))
+        get_auto_seconds(w, &c->bubble_seconds);
     else if (key_is(w, "name_font"))
         get_str(w, &c->name_font);
     else if (key_is(w, "name_size"))
@@ -649,6 +662,8 @@ static void apply_commands(kk_config *c, const warner *w)
         get_bool(w, &c->help_bubbles);
     else if (key_is(w, "help_count"))
         get_int(w, &c->help_count, 1, 20, false);
+    else if (key_is(w, "help_seconds"))
+        get_auto_seconds(w, &c->help_seconds);
     else
         unknown_key(w);
 }

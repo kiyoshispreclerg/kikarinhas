@@ -486,6 +486,11 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(help), gtk_label_new(_("random commands per bubble")),
                        FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(help), e->help_count, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(help), gtk_label_new(_("staying")), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(help),
+                       auto_spin(&e->help_auto, &e->help_secs, 1, 600,
+                                 cfg->help_seconds < 0 ? -1 : (int)(cfg->help_seconds + 0.5)),
+                       FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), help, FALSE, FALSE, 0);
 
     e->commands = gtk_list_store_new(N_COLS, G_TYPE_BOOLEAN, G_TYPE_STRING,
@@ -685,6 +690,7 @@ static void collect(editor *e)
         gtk_combo_box_get_active(GTK_COMBO_BOX(e->name_position)) == 1 ? "above" : "below",
         d.name_above ? "above" : "below");
     put_bool(e, "avatars", "show_bubbles", e->show_bubbles, d.show_bubbles);
+    put_auto(e, "avatars", "bubble_seconds", e->bubble_auto, e->bubble_secs);
     put(e, "avatars", "name_font", text_of(e->name_font), NULL);
     put_num(e, "avatars", "name_size",
             gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->name_size)), d.name_size);
@@ -702,6 +708,7 @@ static void collect(editor *e)
     put(e, "control", "socket", text_of(e->socket), NULL);
     /* [commands] */
     put_bool(e, "commands", "help_bubbles", e->help_bubbles, d.help_bubbles);
+    put_auto(e, "commands", "help_seconds", e->help_auto, e->help_secs);
     put_int(e, "commands", "help_count", spin_int(e->help_count), d.help_count);
     put_bool(e, "commands", "shortcuts", e->shortcuts, d.shortcuts);
     put_num(e, "commands", "shortcut_cooldown",
@@ -927,6 +934,11 @@ static void build(editor *e, const kk_config *cfg)
         _("Above or below the avatar."));
     e->show_bubbles = row(t, _("Messages"),
                           check(_("Show a speech bubble with the message"), cfg->show_bubbles), NULL);
+
+    row(t, _("Message bubble stays"),
+        auto_spin(&e->bubble_auto, &e->bubble_secs, 1, 600,
+                  cfg->bubble_seconds < 0 ? -1 : (int)(cfg->bubble_seconds + 0.5)),
+        _("Seconds on screen; automatic: 4 to 12 s, by the length of the text."));
 
     e->name_font = entry(cfg->name_font);
     e->name_size = spin(4, 200, 1, 1);

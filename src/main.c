@@ -689,6 +689,7 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.show_names = cfg.show_names;
     a->stage->cfg.name_above = cfg.name_above;
     a->stage->cfg.show_bubbles = cfg.show_bubbles;
+    a->stage->cfg.bubble_seconds = cfg.bubble_seconds;
     kk_stage_set_bubble_font(a->stage, cfg.bubble_font, cfg.bubble_size);
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
@@ -1064,6 +1065,7 @@ int main(int argc, char **argv)
         .show_names = a.cfg.show_names,
         .name_above = a.cfg.name_above,
         .show_bubbles = a.cfg.show_bubbles,
+        .bubble_seconds = a.cfg.bubble_seconds,
         .name_font = a.cfg.name_font,
         .name_size = a.cfg.name_size,
         .bubble_font = a.cfg.bubble_font,
