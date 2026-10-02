@@ -63,6 +63,10 @@ The avatars come from your Stream Avatars installation (the `data` folder
 inside the Proton prefix). It is looked up in the Steam libraries; if it is
 not found, point to it with `--sa-dir`. Nothing there is copied or changed.
 
+Want to **make your own avatars, gear and palettes**? The format is the Stream
+Avatars one and is explained in [docs/avatares](docs/avatares/README.md) (in
+Portuguese only for now), with a working example kit.
+
 ```sh
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # a livestream's chat
 build/kikarinhas -y @YourChannel        # waits for the channel to go live
