@@ -24,7 +24,8 @@
  *              name_font, name_size, bubble_font, bubble_size
  *   [chat]     youtube, demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
- *   [commands] shortcuts = yes|no, shortcut_cooldown = 5
+ *   [commands] shortcuts = yes|no, shortcut_cooldown = 5,
+ *              help_bubbles = yes|no, help_count = 3
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
  *              role = anyone|member|mod|owner, enabled = yes|no
@@ -92,6 +93,8 @@ typedef struct {
     /* [control] */
     char *socket; /* NULL = default path, "" = off */
     /* [commands] */
+    bool help_bubbles; /* !help bubbles, even with show_bubbles = no */
+    int help_count;    /* commands listed per help bubble */
     bool shortcuts;
     double shortcut_cd;
     kk_config_command *commands;

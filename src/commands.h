@@ -22,6 +22,8 @@ typedef enum {
     KK_ROLE_OWNER,
 } kk_role;
 
+typedef struct kk_commands kk_commands;
+
 typedef struct {
     const kk_chat_msg *msg;
     const char *user_key; /* "platform:id" */
@@ -29,6 +31,7 @@ typedef struct {
     const char *args;     /* trimmed text after the command word */
     const char *data;     /* the command's data, or NULL */
     void *ud;             /* given to kk_commands_new */
+    kk_commands *commands; /* the table the command was found in */
 } kk_cmd_call;
 
 /* Returns true if it did something; only then do cooldowns start. */
@@ -42,9 +45,9 @@ typedef enum {
     KK_CMD_FAILED,   /* handler did nothing (bad argument, ...) */
 } kk_cmd_result;
 
-typedef struct kk_commands kk_commands;
-
 kk_commands *kk_commands_new(void *ud);
+/* What was given to kk_commands_new. */
+void *kk_commands_ud(const kk_commands *c);
 void kk_commands_free(kk_commands *c);
 
 /* name is lowercase, without "!". Re-adding a name replaces it. */
@@ -58,6 +61,12 @@ bool kk_commands_has(kk_commands *c, const char *word);
 int kk_commands_set_group(kk_commands *c, const char *name, const char *group);
 /* Extra word for an existing command. Fails if the word is taken. */
 int kk_commands_alias(kk_commands *c, const char *name, const char *alias);
+/* A short usage line ("!hug [@name]") for the help command to show. Commands
+ * without one are not listed. */
+int kk_commands_set_help(kk_commands *c, const char *name, const char *text);
+/* Calls fn with the help line of every command a person of role may use. */
+void kk_commands_each_help(const kk_commands *c, kk_role role,
+                           void (*fn)(const char *text, void *ud), void *ud);
 void kk_commands_set_fallback(kk_commands *c, kk_cmd_fn fn,
                               double user_cooldown);
 

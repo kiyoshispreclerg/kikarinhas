@@ -18,7 +18,7 @@
 
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
-    "emote", "hug", "attack", "sound", NULL,
+    "emote", "hug", "attack", "sound", "help", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. */
@@ -39,6 +39,7 @@ static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("hug", 60, 0, "abraco", "abraço", "abracar", "abraçar"),
     CMD("attack", 120, 0, "ataque", "atacar", "bater"),
     CMD("sound", 30, 3, "som", "play", "sfx", "mesa"),
+    CMD("help", 10, 2, "ajuda", "comandos", "commands", "ajudar"),
 };
 #undef CMD
 
@@ -235,6 +236,8 @@ void kk_config_defaults(kk_config *c)
         .count = -1,
         .max_avatars = 30,
         .despawn = 300.0,
+        .help_bubbles = true,
+        .help_count = 3,
         .shortcuts = true,
         .shortcut_cd = 5.0,
         .sound_enabled = true,
@@ -642,6 +645,10 @@ static void apply_commands(kk_config *c, const warner *w)
         get_bool(w, &c->shortcuts);
     else if (key_is(w, "shortcut_cooldown"))
         get_double(w, &c->shortcut_cd, 0, 86400);
+    else if (key_is(w, "help_bubbles"))
+        get_bool(w, &c->help_bubbles);
+    else if (key_is(w, "help_count"))
+        get_int(w, &c->help_count, 1, 20, false);
     else
         unknown_key(w);
 }

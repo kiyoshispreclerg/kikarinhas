@@ -477,6 +477,17 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(top), gtk_label_new("s"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
 
+    GtkWidget *help = gtk_hbox_new(FALSE, 6);
+    e->help_bubbles = check(_("Help bubble (!help), even with message bubbles off;"),
+                            cfg->help_bubbles);
+    e->help_count = spin(1, 20, 1, 0);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->help_count), cfg->help_count);
+    gtk_box_pack_start(GTK_BOX(help), e->help_bubbles, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(help), gtk_label_new(_("random commands per bubble")),
+                       FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(help), e->help_count, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), help, FALSE, FALSE, 0);
+
     e->commands = gtk_list_store_new(N_COLS, G_TYPE_BOOLEAN, G_TYPE_STRING,
                                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
                                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
@@ -690,6 +701,8 @@ static void collect(editor *e)
     /* [control] */
     put(e, "control", "socket", text_of(e->socket), NULL);
     /* [commands] */
+    put_bool(e, "commands", "help_bubbles", e->help_bubbles, d.help_bubbles);
+    put_int(e, "commands", "help_count", spin_int(e->help_count), d.help_count);
     put_bool(e, "commands", "shortcuts", e->shortcuts, d.shortcuts);
     put_num(e, "commands", "shortcut_cooldown",
             gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->shortcut_cd)), d.shortcut_cd);

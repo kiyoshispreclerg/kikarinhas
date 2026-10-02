@@ -237,6 +237,14 @@ become a bridge written in any language.
 | `!hug [@name]` | `!abraco`, `!abraço` | walks to someone and hugs | 60 s |
 | `!attack [@name]` | `!ataque`, `!bater` | walks to someone and attacks | 120 s |
 | `!sound NAME` | `!som`, `!play`, `!sfx`, or just `!NAME` | plays a sound from the sound board | 30 s (3 s for everyone) |
+| `!help` | `!ajuda`, `!comandos`, `!commands` | a bubble with a few random commands | 10 s (2 s for everyone) |
+
+`!help` shows, in a blue bubble over the requester's avatar, a few random
+commands out of the ones that person may use, sounds included (one by one).
+Every request draws again, so whoever wants to learn them all has to ask
+many times. It works even with `show_bubbles = no`. In `[commands]`:
+`help_bubbles = no` turns it off and `help_count` (default 3, up to 20)
+sets how many show; both are in the configurator's Commands tab.
 
 A full-width `!` (`！`, common on Japanese keyboards) works too. The channel
 owner never waits. A command that does nothing (wrong name) does not start

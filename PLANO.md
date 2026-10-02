@@ -322,6 +322,16 @@ data/         avatar padrão original, exemplo de .ini
      reiniciando: a etiqueta é renderizada uma vez por avatar e o `ground`
      automático é medido com a fonte dela; o reload avisa e mantém a fonte
      em uso (mesmo esquema de `scale` e `ground`).
+   - **Ajuda no balão**: `!help` (`!ajuda`, `!comandos`, `!commands`).
+     Cada comando registrado ganha uma linha de uso (`kk_commands_set_help`:
+     `!avatar NOME`, `!hug [@nome]`; comando com `data` fixo não tem
+     argumento); os sons entram um a um (só o nome, não os apelidos), e o
+     `!sound` genérico só aparece quando os sons não são comandos. O
+     sorteio é por amostragem de reservatório entre os comandos que o
+     papel de quem pediu permite (`kk_commands_each_help`), então cada
+     pedido dá outra lista. Balão azul à parte (`kk_stage_help_bubble`,
+     `render_text_bubble`), que ignora `show_bubbles`; `[commands]
+     help_bubbles` desliga e `help_count` (1 a 20) define a quantidade.
    - **Idiomas do configurador**: gettext com msgids em inglês
      (`config/i18n.h`: `_()`, `N_()`, `ngettext()`), traduções em `po/`
      (`pt_BR` e `en`, listadas em `po/LINGUAS`; `make pot` atualiza). Os

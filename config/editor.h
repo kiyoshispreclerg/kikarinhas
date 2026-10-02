@@ -35,7 +35,7 @@ typedef struct {
     /* [control] */
     GtkWidget *socket;
     /* [commands] */
-    GtkWidget *shortcuts, *shortcut_cd;
+    GtkWidget *shortcuts, *shortcut_cd, *help_bubbles, *help_count;
     GtkListStore *commands;
     GtkWidget *tree;
 

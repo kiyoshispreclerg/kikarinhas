@@ -101,6 +101,11 @@ bool kk_stage_set_palette(kk_stage *s, kk_avatar *a, int palette);
 bool kk_stage_wear(kk_stage *s, kk_avatar *a, const char *piece_name);
 void kk_stage_unwear_all(kk_stage *s, kk_avatar *a);
 
+/* Shows text in a blue bubble over a (the first title_len bytes in bold, at
+ * most lines lines, up for seconds), even with show_bubbles off. */
+void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,
+                          int title_len, int lines, double seconds);
+
 /* Avatar whose name tag matches name (case-insensitive, "@" ignored). */
 kk_avatar *kk_stage_find_by_name(kk_stage *s, const char *name);
 /* A random avatar other than not, or NULL. */

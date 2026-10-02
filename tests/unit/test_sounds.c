@@ -295,6 +295,76 @@ TEST(each_sound_is_a_command_sharing_the_cooldown)
     kk_config_free(&c);
 }
 
+static char help_lines[2048];
+static int help_n;
+
+static void collect_help(const char *text, void *ud)
+{
+    (void)ud;
+    help_n++;
+    snprintf(help_lines + strlen(help_lines), sizeof help_lines - strlen(help_lines),
+             "[%s]", text);
+}
+
+static int help_for(kk_commands *c, kk_role role)
+{
+    help_lines[0] = '\0';
+    help_n = 0;
+    kk_commands_each_help(c, role, collect_help, NULL);
+    return help_n;
+}
+
+TEST(help_lists_what_a_person_may_use)
+{
+    kk_config c = load_text("[command.attack]\nrole = mod\n[command.hug]\nenabled = no\n"
+                            "[command.pika]\naction = avatar\ndata = pikachu\n"
+                            "[sound.buzina]\nfile = x.ogg\naliases = buz\n"
+                            "[sound.tom]\nfile = y.ogg\n");
+    CHECK_INT_EQ(c.help_count, 3);
+    CHECK(c.help_bubbles);
+    kk_actions actions = {.sound = fake_sound};
+    kk_commands *cmds = kk_commands_new(&actions);
+    CHECK_INT_EQ(kk_actions_register(cmds, &c, NULL, NULL), 0);
+    CHECK(actions.help_bubbles);
+    CHECK_INT_EQ(actions.help_count, 3);
+
+    help_for(cmds, KK_ROLE_ANYONE);
+    CHECK_STR_HAS(help_lines, "[!avatar NOME]");
+    CHECK_STR_HAS(help_lines, "[!emote [NOME]]");
+    CHECK_STR_HAS(help_lines, "[!pika]");   /* fixed data: no argument */
+    CHECK_STR_HAS(help_lines, "[!buzina]"); /* the name, not each alias */
+    CHECK_STR_HAS(help_lines, "[!tom]");
+    CHECK(!strstr(help_lines, "buz]"));
+    CHECK(!strstr(help_lines, "!sound")); /* the sounds are listed instead */
+    CHECK(!strstr(help_lines, "!help"));
+    CHECK(!strstr(help_lines, "!hug"));    /* disabled */
+    CHECK(!strstr(help_lines, "!attack")); /* needs mod */
+    int anyone = help_n;
+    CHECK_INT_EQ(help_for(cmds, KK_ROLE_MOD), anyone + 1);
+    CHECK_STR_HAS(help_lines, "[!attack [@nome]]");
+    kk_commands_free(cmds);
+    kk_config_free(&c);
+
+    /* Without a command per sound, !sound NAME is the way in. */
+    c = load_text("[soundboard]\ncommands = no\n[sound.buzina]\nfile = x.ogg\n");
+    cmds = kk_commands_new(&actions);
+    kk_actions_register(cmds, &c, NULL, NULL);
+    help_for(cmds, KK_ROLE_ANYONE);
+    CHECK_STR_HAS(help_lines, "[!sound NOME]");
+    CHECK(!strstr(help_lines, "[!buzina]"));
+    kk_commands_free(cmds);
+    kk_config_free(&c);
+
+    c = load_text("[commands]\nhelp_bubbles = no\nhelp_count = 7\n");
+    CHECK(!c.help_bubbles);
+    CHECK_INT_EQ(c.help_count, 7);
+    kk_config_free(&c);
+    c = load_text("[commands]\nhelp_count = 0\n");
+    CHECK_INT_EQ(n_warnings, 1);
+    CHECK_INT_EQ(c.help_count, 3);
+    kk_config_free(&c);
+}
+
 TEST(soundboard_plays_by_name_or_alias)
 {
     char tone[KK_PATH_MAX];
@@ -408,6 +478,7 @@ int main(void)
     RUN(sound_names_from_files);
     RUN(relative_sound_files_follow_the_config);
     RUN(each_sound_is_a_command_sharing_the_cooldown);
+    RUN(help_lists_what_a_person_may_use);
     RUN(soundboard_plays_by_name_or_alias);
     RUN(imports_stream_avatars_sounds);
     RUN(users_remember_name_and_dates);

@@ -85,29 +85,17 @@ static void bubble_path(cairo_t *cr, double w, double h)
     cairo_close_path(cr);
 }
 
-/* Bubble with up to BUBBLE_LINES wrapped lines; paid messages get the
- * amount on top in bold and a gold body, new members a green one. */
-static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
+/* Bubble with up to max_lines wrapped lines of plain text (never parsed as
+ * markup), the first bold_len bytes in bold, on a fill-coloured body. */
+static cairo_surface_t *render_text_bubble(kk_stage *s, const char *text,
+                                           int bold_len, rgb fill, int max_lines)
 {
-    if (!s->cfg.show_bubbles)
-        return NULL;
     PangoLayout *layout = pango_layout_new(s->pango);
     pango_layout_set_font_description(layout, s->bubble_font);
     pango_layout_set_width(layout, BUBBLE_WIDTH * PANGO_SCALE);
     pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
-    pango_layout_set_height(layout, -BUBBLE_LINES);
+    pango_layout_set_height(layout, -max_lines);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
-
-    /* Plain text plus attributes: chat text is never parsed as markup. */
-    char text[600];
-    int bold_len = 0;
-    if (m->kind == KK_MSG_PAID && m->amount && m->amount[0]) {
-        snprintf(text, sizeof text, "%s%s%s", m->amount, m->text[0] ? "\n" : "",
-                 m->text);
-        bold_len = (int)strlen(m->amount);
-    } else {
-        snprintf(text, sizeof text, "%s", m->text);
-    }
     pango_layout_set_text(layout, text, -1);
     if (bold_len) {
         PangoAttrList *attrs = pango_attr_list_new();
@@ -126,12 +114,6 @@ static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
     if (w < 3 * BUBBLE_TAIL + 2 * BUBBLE_RADIUS)
         w = (int)(3 * BUBBLE_TAIL + 2 * BUBBLE_RADIUS);
 
-    rgb fill = {1.0, 1.0, 1.0};
-    if (m->kind == KK_MSG_PAID)
-        fill = (rgb){1.0, 0.84, 0.35};
-    else if (m->kind == KK_MSG_MEMBER)
-        fill = (rgb){0.62, 0.95, 0.68};
-
     cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
     cairo_t *cr = cairo_create(surf);
     bubble_path(cr, w, h);
@@ -148,6 +130,29 @@ static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
     cairo_destroy(cr);
     g_object_unref(layout);
     return surf;
+}
+
+/* A chat message: paid ones get the amount on top in bold and a gold body,
+ * new members a green one. Nothing when bubbles are off. */
+static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
+{
+    if (!s->cfg.show_bubbles)
+        return NULL;
+    char text[600];
+    int bold_len = 0;
+    if (m->kind == KK_MSG_PAID && m->amount && m->amount[0]) {
+        snprintf(text, sizeof text, "%s%s%s", m->amount, m->text[0] ? "\n" : "",
+                 m->text);
+        bold_len = (int)strlen(m->amount);
+    } else {
+        snprintf(text, sizeof text, "%s", m->text);
+    }
+    rgb fill = {1.0, 1.0, 1.0};
+    if (m->kind == KK_MSG_PAID)
+        fill = (rgb){1.0, 0.84, 0.35};
+    else if (m->kind == KK_MSG_MEMBER)
+        fill = (rgb){0.62, 0.95, 0.68};
+    return render_text_bubble(s, text, bold_len, fill, BUBBLE_LINES);
 }
 
 /* Long messages stay up longer, within limits. */
@@ -558,6 +563,15 @@ void kk_stage_say(kk_stage *s, kk_avatar *a, const kk_chat_msg *m)
     bool has_text = m->text[0] || (m->kind == KK_MSG_PAID && m->amount && m->amount[0]);
     kk_avatar_say(a, has_text ? render_bubble(s, m) : NULL,
                   bubble_seconds(m->text));
+}
+
+void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,
+                          int title_len, int lines, double seconds)
+{
+    kk_avatar_jump(a);
+    kk_avatar_say(a, render_text_bubble(s, text, title_len, (rgb){0.78, 0.89, 1.0},
+                                        lines),
+                  seconds);
 }
 
 kk_avatar *kk_stage_find_by_name(kk_stage *s, const char *name)

@@ -123,6 +123,52 @@ static bool cmd_sound(const kk_cmd_call *c)
     return name[0] && a->sound && a->sound(a->sound_ud, c->msg, name);
 }
 
+/* !help: a few usage lines picked at random among the commands the sender
+ * may use (sounds included), in a bubble over their avatar. */
+#define HELP_MAX 20
+
+typedef struct {
+    kk_rng *rng;
+    const char *pick[HELP_MAX];
+    int want, seen, have;
+} help_pick;
+
+/* Reservoir sampling: every command is equally likely, however many. */
+static void help_each(const char *text, void *ud)
+{
+    help_pick *h = ud;
+    if (h->have < h->want) {
+        h->pick[h->have++] = text;
+    } else {
+        int j = kk_rng_int(h->rng, h->seen + 1);
+        if (j < h->want)
+            h->pick[j] = text;
+    }
+    h->seen++;
+}
+
+static bool cmd_help(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!a->help_bubbles || !a->self || !c->commands)
+        return false;
+    help_pick h = {.rng = &a->stage->rng,
+                   .want = a->help_count < 1 ? 1
+                           : a->help_count > HELP_MAX ? HELP_MAX
+                                                      : a->help_count};
+    kk_commands_each_help(c->commands, kk_role_of(c->msg->badges), help_each, &h);
+    if (h.have == 0)
+        return false;
+    char text[600];
+    int n = snprintf(text, sizeof text, "Comandos:");
+    int title_len = n;
+    for (int i = 0; i < h.have && n < (int)sizeof text; i++)
+        n += snprintf(text + n, sizeof text - (size_t)n, "\n%s", h.pick[i]);
+    kk_stage_help_bubble(a->stage, a->self, text, title_len, h.have + 1,
+                         4.0 + 1.5 * h.have);
+    return true;
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -148,7 +194,7 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"avatar", cmd_avatar}, {"color", cmd_color}, {"gear", cmd_gear},
         {"jump", cmd_jump},     {"sit", cmd_sit},     {"dance", cmd_dance},
         {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
-        {"sound", cmd_sound},
+        {"sound", cmd_sound},   {"help", cmd_help},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
@@ -156,11 +202,38 @@ kk_cmd_fn kk_actions_find(const char *action)
     return NULL;
 }
 
+/* The line !help shows: "!hug [@nome]". A command with fixed data takes no
+ * argument; a command with an unknown action is just "!name". */
+static void set_help(kk_commands *c, const kk_config_command *k)
+{
+    static const struct {
+        const char *action, *hint;
+    } hints[] = {
+        {"avatar", "NOME"}, {"color", "COR"},      {"gear", "PEÇA"},
+        {"emote", "[NOME]"}, {"hug", "[@nome]"},   {"attack", "[@nome]"},
+        {"sound", "NOME"},
+    };
+    char line[160];
+    const char *hint = "";
+    for (size_t i = 0; !k->data && i < sizeof hints / sizeof hints[0]; i++)
+        if (strcmp(k->action, hints[i].action) == 0)
+            hint = hints[i].hint;
+    snprintf(line, sizeof line, "!%s%s%s", k->name, hint[0] ? " " : "", hint);
+    kk_commands_set_help(c, k->name, line);
+}
+
 int kk_actions_register(kk_commands *c, const kk_config *cfg,
                         kk_config_warn_fn warn, void *ud)
 {
     char msg[256];
     int problems = 0;
+    kk_actions *self = kk_commands_ud(c);
+    if (self) {
+        self->help_bubbles = cfg->help_bubbles;
+        self->help_count = cfg->help_count;
+    }
+    /* With a command per sound, those are listed instead of "!sound". */
+    bool sounds_listed = cfg->sound_enabled && cfg->sound_commands && cfg->n_sounds > 0;
     for (int i = 0; i < cfg->n_commands; i++) {
         const kk_config_command *k = &cfg->commands[i];
         kk_cmd_fn fn = k->action ? kk_actions_find(k->action) : NULL;
@@ -172,7 +245,13 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
             if (warn)
                 warn(ud, 0, msg);
             problems++;
+            continue;
         }
+        bool is_help = strcmp(k->action, "help") == 0;
+        bool is_sound = strcmp(k->action, "sound") == 0 && !k->data;
+        if (!is_help && !(is_sound && (sounds_listed || !cfg->sound_enabled ||
+                                       cfg->n_sounds == 0)))
+            set_help(c, k);
     }
     /* Aliases after every name, so an alias can't steal a later name. */
     for (int i = 0; i < cfg->n_commands; i++) {
@@ -212,6 +291,11 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
             kk_commands_add(c, word, cmd_sound, s->name, base->user_cd,
                             base->global_cd, base->role);
             kk_commands_set_group(c, word, "sound");
+            if (w < 0) {
+                char line[160];
+                snprintf(line, sizeof line, "!%s", word);
+                kk_commands_set_help(c, word, line);
+            }
         }
     }
 

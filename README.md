@@ -235,6 +235,14 @@ conhece pode virar uma bridge em qualquer linguagem.
 | `!hug [@nome]` | `!abraco`, `!abraço` | vai até alguém e abraça | 60 s |
 | `!attack [@nome]` | `!ataque`, `!bater` | vai até alguém e ataca | 120 s |
 | `!sound NOME` | `!som`, `!play`, `!sfx`, ou só `!NOME` | toca um som da mesa de som | 30 s (3 s para todos) |
+| `!help` | `!ajuda`, `!comandos`, `!commands` | balão com alguns comandos sorteados | 10 s (2 s para todos) |
+
+`!help` mostra, num balão azul sobre o avatar de quem pediu, alguns comandos
+sorteados entre os que essa pessoa pode usar, com os sons incluídos (um
+por um). Cada pedido sorteia de novo, então quem quiser conhecer todos
+precisa pedir várias vezes. Funciona mesmo com `show_bubbles = no`. Em
+`[commands]`: `help_bubbles = no` desliga e `help_count` (padrão 3, até 20)
+muda quantos aparecem; ambos estão na aba Comandos do configurador.
 
 `!` de largura total (`！`, comum em teclados japoneses) também vale. O dono
 do canal não tem espera. Comando que não faz nada (nome errado) não conta a

@@ -18,6 +18,7 @@ typedef struct {
     double user_cd, global_cd;
     kk_role role;
     char *group; /* cooldowns are kept under this name; NULL = own name */
+    char *help;  /* usage line for the help command, or NULL */
 } command;
 
 /* When someone may use a command again, keyed by hash(command, person). */
@@ -44,6 +45,11 @@ kk_commands *kk_commands_new(void *ud)
     return c;
 }
 
+void *kk_commands_ud(const kk_commands *c)
+{
+    return c->ud;
+}
+
 void kk_commands_free(kk_commands *c)
 {
     if (!c)
@@ -53,6 +59,7 @@ void kk_commands_free(kk_commands *c)
             free(c->cmds[i].names[k]);
         free(c->cmds[i].data);
         free(c->cmds[i].group);
+        free(c->cmds[i].help);
     }
     free(c->cmds);
     free(c->cds);
@@ -116,6 +123,27 @@ int kk_commands_set_group(kk_commands *c, const char *name, const char *group)
     free(cmd->group);
     cmd->group = g;
     return 0;
+}
+
+int kk_commands_set_help(kk_commands *c, const char *name, const char *text)
+{
+    command *cmd = find(c, name);
+    char *h = text ? strdup(text) : NULL;
+    if (!cmd || (text && !h)) {
+        free(h);
+        return -1;
+    }
+    free(cmd->help);
+    cmd->help = h;
+    return 0;
+}
+
+void kk_commands_each_help(const kk_commands *c, kk_role role,
+                           void (*fn)(const char *text, void *ud), void *ud)
+{
+    for (int i = 0; i < c->count; i++)
+        if (c->cmds[i].help && role >= c->cmds[i].role)
+            fn(c->cmds[i].help, ud);
 }
 
 int kk_commands_alias(kk_commands *c, const char *name, const char *alias)
@@ -245,7 +273,8 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
     char args[MAX_ARGS];
     kk_role role = kk_role_of(msg->badges);
     command *cmd = find(c, word);
-    kk_cmd_call call = {.msg = msg, .user_key = user_key, .ud = c->ud, .args = args};
+    kk_cmd_call call = {.msg = msg, .user_key = user_key, .ud = c->ud,
+                        .commands = c, .args = args};
     uint64_t h;
 
     if (cmd) {
