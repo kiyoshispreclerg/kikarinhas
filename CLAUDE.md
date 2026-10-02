@@ -68,6 +68,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
+| `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas e o ícone |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/audience.c` | abas Sons e Espectadores |
 
@@ -79,6 +80,8 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 - Desempenho importa (meta: poucos % de CPU com 30 avatares): o que é
   estático vai para superfícies em cache e só é copiado a cada quadro.
 - Caminhos com `kk_pathf` (falha em vez de truncar).
+- `README.md` (pt-BR, padrão) e `README.en.md` andam juntos: mudou um, mude o
+  outro.
 - Commits em português, terminando com a linha Co-Authored-By.
 
 ## Próximas fases (ver PLANO.md)

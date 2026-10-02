@@ -1,5 +1,7 @@
 # Kikarinhas
 
+**Português** · [English](README.en.md)
+
 Avatares do chat andando na sua live: cada pessoa que fala no chat ganha um
 bonequinho que passeia, pula e reage numa janela transparente que o OBS
 captura. Parecido com o Stream Avatars e o Desktop Ponies, mas nativo para
@@ -30,6 +32,20 @@ make test       # testes de unidade
 make asan       # testes com AddressSanitizer/UBSan
 make asan-run   # o programa com AddressSanitizer/UBSan
 ```
+
+## Instalar
+
+```sh
+sudo make install PREFIX=/usr   # sem PREFIX, vai para /usr/local
+sudo make uninstall PREFIX=/usr
+```
+
+Instala `kikarinhas` e `kikarinhas-config` (este só se foi compilado, com
+GTK2), o `.ini` de exemplo em `share/doc/kikarinhas/`, os atalhos `.desktop`
+e o ícone, então os dois programas aparecem nos menus e buscadores de
+aplicativos (o configurador como "Configurações do Kikarinhas"). Se o menu
+não mostrar na hora, rode `update-desktop-database` ou saia e entre na
+sessão.
 
 ## Usar
 
@@ -94,9 +110,9 @@ nome e do balão.
 Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
 --reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
 tempo de sumiço, fps, chat de mentira, `verbose`, o alvo do YouTube,
-nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo, escala, chão, avatares
-fixos, fonte dos nomes, pasta do Stream Avatars, arquivo de pessoas e socket só mudam
-reiniciando, e o log avisa.
+nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo,
+escala, chão, avatares fixos, fonte dos nomes, pasta do Stream Avatars,
+arquivo de pessoas e socket só mudam reiniciando, e o log avisa.
 Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
 
 Os comandos do chat são configurados em seções `[command.NOME]`:
