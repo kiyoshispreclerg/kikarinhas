@@ -18,16 +18,18 @@
 
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
-    "emote", "hug", "attack", "sound", "help", "text", "image", NULL,
+    "emote", "hug", "attack", "sound", "help", "text", "image", "nowplaying", NULL,
 };
 
-/* Cooldowns follow Stream Avatars' defaults where it has one. */
-#define CMD(n, ucd, gcd, ...)                                                  \
-    {.name = (char *)n, .action = (char *)n, .aliases = {__VA_ARGS__},       \
+/* Cooldowns follow Stream Avatars' defaults where it has one. CMD_AS is a
+ * command named differently from its action. */
+#define CMD_AS(n, act, ucd, gcd, ...)                                          \
+    {.name = (char *)n, .action = (char *)act, .aliases = {__VA_ARGS__},     \
      .n_aliases = (int)(sizeof((const char *[]){__VA_ARGS__}) /              \
                         sizeof(const char *)),                               \
      .user_cd = ucd, .global_cd = gcd, .role = KK_ROLE_ANYONE, .enabled = true, \
      .params = KK_CMD_PARAMS_INIT}
+#define CMD(n, ucd, gcd, ...) CMD_AS(n, n, ucd, gcd, __VA_ARGS__)
 
 static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("avatar", 5, 0, "personagem", "char"),
@@ -41,8 +43,10 @@ static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("attack", 120, 0, "ataque", "atacar", "bater"),
     CMD("sound", 30, 3, "som", "play", "sfx", "mesa"),
     CMD("help", 10, 2, "ajuda", "comandos", "commands", "ajudar"),
+    CMD_AS("song", "nowplaying", 10, 3, "musica", "música", "np", "tocando"),
 };
 #undef CMD
+#undef CMD_AS
 
 const kk_config_command *kk_config_default_commands(int *n)
 {

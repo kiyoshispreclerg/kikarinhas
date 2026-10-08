@@ -1,7 +1,7 @@
 # Kikarinhas — notas para o Claude
 
 Avatares do chat numa janela ARGB que o OBS captura (tipo Stream Avatars),
-nativo X11, em C11 + Xlib + Cairo + Pango + libcurl + ALSA. Leia o `PLANO.md`
+nativo X11, em C11 + Xlib + Cairo + Pango + libcurl + ALSA + libdbus. Leia o `PLANO.md`
 antes de começar uma fase: ele tem a arquitetura, o estado de cada fase e as
 lições aprendidas (formato do Stream Avatars, protocolo do YouTube).
 
@@ -72,6 +72,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
 | `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `play`, `set_avatar`... |
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
+| `src/mpris.c` | música tocando no desktop (MPRIS na sessão D-Bus, sem bloquear) |
 | `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP) e a camada do `action = image` |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |

@@ -24,6 +24,7 @@
 #include "http.h"
 #include "library.h"
 #include "log.h"
+#include "mpris.h"
 #include "overlay.h"
 #include "sa.h"
 #include "soundboard.h"
@@ -634,6 +635,7 @@ typedef struct {
     kk_emotes *emotes;
     kk_emotewall *wall;
     kk_overlay *overlay;  /* pictures shown by commands */
+    kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
     source sources[KK_MAX_SOURCES]; /* the lives being read */
     int n_sources;
     kk_demochat demo;
@@ -945,6 +947,22 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         }
     } else if (strcmp(type, "set_user") == 0 || strcmp(type, "set_avatar") == 0) {
         set_user(a, req, reply);
+    } else if (strcmp(type, "nowplaying") == 0) {
+        /* {"ok":true,"text":"Artist — Title","paused":false}; text null if
+         * nothing plays. */
+        char song[512];
+        bool paused = false;
+        const char *filter =
+            cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "player"));
+        if (!a->mpris) {
+            cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
+            cJSON_AddStringToObject(reply, "error", "sem sessão D-Bus");
+        } else if (kk_mpris_current(a->mpris, filter, song, sizeof song, &paused)) {
+            cJSON_AddStringToObject(reply, "text", song);
+            cJSON_AddBoolToObject(reply, "paused", paused);
+        } else {
+            cJSON_AddNullToObject(reply, "text");
+        }
     } else if (strcmp(type, "ping") == 0) {
         cJSON_AddStringToObject(reply, "version", KK_VERSION);
     } else if (strcmp(type, "quit") == 0) {
@@ -1051,6 +1069,10 @@ static void run(app *a)
                 kk_twitch_pollfd(a->sources[i].twitch, &fds[nfds]))
                 tw_at[i] = nfds++;
         }
+        int bus_at = nfds;
+        int room = MAX_FDS - nfds < 4 ? MAX_FDS - nfds : 4;
+        int n_bus = a->mpris ? kk_mpris_pollfds(a->mpris, fds + bus_at, room) : 0;
+        nfds += n_bus;
         int ctl_at = nfds;
         if (a->control)
             nfds += kk_control_pollfds(a->control, fds + nfds, MAX_FDS - nfds);
@@ -1068,6 +1090,8 @@ static void run(app *a)
             kk_log_error("conexão com o servidor X perdida");
             return;
         }
+        if (a->mpris)
+            kk_mpris_dispatch(a->mpris, fds + bus_at, n_bus);
         if (a->control)
             kk_control_dispatch(a->control, fds + ctl_at, nfds - ctl_at);
 
@@ -1308,8 +1332,9 @@ int main(int argc, char **argv)
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
 
+    a.mpris = kk_mpris_new();
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
-                          .overlay = a.overlay};
+                          .overlay = a.overlay, .mpris = a.mpris};
     a.actions = &actions;
     a.sink = (chat_sink){
         .stage = &stage,
@@ -1345,6 +1370,7 @@ int main(int argc, char **argv)
     kk_stage_remove_layer(&stage, kk_overlay_layer(a.overlay));
     kk_emotewall_free(a.wall);
     kk_overlay_free(a.overlay);
+    kk_mpris_free(a.mpris);
     kk_emotes_free(a.emotes);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);

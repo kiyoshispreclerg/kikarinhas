@@ -4,6 +4,7 @@
 
 #include "commands.h"
 #include "config.h"
+#include "mpris.h"
 #include "overlay.h"
 #include "stage.h"
 
@@ -19,6 +20,7 @@ typedef struct {
     void *sound_ud;
     kk_avatar *self; /* the sender's avatar, set before each dispatch */
     kk_overlay *overlay; /* where action = image shows pictures; may be NULL */
+    kk_mpris *mpris;     /* the desktop's players; NULL without a session bus */
     bool help_bubbles; /* set by kk_actions_register from the config */
     int help_count;
     double help_seconds; /* -1: by the number of lines */

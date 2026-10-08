@@ -54,7 +54,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y --no-install-recommends \
             ca-certificates git build-essential dpkg-dev pkg-config gettext libx11-dev \
             libxext-dev libcairo2-dev libpango1.0-dev libcurl4-openssl-dev \
-            libasound2-dev libssl-dev libgtk2.0-dev
+            libasound2-dev libssl-dev libgtk2.0-dev libdbus-1-dev
       - uses: actions/checkout@v4
       - name: Build the .deb
         env:

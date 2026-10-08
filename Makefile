@@ -30,7 +30,8 @@ LIB_SRC = src/log.c \
       src/soundboard.c \
       src/emoji.c \
       src/emotes.c \
-      src/emotewall.c
+      src/emotewall.c \
+      src/mpris.c
 VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c vendor/images.c
 LIBKK = $(BUILD)/libkk.a
 

@@ -25,7 +25,7 @@ Dependências (Debian/Ubuntu):
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
     libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev \
-    libssl-dev
+    libssl-dev libdbus-1-dev
 sudo apt install libgtk2.0-dev   # opcional: só para o kikarinhas-config
 sudo apt install fonts-noto-color-emoji   # emojis coloridos (emote wall e balões)
 ```
@@ -363,6 +363,16 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!attack [@nome]` | `!ataque`, `!bater` | vai até alguém e ataca | 120 s |
 | `!sound NOME` | `!som`, `!play`, `!sfx`, ou só `!NOME` | toca um som da mesa de som | 30 s (3 s para todos) |
 | `!help` | `!ajuda`, `!comandos`, `!commands` | balão com alguns comandos sorteados | 10 s (2 s para todos) |
+| `!song` | `!musica`, `!música`, `!np`, `!tocando` | balão com a música tocando no computador | 10 s (3 s para todos) |
+
+`!song` mostra a música que está tocando no computador de quem transmite,
+a mesma que os painéis do Linux mostram (MPRIS pelo D-Bus: Spotify, VLC,
+Audacious, navegadores...). Com mais de um player, vale o que começou a
+tocar por último; se nada toca, vale um pausado. Cuidado: uma aba do
+navegador tocando vídeo também conta. Para limitar a um player, ponha parte
+do nome dele no `data` do comando (`[command.song]` com `data = spotify`); o
+que a pessoa digita depois do comando é ignorado. No socket,
+`{"type":"nowplaying"}` responde a mesma coisa.
 
 `!help` mostra, num balão azul sobre o avatar de quem pediu, alguns comandos
 sorteados entre os que essa pessoa pode usar, com os sons incluídos (um

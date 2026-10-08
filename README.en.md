@@ -25,7 +25,7 @@ Dependencies (Debian/Ubuntu):
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
     libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev \
-    libssl-dev
+    libssl-dev libdbus-1-dev
 sudo apt install libgtk2.0-dev   # optional: only for kikarinhas-config
 sudo apt install fonts-noto-color-emoji   # colour emoji (emote wall and bubbles)
 ```
@@ -369,6 +369,16 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!attack [@name]` | `!ataque`, `!bater` | walks to someone and attacks | 120 s |
 | `!sound NAME` | `!som`, `!play`, `!sfx`, or just `!NAME` | plays a sound from the sound board | 30 s (3 s for everyone) |
 | `!help` | `!ajuda`, `!comandos`, `!commands` | a bubble with a few random commands | 10 s (2 s for everyone) |
+| `!song` | `!musica`, `!música`, `!np`, `!tocando` | a bubble with the music playing on the computer | 10 s (3 s for everyone) |
+
+`!song` shows the music playing on the streamer's computer, the same the
+Linux panels show (MPRIS over D-Bus: Spotify, VLC, Audacious, browsers...).
+With more than one player, the one that started playing last wins; if
+nothing plays, a paused one does. Careful: a browser tab playing a video
+counts too. To limit it to one player, put part of its name in the
+command's `data` (`[command.song]` with `data = spotify`); whatever people
+type after the command is ignored. Over the socket, `{"type":"nowplaying"}`
+answers the same.
 
 `!help` shows, in a blue bubble over the requester's avatar, a few random
 commands out of the ones that person may use, sounds included (one by one).

@@ -50,6 +50,7 @@ kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 | OpenSSL | TLS do IRC da Twitch e do websocket da Odysee |
 | cJSON (embutido) | JSON do SA e das APIs |
 | miniz (embutido, ainda não incluído) | ler os zips do SA/workshop |
+| libdbus-1 | players MPRIS (a música tocando, `!song`) |
 | GTK2 | só o `kikarinhas-config` |
 | fonte de emoji colorido (Noto Color Emoji) | só ao rodar: emojis do emote wall e dos balões |
 
@@ -494,6 +495,17 @@ data/         avatar padrão original, exemplo de .ini
      o `reload` esquece tudo. Ampliação inteira de 2x ou mais usa nearest.
      Lição: o cache guarda ponteiros, porque as imagens na tela apontam para
      ele enquanto ele cresce (o ASan pegou o `realloc`).
+   - **Música tocando** (`src/mpris.c`, comando padrão `!song`, ação
+     `nowplaying`): conexão privada à sessão D-Bus com os descritores no
+     `poll()` (watches da libdbus; timeouts ignorados porque nenhuma
+     chamada espera resposta com prazo). `ListNames` assíncrono e `GetAll`
+     por player (a resposta traz o nome único, que é de onde vêm os
+     sinais); `NameOwnerChanged` e `PropertiesChanged` mantêm a lista, então
+     o comando responde na hora. Vale o player tocando que começou por
+     último, senão um pausado. `data` filtra pelo nome do player (o que o
+     espectador digita é ignorado: uma aba do navegador não aparece por
+     acaso). Socket: `nowplaying`. Testado com o Audacious e com um player
+     falso em Python abrindo, trocando de faixa e fechando.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

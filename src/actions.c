@@ -224,6 +224,24 @@ static bool cmd_image(const kk_cmd_call *c)
            kk_overlay_show(a->overlay, c->name, c->data, c->params);
 }
 
+/* !song: what the desktop is playing (MPRIS), in a bubble. data, when set,
+ * limits it to players whose name has it ("spotify"), so a browser tab
+ * never shows up by accident; what viewers type is ignored. */
+static bool cmd_nowplaying(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!a->mpris || !a->self)
+        return false;
+    char song[520], text[600];
+    bool paused;
+    if (!kk_mpris_current(a->mpris, c->data, song, sizeof song, &paused))
+        snprintf(text, sizeof text, "Nenhuma música tocando agora.");
+    else
+        snprintf(text, sizeof text, "♪ %s%s", song, paused ? " (pausada)" : "");
+    kk_stage_help_bubble(a->stage, a->self, text, 0, 4, text_seconds(c, text));
+    return true;
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -250,7 +268,7 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"jump", cmd_jump},     {"sit", cmd_sit},     {"dance", cmd_dance},
         {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
         {"sound", cmd_sound},   {"help", cmd_help},   {"text", cmd_text},
-        {"image", cmd_image},
+        {"image", cmd_image},   {"nowplaying", cmd_nowplaying},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
