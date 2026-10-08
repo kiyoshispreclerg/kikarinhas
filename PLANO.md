@@ -532,6 +532,18 @@ data/         avatar padrão original, exemplo de .ini
      `points`, `give`, `award` (mod) e `top`; a ajuda mostra o preço. O
      configurador mostra os custos sobre os mesmos dados das abas Comandos e
      Sons, e a aba Espectadores edita o saldo (`set_user` com `points`).
+   - **Pôneis com cara de GIF** (`src/sprite.c`): as folhas de applejack,
+     fluttershy, rainbowdash e rarity vieram de GIFs com pontilhado, e a
+     escala 2 com `pixelsPerUnit` 1,43 dava 1,4× com nearest (pixels de 1
+     e 2 de largura, xadrez virando chuvisco). Agora: folha com ≥ 2% de
+     pixels em xadrez (lados diferentes, ≥ 3 cantos iguais) **e** mais de
+     16 cores passa por duas passadas de mistura com os vizinhos de cor
+     próxima (soma |ΔRGB| ≤ 200; contornos e olhos ficam) e é escalada
+     suave; pixel art em escala fracionária é ampliada por fator inteiro
+     com nearest e reduzida suave. `--check` diz quais foram misturadas.
+     Lição: o critério de cores separa o pontilhado intencional da pixel
+     art (Pokémon de 10 a 14 cores, também com xadrez nas asas) do
+     pontilhado de conversão (27 a 529 cores).
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

@@ -10,7 +10,16 @@
 /* A spritesheet cropped to the cells in use. Pixel art is kept at its
  * original size and enlarged with nearest filtering when drawn (cheap in
  * pixman, and 4x less memory at scale 2); smooth sheets are pre-scaled once
- * since bilinear filtering per frame would cost real CPU. */
+ * since bilinear filtering per frame would cost real CPU.
+ *
+ * Two cases of pixel art are pre-scaled too:
+ *  - at a fractional scale (1.4x), nearest makes some pixels one wide and
+ *    others two: the cells are enlarged by a whole factor with nearest and
+ *    then smoothly reduced, so every pixel keeps the same size;
+ *  - dithered sheets (pictures that came from low-colour GIFs, like some
+ *    pony avatars), whose checkerboards of two colours look like noise when
+ *    enlarged: neighbouring pixels of close colours are blended (outlines
+ *    and eyes, far in colour, stay sharp) and the sheet is scaled smoothly. */
 typedef struct {
     cairo_surface_t *pixels; /* avatars face right in the source */
     int store_w, store_h;    /* cell size inside pixels */
@@ -18,6 +27,7 @@ typedef struct {
     int cols, rows;
     int foot_pad; /* on-screen transparent rows under the feet in idle/walk */
     int head_pad; /* same, above the head */
+    bool dedithered; /* the source was found dithered and blended */
 } kk_sheet;
 
 /* Exact colour swap applied to the source pixels (a palette). */

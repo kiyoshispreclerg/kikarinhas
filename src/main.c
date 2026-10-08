@@ -444,6 +444,8 @@ static int check_avatars(const kk_sa_library *lib)
                    a->name, sh->cols, max_frames(a));
             warn++;
         }
+        if (sh->dedithered)
+            printf("info  %s: pontilhado (veio de GIF); cores vizinhas misturadas\n", a->name);
         if (a->anims[KK_ANIM_IDLE].frames == 0 &&
             a->anims[KK_ANIM_WALK].frames == 0) {
             printf("aviso %s: sem idle nem walk\n", a->name);

@@ -68,6 +68,18 @@ quantas linhas transparentes sobram embaixo nos quadros de `idle` e `walk`
   ampliação para a escala da janela (`scale` no `.ini`).
 - Arte HD (centenas de pixels): ponha `pixelsPerUnit` maior que 1 para
   reduzir, e `bilinearFilter: true`.
+- Se `pixelsPerUnit` e a escala da janela derem um fator quebrado (1,4×),
+  o vizinho mais próximo deixaria uns pixels com 1 de largura e outros com
+  2. Nesse caso o Kikarinhas amplia por um fator inteiro e reduz suave: os
+  pixels ficam do mesmo tamanho, com a borda um pouco mais macia. Prefira
+  fatores inteiros (escala 2 com `pixelsPerUnit` 1 ou 2).
+- **Pontilhado** (dithering): imagens que passaram por GIF costumam ter
+  xadrezes de duas cores no lugar das cores intermediárias, e ampliadas
+  parecem chuvisco. Quando a folha tem bastante xadrez **e** mais de 16
+  cores, o Kikarinhas mistura as cores vizinhas parecidas (contornos e olhos
+  ficam) e suaviza a folha; `kikarinhas --check` avisa quais. Pixel art de
+  paleta curta que usa pontilhado de propósito fica como está. Melhor
+  ainda: exporte o PNG sem pontilhado.
 - Memória: o Kikarinhas guarda a folha no tamanho original e amplia ao
   desenhar. Imagens enormes custam RAM mesmo com poucos quadros.
 
