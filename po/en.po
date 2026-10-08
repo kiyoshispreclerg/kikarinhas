@@ -64,8 +64,8 @@ msgid ""
 "New command: give it a name, pick the action and, for \"sound\", the sound "
 "in \"Data\"."
 msgstr ""
-"New command: give it a name, pick the action and, for \"sound\", the sound "
-"in \"Data\"."
+"New command: give it a name, pick the action and, for \"sound\", the sound in "
+"\"Data\"."
 
 #: config/main.c:435 config/main.c:453
 msgid "Pick a command in the list."
@@ -140,8 +140,8 @@ msgid ""
 "(marked in the Viewers tab), moderators, owner.</small>"
 msgstr ""
 "<small>Double-click a cell to edit it. Aliases separated by commas. \"Data\" "
-"is the command's fixed argument (the sound of a !horn, the avatar of a !"
-"pika); empty, whatever the person typed is used. The channel owner never "
+"is the command's fixed argument (the sound of a !horn, the avatar of a "
+"!pika); empty, whatever the person typed is used. The channel owner never "
 "waits. \"Who can\" is the lowest level allowed: anyone, members, trusted "
 "(marked in the Viewers tab), moderators, owner.</small>"
 
@@ -201,7 +201,8 @@ msgstr "Saved. The socket is off: restart kikarinhas to apply."
 #: config/main.c:869
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
-msgstr "Saved. kikarinhas is not running (%s); it takes effect when it starts."
+msgstr ""
+"Saved. kikarinhas is not running (%s); it takes effect when it starts."
 
 #: config/main.c:878
 #, c-format
@@ -279,8 +280,8 @@ msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 msgstr ""
-"Avatars that walk around without belonging to anyone in the chat; automatic: "
-"6 without chat, 0 with chat."
+"Avatars that walk around without belonging to anyone in the chat; "
+"automatic: 6 without chat, 0 with chat."
 
 #: config/main.c:932
 msgid "Always on screen"
@@ -307,12 +308,12 @@ msgid ""
 "The \"data\" folder; empty: searches the Steam libraries; off: don't use "
 "Stream Avatars."
 msgstr ""
-"A pasta \"data\"; vazio: procura nas bibliotecas do Steam; off: não usa o "
+"The \"data\" folder; empty: searches the Steam libraries; off: don't use "
 "Stream Avatars."
 
 #: config/main.c:943
 msgid "More avatar folders"
-msgstr "Outras pastas de avatares"
+msgstr "More avatar folders"
 
 #: config/main.c:944
 msgid ""
@@ -321,10 +322,10 @@ msgid ""
 "Avatars; on a repeated name the first one wins. Only changes when kikarinhas "
 "restarts."
 msgstr ""
-"Cada uma pode ter uma pasta de dados (streamavatars_json.txt), um pacote "
-"(data.txt) ou pastas com eles. A sua pasta é lida primeiro, depois estas, "
-"depois o Stream Avatars; com nome repetido, vale o primeiro. Só muda "
-"reiniciando o kikarinhas."
+"Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) "
+"or folders of those. Your own folder is read first, then these, then Stream "
+"Avatars; on a repeated name the first one wins. Only changes when "
+"kikarinhas restarts."
 
 #: config/main.c:950
 msgid "below"
@@ -395,8 +396,8 @@ msgid ""
 "Every live in the list is read at the same time, YouTube and Twitch "
 "together. Double-click a link to edit it."
 msgstr ""
-"Todas as lives da lista são lidas ao mesmo tempo, YouTube e Twitch juntos. "
-"Clique duas vezes num link para editar."
+"Every live in the list is read at the same time, YouTube and Twitch "
+"together. Double-click a link to edit it."
 
 #: config/main.c:981
 msgid "BTTV, FFZ and 7TV emotes on Twitch"
@@ -439,8 +440,8 @@ msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 msgstr ""
-"Avatar, color and accessories of each person; empty: ~/.local/share/"
-"kikarinhas/users.tsv."
+"Avatar, color and accessories of each person; empty: "
+"~/.local/share/kikarinhas/users.tsv."
 
 #: config/main.c:994
 msgid "Control socket"
@@ -452,7 +453,7 @@ msgstr "For bridges and the Apply button; empty: the default; off: disabled."
 
 #: config/main.c:1000
 msgid "Installed avatars"
-msgstr "Avatares instalados"
+msgstr "Installed avatars"
 
 #: config/main.c:1002
 msgid "Commands"
@@ -588,8 +589,8 @@ msgid_plural ""
 "%d sounds added. The name is the chat command (!name); double-click a cell "
 "to change it."
 msgstr[0] ""
-"%d sound added. The name is the chat command (!name); double-click a cell to "
-"change it."
+"%d sound added. The name is the chat command (!name); double-click a cell "
+"to change it."
 msgstr[1] ""
 "%d sounds added. The name is the chat command (!name); double-click a cell "
 "to change it."
@@ -761,9 +762,9 @@ msgid ""
 "it while it lasts. 0: rule off. One rule is enough; with both off, every "
 "emoji goes up."
 msgstr ""
-"Starts a combo: those go up together, and so does every further message with "
-"it while it lasts. 0: rule off. One rule is enough; with both off, every "
-"emoji goes up."
+"Starts a combo: those go up together, and so does every further message "
+"with it while it lasts. 0: rule off. One rule is enough; with both off, "
+"every emoji goes up."
 
 #: config/wall.c:85
 msgid "At most"
@@ -864,7 +865,7 @@ msgstr "Could not write the people file."
 #: config/audience.c:337
 #, c-format
 msgid "There is no avatar \"%s\" in the avatar folders."
-msgstr "Não há avatar \"%s\" nas pastas de avatares."
+msgstr "There is no avatar \"%s\" in the avatar folders."
 
 #: config/audience.c:350
 #, c-format
@@ -924,17 +925,17 @@ msgstr ""
 "Double-click the avatar to change it (you can type the name). With "
 "kikarinhas running, the change takes effect at once. Empty avatar: a random "
 "one, always the same. Level: what the chat badges said on the latest "
-"message. Trusted: ticked by hand, for commands limited to trusted people and "
-"up. People from Stream Avatars without a name or dates: run kikarinhas --"
-"import-sa-users once."
+"message. Trusted: ticked by hand, for commands limited to trusted people "
+"and up. People from Stream Avatars without a name or dates: run kikarinhas "
+"--import-sa-users once."
 
 #: config/sources.c:64
 msgid "Add a live"
-msgstr "Adicionar live"
+msgstr "Add a live"
 
 #: config/sources.c:83 config/sources.c:169
 msgid "Live or channel"
-msgstr "Live ou canal"
+msgstr "Live or channel"
 
 #: config/sources.c:84
 msgid ""
@@ -942,14 +943,14 @@ msgid ""
 "it waits for it to go live. Twitch: channel name or twitch.tv link (read "
 "without logging in)."
 msgstr ""
-"YouTube: link da live ou do canal, @handle ou id do vídeo; com um canal, "
-"espera ele entrar ao vivo. Twitch: nome do canal ou link twitch.tv (lido sem "
-"login)."
+"YouTube: link to the stream or channel, @handle or video id; with a "
+"channel, it waits for it to go live. Twitch: channel name or twitch.tv link "
+"(read without logging in)."
 
 #: config/sources.c:99
 #, c-format
 msgid "%s: %s added. Save and apply to connect."
-msgstr "%s: %s adicionado. Salve e aplique para conectar."
+msgstr "%s: %s added. Save and apply to connect."
 
 #: config/sources.c:104
 #, c-format
@@ -957,7 +958,8 @@ msgid ""
 "Twitch: could not understand \"%s\" (use the channel name or the twitch.tv/"
 "channel link)."
 msgstr ""
-"Twitch: não entendi \"%s\" (use o nome do canal ou o link twitch.tv/canal)."
+"Twitch: could not understand \"%s\" (use the channel name or the "
+"twitch.tv/channel link)."
 
 #: config/sources.c:106
 #, c-format
@@ -965,46 +967,47 @@ msgid ""
 "YouTube: could not understand \"%s\" (use the link to the stream or channel, "
 "or the @handle)."
 msgstr ""
-"YouTube: não entendi \"%s\" (use o link da live ou do canal, ou o @handle)."
+"YouTube: could not understand \"%s\" (use the link to the stream or channel, "
+"or the @handle)."
 
 #: config/sources.c:124
 msgid "Pick a live in the list."
-msgstr "Escolha uma live na lista."
+msgstr "Pick a live in the list."
 
 #: config/sources.c:147
 #, c-format
 msgid "%s: could not understand \"%s\"."
-msgstr "%s: não entendi \"%s\"."
+msgstr "%s: could not understand \"%s\"."
 
 #: config/avatars.c:82
 msgid "Avatar folder"
-msgstr "Pasta de avatares"
+msgstr "Avatar folder"
 
 #: config/avatars.c:88
 #, c-format
 msgid "Folder names with a comma can't go in the list: %s"
-msgstr "Pastas com vírgula no nome não cabem na lista: %s"
+msgstr "Folder names with a comma can't go in the list: %s"
 
 #: config/avatars.c:106
 msgid "Pick a folder in the list."
-msgstr "Escolha uma pasta na lista."
+msgstr "Pick a folder in the list."
 
 #: config/avatars.c:121
 #, c-format
 msgid "Could not open %s: %s"
-msgstr "Não consegui abrir %s: %s"
+msgstr "Could not open %s: %s"
 
 #: config/avatars.c:149
 msgid "_Add folder"
-msgstr "_Adicionar pasta"
+msgstr "_Add folder"
 
 #: config/avatars.c:151
 msgid "Open my avatars folder"
-msgstr "Abrir a minha pasta de avatares"
+msgstr "Open my avatars folder"
 
 #: config/avatars.c:210
 msgid "No avatars found in any folder."
-msgstr "Nenhum avatar encontrado nas pastas."
+msgstr "No avatars found in any folder."
 
 #: config/avatars.c:323
 #, c-format
@@ -1016,43 +1019,43 @@ msgstr[1] "%d avatars"
 #: config/avatars.c:325
 #, c-format
 msgid "%d of %d avatars"
-msgstr "%d de %d avatares"
+msgstr "%d of %d avatars"
 
 #: config/avatars.c:367
 msgid "no image"
-msgstr "sem imagem"
+msgstr "no image"
 
 #: config/avatars.c:396
 msgid "Avatar folders read again."
-msgstr "Pastas de avatares lidas de novo."
+msgstr "Avatar folders read again."
 
 #: config/avatars.c:447
 msgid "_Read again"
-msgstr "_Ler de novo"
+msgstr "_Read again"
 
 #: config/avatars.c:473
 msgid "Key"
-msgstr "Chave"
+msgstr "Key"
 
 #: config/avatars.c:474
 msgid "Cell"
-msgstr "Célula"
+msgstr "Cell"
 
 #: config/avatars.c:474
 msgid "Animations"
-msgstr "Animações"
+msgstr "Animations"
 
 #: config/avatars.c:475
 msgid "Palettes"
-msgstr "Paletas"
+msgstr "Palettes"
 
 #: config/avatars.c:475
 msgid "Gear sets"
-msgstr "Conjuntos de gear"
+msgstr "Gear sets"
 
 #: config/avatars.c:476
 msgid "Folder"
-msgstr "Pasta"
+msgstr "Folder"
 
 #: config/avatars.c:499
 msgid ""
@@ -1061,10 +1064,10 @@ msgid ""
 "people type in !avatar; the animations after \";\" are the ones !emote "
 "takes. \"Read again\" after changing the folders."
 msgstr ""
-"Todos os avatares de todas as pastas (aba Avatares), como o kikarinhas "
-"vai ver: com nome repetido, só o primeiro aparece. O nome ou a chave é "
-"o que se digita no !avatar; as animações depois do \";\" são as que o "
-"!emote aceita. \"Ler de novo\" depois de mudar as pastas."
+"Every avatar of every folder (Avatars tab), as kikarinhas will see them: on "
+"a repeated name, only the first one is here. The name or the key is what "
+"people type in !avatar; the animations after \";\" are the ones !emote takes. "
+"\"Read again\" after changing the folders."
 
 #~ msgid "Could not find Stream Avatars: no avatar list to choose from."
 #~ msgstr "Could not find Stream Avatars: no avatar list to choose from."
