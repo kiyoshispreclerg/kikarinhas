@@ -70,7 +70,7 @@ pot update-po:
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c
+CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c config/sources.c
 CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c

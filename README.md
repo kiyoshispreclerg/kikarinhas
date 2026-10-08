@@ -105,8 +105,10 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `--reload` | pede ao kikarinhas aberto para reler a configuração e sai |
 
 Dá para ler várias lives ao mesmo tempo, de uma plataforma ou das duas:
-repita `-y`/`-t`, ou separe por vírgula no `.ini` (`youtube = @um, @dois`,
-`twitch = canal1, canal2`). Os avatares e emotes de todas aparecem juntos;
+repita `-y`/`-t`, separe por vírgula no `.ini` (`youtube = @um, @dois`,
+`twitch = canal1, canal2`) ou use o botão **Adicionar** da aba Chat do
+`kikarinhas-config`, que vai juntando as lives numa lista (e reconhece a
+plataforma pelo link). Os avatares e emotes de todas aparecem juntos;
 a mesma pessoa em duas lives da mesma plataforma é um avatar só. Com `-v`,
 cada mensagem diz de onde veio (`[twitch #canal]`, `[youtube @handle]`). No
 `reload`, só as lives que entraram ou saíram da lista conectam ou

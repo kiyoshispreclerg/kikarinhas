@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 12:48-0300\n"
+"POT-Creation-Date: 2026-10-08 12:52-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -145,11 +145,12 @@ msgstr ""
 "waits. \"Who can\" is the lowest level allowed: anyone, members, trusted "
 "(marked in the Viewers tab), moderators, owner.</small>"
 
-#: config/main.c:550 config/sounds.c:431
+#: config/main.c:550 config/sounds.c:431 config/sources.c:68
+#: config/sources.c:184
 msgid "_Add"
 msgstr "_Add"
 
-#: config/main.c:551 config/sounds.c:665
+#: config/main.c:551 config/sounds.c:665 config/sources.c:185
 msgid "_Remove"
 msgstr "_Remove"
 
@@ -157,78 +158,78 @@ msgstr "_Remove"
 msgid "Restore _defaults"
 msgstr "Restore _defaults"
 
-#: config/main.c:764
+#: config/main.c:763
 #, c-format
 msgid "line %d: "
 msgstr "line %d: "
 
-#: config/main.c:783
+#: config/main.c:782
 #, c-format
 msgid "Could not write %s: %s"
 msgstr "Could not write %s: %s"
 
-#: config/main.c:788
+#: config/main.c:787
 #, c-format
 msgid "Saved to %s, but with a problem: %s"
 msgstr "Saved to %s, but with a problem: %s"
 
-#: config/main.c:790
+#: config/main.c:789
 #, c-format
 msgid "Saved to %s."
 msgstr "Saved to %s."
 
-#: config/main.c:824
+#: config/main.c:823
 #, c-format
 msgid "kikarinhas: not running"
 msgstr "kikarinhas: not running"
 
-#: config/main.c:830
+#: config/main.c:829
 #, c-format
 msgid "kikarinhas running: v%s"
 msgstr "kikarinhas running: v%s"
 
-#: config/main.c:832
+#: config/main.c:831
 #, c-format
 msgid "kikarinhas running"
 msgstr "kikarinhas running"
 
-#: config/main.c:856
+#: config/main.c:855
 msgid "Saved. The socket is off: restart kikarinhas to apply."
 msgstr "Saved. The socket is off: restart kikarinhas to apply."
 
-#: config/main.c:860
+#: config/main.c:859
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 msgstr "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 
-#: config/main.c:869
+#: config/main.c:868
 #, c-format
 msgid "Saved, but kikarinhas did not apply it: %s"
 msgstr "Saved, but kikarinhas did not apply it: %s"
 
-#: config/main.c:872
+#: config/main.c:871
 #, c-format
 msgid "Applied, with %d warning(s): %s"
 msgstr "Applied, with %d warning(s): %s"
 
-#: config/main.c:875
+#: config/main.c:874
 msgid "Saved and applied."
 msgstr "Saved and applied."
 
-#: config/main.c:885
+#: config/main.c:884
 #, c-format
 msgid "Kikarinhas v%s — settings"
 msgstr "Kikarinhas v%s — settings"
 
-#: config/main.c:896
+#: config/main.c:895
 msgid "Window"
 msgstr "Window"
 
-#: config/main.c:901
+#: config/main.c:900
 msgid "Mode"
 msgstr "Mode"
 
-#: config/main.c:902
+#: config/main.c:901
 msgid ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
@@ -236,31 +237,31 @@ msgstr ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 
-#: config/main.c:912 config/wall.c:71
+#: config/main.c:911 config/wall.c:71
 msgid "Size"
 msgstr "Size"
 
-#: config/main.c:912
+#: config/main.c:911
 msgid "Only in obs mode."
 msgstr "Only in obs mode."
 
-#: config/main.c:913
+#: config/main.c:912
 msgid "Frames per second"
 msgstr "Frames per second"
 
-#: config/main.c:916
+#: config/main.c:915
 msgid "Avatars"
 msgstr "Avatars"
 
-#: config/main.c:917
+#: config/main.c:916
 msgid "Scale"
 msgstr "Scale"
 
-#: config/main.c:919
+#: config/main.c:918
 msgid "Ground"
 msgstr "Ground"
 
-#: config/main.c:920
+#: config/main.c:919
 msgid ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
@@ -268,11 +269,11 @@ msgstr ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
 
-#: config/main.c:921
+#: config/main.c:920
 msgid "Random"
 msgstr "Random"
 
-#: config/main.c:922
+#: config/main.c:921
 msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
@@ -280,71 +281,71 @@ msgstr ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 
-#: config/main.c:923
+#: config/main.c:922
 msgid "Always on screen"
 msgstr "Always on screen"
 
-#: config/main.c:924
+#: config/main.c:923
 msgid "Avatar names separated by commas."
 msgstr "Avatar names separated by commas."
 
-#: config/main.c:928
+#: config/main.c:927
 msgid "Everyone's avatar"
 msgstr "Everyone's avatar"
 
-#: config/main.c:929
+#: config/main.c:928
 msgid "Empty: a random one per person, always the same."
 msgstr "Empty: a random one per person, always the same."
 
-#: config/main.c:930
+#: config/main.c:929
 msgid "Stream Avatars folder"
 msgstr "Stream Avatars folder"
 
-#: config/main.c:932
+#: config/main.c:931
 msgid "The \"data\" folder; empty: searches the Steam libraries."
 msgstr "The \"data\" folder; empty: searches the Steam libraries."
 
-#: config/main.c:935
+#: config/main.c:934
 msgid "below"
 msgstr "below"
 
-#: config/main.c:936
+#: config/main.c:935
 msgid "above"
 msgstr "above"
 
-#: config/main.c:938
+#: config/main.c:937
 msgid "Avatar name"
 msgstr "Avatar name"
 
-#: config/main.c:939
+#: config/main.c:938
 msgid "Show names"
 msgstr "Show names"
 
-#: config/main.c:940
+#: config/main.c:939
 msgid "Above or below the avatar."
 msgstr "Above or below the avatar."
 
-#: config/main.c:941
+#: config/main.c:940
 msgid "Messages"
 msgstr "Messages"
 
-#: config/main.c:942
+#: config/main.c:941
 msgid "Show a speech bubble with the message"
 msgstr "Show a speech bubble with the message"
 
-#: config/main.c:944
+#: config/main.c:943
 msgid "Message bubble stays"
 msgstr "Message bubble stays"
 
-#: config/main.c:947
+#: config/main.c:946
 msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 msgstr "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 
-#: config/main.c:952
+#: config/main.c:951
 msgid "Name font"
 msgstr "Name font"
 
-#: config/main.c:953
+#: config/main.c:952
 msgid ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
@@ -352,39 +353,35 @@ msgstr ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
 
-#: config/main.c:958
+#: config/main.c:957
 msgid "Bubble font"
 msgstr "Bubble font"
 
-#: config/main.c:959
+#: config/main.c:958
 msgid "Empty: Sans. Applies to the next bubbles."
 msgstr "Empty: Sans. Applies to the next bubbles."
 
-#: config/main.c:961
+#: config/main.c:960
 msgid "Chat"
 msgstr "Chat"
 
-#: config/main.c:963
-msgid ""
-"Link to the stream or channel, @handle or video id. With a channel, it waits "
-"for it to go live. Several at once: separate them with commas."
-msgstr ""
-"Link to the stream or channel, @handle or video id. With a channel, it waits "
-"for it to go live. Several at once: separate them with commas."
+#: config/main.c:961
+msgid "Lives"
+msgstr "Lives"
 
-#: config/main.c:967
+#: config/main.c:962
 msgid ""
-"Channel name or twitch.tv link. The chat is read without logging in. Several "
-"at once: separate them with commas; they also add up with YouTube."
+"Every live in the list is read at the same time, YouTube and Twitch "
+"together. Double-click a link to edit it."
 msgstr ""
-"Channel name or twitch.tv link. The chat is read without logging in. Several "
-"at once: separate them with commas; they also add up with YouTube."
+"Todas as lives da lista são lidas ao mesmo tempo, YouTube e Twitch "
+"juntos. Clique duas vezes num link para editar."
 
-#: config/main.c:971
+#: config/main.c:965
 msgid "BTTV, FFZ and 7TV emotes on Twitch"
 msgstr "BTTV, FFZ and 7TV emotes on Twitch"
 
-#: config/main.c:972
+#: config/main.c:966
 msgid ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
@@ -392,31 +389,31 @@ msgstr ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
 
-#: config/main.c:974
+#: config/main.c:968
 msgid "Fake chat (to test without a stream)"
 msgstr "Fake chat (to test without a stream)"
 
-#: config/main.c:975
+#: config/main.c:969
 msgid "Avatars at the same time"
 msgstr "Avatars at the same time"
 
-#: config/main.c:977
+#: config/main.c:971
 msgid "Leaves after"
 msgstr "Leaves after"
 
-#: config/main.c:978
+#: config/main.c:972
 msgid "Seconds of silence until the avatar leaves."
 msgstr "Seconds of silence until the avatar leaves."
 
-#: config/main.c:980
+#: config/main.c:974
 msgid "Print the messages in the terminal"
 msgstr "Print the messages in the terminal"
 
-#: config/main.c:981
+#: config/main.c:975
 msgid "People file"
 msgstr "People file"
 
-#: config/main.c:982
+#: config/main.c:976
 msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
@@ -424,43 +421,43 @@ msgstr ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 
-#: config/main.c:984
+#: config/main.c:978
 msgid "Control socket"
 msgstr "Control socket"
 
-#: config/main.c:986
+#: config/main.c:980
 msgid "For bridges and the Apply button; empty: the default; off: disabled."
 msgstr "For bridges and the Apply button; empty: the default; off: disabled."
 
-#: config/main.c:989
+#: config/main.c:983
 msgid "Commands"
 msgstr "Commands"
 
-#: config/main.c:991
+#: config/main.c:985
 msgid "Sounds"
 msgstr "Sounds"
 
-#: config/main.c:993
+#: config/main.c:987
 msgid "Emote wall"
 msgstr "Emote wall"
 
-#: config/main.c:995
+#: config/main.c:989
 msgid "Viewers"
 msgstr "Viewers"
 
-#: config/main.c:1014
+#: config/main.c:1008
 msgid "_Close"
 msgstr "_Close"
 
-#: config/main.c:1015
+#: config/main.c:1009
 msgid "_Save"
 msgstr "_Save"
 
-#: config/main.c:1016
+#: config/main.c:1010
 msgid "Save and _apply"
 msgstr "Save and _apply"
 
-#: config/main.c:1060
+#: config/main.c:1054
 #, c-format
 msgid ""
 "Usage: kikarinhas-config [FILE]\n"
@@ -471,17 +468,17 @@ msgstr ""
 "       kikarinhas-config -V, --version\n"
 "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
 
-#: config/main.c:1068
+#: config/main.c:1062
 #, c-format
 msgid "kikarinhas-config: no $HOME\n"
 msgstr "kikarinhas-config: no $HOME\n"
 
-#: config/main.c:1075
+#: config/main.c:1069
 #, c-format
 msgid "kikarinhas-config: could not read %s: %s\n"
 msgstr "kikarinhas-config: could not read %s: %s\n"
 
-#: config/main.c:1080
+#: config/main.c:1074
 msgid ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
@@ -489,7 +486,7 @@ msgstr ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
 
-#: config/main.c:1089
+#: config/main.c:1083
 #, c-format
 msgid "kikarinhas-config: out of memory\n"
 msgstr "kikarinhas-config: out of memory\n"
@@ -549,7 +546,7 @@ msgstr "Invalid volume: 0 to 400%%."
 msgid "Add sounds"
 msgstr "Add sounds"
 
-#: config/sounds.c:431
+#: config/sounds.c:431 config/sources.c:67
 msgid "_Cancel"
 msgstr "_Cancel"
 
@@ -870,7 +867,7 @@ msgstr "_Refresh"
 msgid "Name"
 msgstr "Name"
 
-#: config/audience.c:423
+#: config/audience.c:423 config/sources.c:87 config/sources.c:164
 msgid "Platform"
 msgstr "Platform"
 
@@ -909,3 +906,60 @@ msgstr ""
 "message. Trusted: ticked by hand, for commands limited to trusted people and "
 "up. People from Stream Avatars without a name or dates: run kikarinhas --"
 "import-sa-users once."
+
+#: config/sources.c:64
+msgid "Add a live"
+msgstr "Adicionar live"
+
+#: config/sources.c:83 config/sources.c:169
+msgid "Live or channel"
+msgstr "Live ou canal"
+
+#: config/sources.c:84
+msgid ""
+"YouTube: link to the stream or channel, @handle or video id; with a channel, "
+"it waits for it to go live. Twitch: channel name or twitch.tv link (read "
+"without logging in)."
+msgstr ""
+"YouTube: link da live ou do canal, @handle ou id do vídeo; com um "
+"canal, espera ele entrar ao vivo. Twitch: nome do canal ou link "
+"twitch.tv (lido sem login)."
+
+#: config/sources.c:99
+#, c-format
+msgid "%s: %s added. Save and apply to connect."
+msgstr "%s: %s adicionado. Salve e aplique para conectar."
+
+#: config/sources.c:104
+#, c-format
+msgid ""
+"Twitch: could not understand \"%s\" (use the channel name or the twitch.tv/"
+"channel link)."
+msgstr ""
+"Twitch: não entendi \"%s\" (use o nome do canal ou o link "
+"twitch.tv/canal)."
+
+#: config/sources.c:106
+#, c-format
+msgid ""
+"YouTube: could not understand \"%s\" (use the link to the stream or channel, "
+"or the @handle)."
+msgstr ""
+"YouTube: não entendi \"%s\" (use o link da live ou do canal, ou o "
+"@handle)."
+
+#: config/sources.c:124
+msgid "Pick a live in the list."
+msgstr "Escolha uma live na lista."
+
+#: config/sources.c:147
+#, c-format
+msgid "%s: could not understand \"%s\"."
+msgstr "%s: não entendi \"%s\"."
+
+#~ msgid ""
+#~ "Channel name or twitch.tv link. The chat is read without logging in. "
+#~ "Several at once: separate them with commas; they also add up with YouTube."
+#~ msgstr ""
+#~ "Channel name or twitch.tv link. The chat is read without logging in. "
+#~ "Several at once: separate them with commas; they also add up with YouTube."

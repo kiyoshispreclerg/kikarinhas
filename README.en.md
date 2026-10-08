@@ -106,8 +106,10 @@ build/kikarinhas --check                # checks every spritesheet
 | `--reload` | asks the running kikarinhas to reread its configuration and exits |
 
 Several streams can be read at once, from one platform or both: repeat
-`-y`/`-t`, or separate them with commas in the `.ini` (`youtube = @one,
-@two`, `twitch = channel1, channel2`). The avatars and emotes of all of
+`-y`/`-t`, separate them with commas in the `.ini` (`youtube = @one,
+@two`, `twitch = channel1, channel2`), or use the **Add** button in the Chat
+tab of `kikarinhas-config`, which builds up a list of streams (and tells
+the platform from the link). The avatars and emotes of all of
 them show up together; the same person in two streams of the same platform
 is a single avatar. With `-v`, each message says where it came from
 (`[twitch #channel]`, `[youtube @handle]`). On `reload`, only the streams

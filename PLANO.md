@@ -452,6 +452,13 @@ data/         avatar padrão original, exemplo de .ini
      streamer reservou para quem ele conhece. `kk_commands_set_trust` liga
      o registro de comandos ao arquivo; a confiança nunca baixa o nível dos
      selos. O chat de mentira não grava nível.
+   - **Lista de lives no configurador** (`config/sources.c`): a aba Chat
+     mostra uma lista (plataforma, live) com Adicionar/Remover no lugar dos
+     dois campos; o arquivo continua com `[chat] youtube` e `twitch`. O
+     diálogo adivinha a plataforma pelo link (twitch.tv, youtube.com,
+     `@handle`) e confere o alvo com os mesmos `kk_yt_parse_target`/
+     `kk_tw_parse_target` do programa, porque um alvo inválido faz o
+     `reload` recusar tudo.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

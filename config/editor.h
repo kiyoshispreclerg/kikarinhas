@@ -17,6 +17,7 @@
 typedef struct sounds_tab sounds_tab;
 typedef struct audience_tab audience_tab;
 typedef struct wall_tab wall_tab;
+typedef struct sources_tab sources_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -33,7 +34,7 @@ typedef struct {
         *name_font, *name_size, *bubble_font, *bubble_size, *bubble_auto,
         *bubble_secs;
     /* [chat] */
-    GtkWidget *youtube, *twitch, *extra_emotes, *demo, *max, *despawn, *verbose, *users;
+    GtkWidget *extra_emotes, *demo, *max, *despawn, *verbose, *users;
     /* [control] */
     GtkWidget *socket;
     /* [commands] */
@@ -44,6 +45,7 @@ typedef struct {
     sounds_tab *sounds;
     audience_tab *audience;
     wall_tab *wall;
+    sources_tab *sources;
 } editor;
 
 /* Labels of the levels (kk_role), to translate with _() where shown. */
@@ -99,6 +101,11 @@ void sounds_free(editor *e);
 GtkWidget *wall_page(editor *e, const kk_config *cfg);
 void wall_collect(editor *e);
 void wall_free(editor *e);
+
+/* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */
+GtkWidget *sources_widget(editor *e, const kk_config *cfg);
+void sources_collect(editor *e);
+void sources_free(editor *e);
 
 /* The "Espectadores" tab (audience.c). */
 GtkWidget *audience_page(editor *e, const kk_config *cfg);

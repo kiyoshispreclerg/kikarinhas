@@ -9,7 +9,7 @@
  *
  * This file has the window and the Janela/Avatares/Chat/Comandos tabs;
  * sounds.c, wall.c and audience.c have the Sons, Emote wall and
- * Espectadores ones. */
+ * Espectadores ones, and sources.c the list of lives of the Chat tab. */
 #include <errno.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -701,8 +701,7 @@ static void collect(editor *e)
     put_num(e, "avatars", "bubble_size",
             gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->bubble_size)), d.bubble_size);
     /* [chat] */
-    put(e, "chat", "youtube", text_of(e->youtube), NULL);
-    put(e, "chat", "twitch", text_of(e->twitch), NULL);
+    sources_collect(e);
     put_bool(e, "chat", "third_party_emotes", e->extra_emotes, d.extra_emotes);
     put_bool(e, "chat", "demo", e->demo, d.demo);
     put_int(e, "chat", "max", spin_int(e->max), d.max_avatars);
@@ -959,14 +958,9 @@ static void build(editor *e, const kk_config *cfg)
         _("Empty: Sans. Applies to the next bubbles."));
 
     t = page(nb, _("Chat"));
-    e->youtube = row(t, "YouTube", entry(cfg->youtube),
-                     _("Link to the stream or channel, @handle or video id. With a channel, "
-                       "it waits for it to go live. Several at once: separate them with "
-                       "commas."));
-    e->twitch = row(t, "Twitch", entry(cfg->twitch),
-                    _("Channel name or twitch.tv link. The chat is read without logging in. "
-                      "Several at once: separate them with commas; they also add up "
-                      "with YouTube."));
+    row(t, _("Lives"), sources_widget(e, cfg),
+        _("Every live in the list is read at the same time, YouTube and Twitch together. "
+          "Double-click a link to edit it."));
     e->extra_emotes = row(t, NULL,
                           check(_("BTTV, FFZ and 7TV emotes on Twitch"), cfg->extra_emotes),
                           _("Downloads the global lists and the channel's, so those emotes "
@@ -1101,6 +1095,7 @@ int main(int argc, char **argv)
     gtk_widget_show_all(e.window);
     gtk_main();
     sounds_free(&e);
+    sources_free(&e);
     audience_free(&e);
     wall_free(&e);
     kk_ini_free(e.ini);
