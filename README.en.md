@@ -321,6 +321,33 @@ file = ~/sounds/horn.ogg
 cost = 50
 ```
 
+### Timers
+
+A timer runs a command by itself now and then, in `[timer.NAME]` sections
+or the **Timers** tab of `kikarinhas-config`. It runs when **every**
+condition set holds (`minutes` or `messages` is required):
+
+- `minutes`: minutes since it last ran (or since kikarinhas started);
+- `messages`: chat messages since then;
+- `viewers`: at least that many people of the chat with an avatar on screen.
+
+The command runs as if the channel owner typed it: no cooldown, no cost.
+Bubble commands (`text`, `!song`...) show over someone on screen.
+
+```ini
+# The logo every 15 minutes.
+[timer.logo]
+command = !logo
+minutes = 15
+
+# The Discord link every 10 minutes, but only if the chat moved.
+[timer.discord]
+command = !discord
+minutes = 10
+messages = 30
+viewers = 3
+```
+
 ### Emote wall
 
 Chat emoji fly across the screen, over the avatars: common emoji (drawn

@@ -552,6 +552,15 @@ data/         avatar padrão original, exemplo de .ini
      `kk_stage_default_avatar` (o padrão do `.ini` ou o do hash da chave).
      As miniaturas ficam num cache por avatar, dividido com a aba Avatares
      instalados.
+   - **Timers** (`src/timers.c`, aba em `config/timers.c`): `[timer.NOME]`
+     com `command`, `minutes`, `messages`, `viewers` e `enabled`; vence
+     quando todas as condições preenchidas valem, e precisa de minutos ou
+     mensagens (só pessoas na tela dispararia todo segundo). O laço confere
+     uma vez por segundo, junto da presença dos pontos, e roda o comando com
+     uma mensagem sintética do dono (`kk_commands_handle` direto, sem
+     `on_chat`: não cria avatar nem dá pontos); o balão vai para
+     `kk_stage_random_avatar`. No `reload`, um timer que continua com o
+     mesmo nome guarda o relógio e a contagem.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

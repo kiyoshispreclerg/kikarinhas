@@ -21,6 +21,7 @@ typedef struct wall_tab wall_tab;
 typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
 typedef struct points_tab points_tab;
+typedef struct timers_tab timers_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -51,6 +52,7 @@ typedef struct {
     sources_tab *sources;
     avatars_tab *avatars;
     points_tab *points;
+    timers_tab *timers;
 } editor;
 
 /* Labels of the levels (kk_role), to translate with _() where shown. */
@@ -93,6 +95,8 @@ void put_auto(editor *e, const char *section, const char *key, GtkWidget *check_
 
 /* The "Comandos" tab (commands.c). */
 GtkWidget *commands_page(editor *e, const kk_config *cfg);
+/* Calls fn with the name of every active command, as the tab has them. */
+void commands_each_name(editor *e, void (*fn)(const char *name, void *ud), void *ud);
 /* The commands with their cost in points, editable (for the Points tab). */
 GtkWidget *commands_cost_view(editor *e);
 void commands_collect(editor *e);
@@ -143,6 +147,11 @@ void avatars_free(editor *e);
 GtkWidget *points_page(editor *e, const kk_config *cfg);
 void points_collect(editor *e);
 void points_free(editor *e);
+
+/* The "Timers" tab (timers.c): [timer.NAME] sections. */
+GtkWidget *timers_page(editor *e, const kk_config *cfg);
+void timers_collect(editor *e);
+void timers_free(editor *e);
 
 /* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */
 GtkWidget *sources_widget(editor *e, const kk_config *cfg);

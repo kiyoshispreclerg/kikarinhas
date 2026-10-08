@@ -314,6 +314,33 @@ file = ~/sons/buzina.ogg
 cost = 50
 ```
 
+### Timers
+
+Um timer executa um comando sozinho de tempos em tempos, em seções
+`[timer.NOME]` ou na aba **Timers** do `kikarinhas-config`. Ele roda quando
+**todas** as condições preenchidas valem (é preciso `minutes` ou `messages`):
+
+- `minutes`: minutos desde a última vez (ou desde que o kikarinhas abriu);
+- `messages`: mensagens no chat desde a última vez;
+- `viewers`: pelo menos tantas pessoas do chat com avatar na tela.
+
+O comando roda como se o dono do canal tivesse digitado: sem espera e sem
+custo. Comandos de balão (`text`, `!song`...) aparecem sobre alguém da tela.
+
+```ini
+# O logo a cada 15 minutos.
+[timer.logo]
+command = !logo
+minutes = 15
+
+# O link do Discord a cada 10 minutos, mas só se o chat andou.
+[timer.discord]
+command = !discord
+minutes = 10
+messages = 30
+viewers = 3
+```
+
 ### Emote wall
 
 Os emojis do chat voam pela tela, por cima dos avatares: emojis comuns

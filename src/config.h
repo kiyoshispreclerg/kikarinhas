@@ -39,6 +39,8 @@
  *              voices = 8, commands = yes
  *   [sound.NAME] file, aliases = a, b, volume = 100 (%),
  *              cost = N (points; unset: the sound command's)
+ *   [timer.NAME] command = !logo, minutes = 10, messages = 0, viewers = 0,
+ *              enabled = yes
  *   [points]   enabled, name = pontos, start = 0, message = 1,
  *              message_cooldown = 30, watch = 5, watch_minutes = 5,
  *              arrival = 10, paid = 100, member = 100
@@ -81,6 +83,18 @@ typedef struct {
     int volume; /* percent, 0..400 */
     long cost;  /* points; < 0: the sound command's */
 } kk_config_sound;
+
+/* A command run by itself now and then (timers.c): when every condition
+ * set is met (minutes since the last run, chat messages since then, people
+ * on screen); minutes or messages must be set. */
+typedef struct {
+    char *name;    /* lowercase */
+    char *command; /* as typed in the chat: "!sound buzina" */
+    double minutes;
+    int messages;
+    int viewers;
+    bool enabled;
+} kk_config_timer;
 
 typedef enum {
     KK_CONFIG_WALL_RISE,
@@ -151,6 +165,9 @@ typedef struct {
     bool wall_reactions;
     int wall_reactions_per_icon;
     char *wall_blacklist;    /* comma-separated; NULL = none */
+    /* [timer.NAME] */
+    kk_config_timer *timers;
+    int n_timers;
     /* [points] (see points.h) */
     bool points_enabled;
     char *points_name;       /* what they are called in bubbles; NULL = "pontos" */

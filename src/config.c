@@ -14,6 +14,7 @@
 
 #define CMD_PREFIX "command."
 #define SOUND_PREFIX "sound."
+#define TIMER_PREFIX "timer."
 #define MAX_NAME 64
 
 static const char *const ACTIONS[] = {
@@ -209,6 +210,26 @@ static bool sound_copy(kk_config_sound *dst, const kk_config_sound *src)
     return ok;
 }
 
+static void timer_free(kk_config_timer *t)
+{
+    free(t->name);
+    free(t->command);
+}
+
+static kk_config_timer *add_timer(kk_config *c, const char *name)
+{
+    kk_config_timer *nt = realloc(c->timers, (size_t)(c->n_timers + 1) * sizeof *nt);
+    if (!nt)
+        return NULL;
+    c->timers = nt;
+    kk_config_timer *t = &nt[c->n_timers];
+    *t = (kk_config_timer){.enabled = true};
+    if (!kk_config_set_str(&t->name, name))
+        return NULL;
+    c->n_timers++;
+    return t;
+}
+
 static kk_config_command *add_command(kk_config *c)
 {
     kk_config_command *nc =
@@ -243,6 +264,9 @@ void kk_config_free(kk_config *c)
     free(c->sounds);
     free(c->wall_blacklist);
     free(c->points_name);
+    for (int i = 0; i < c->n_timers; i++)
+        timer_free(&c->timers[i]);
+    free(c->timers);
     memset(c, 0, sizeof *c);
 }
 
@@ -314,6 +338,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->n_sounds = 0;
     dst->wall_blacklist = NULL;
     dst->points_name = NULL;
+    dst->timers = NULL;
+    dst->n_timers = 0;
     bool ok = true;
     memset(dst->show, 0, sizeof dst->show);
     for (int i = 0; i < src->n_show; i++)
@@ -329,6 +355,16 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
     ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
     ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
+    for (int i = 0; i < src->n_timers && ok; i++) {
+        kk_config_timer *t = add_timer(dst, src->timers[i].name);
+        ok = t && kk_config_set_str(&t->command, src->timers[i].command);
+        if (t) {
+            t->minutes = src->timers[i].minutes;
+            t->messages = src->timers[i].messages;
+            t->viewers = src->timers[i].viewers;
+            t->enabled = src->timers[i].enabled;
+        }
+    }
     for (int i = 0; i < src->n_commands && ok; i++) {
         kk_config_command *k = add_command(dst);
         ok = k && command_copy(k, &src->commands[i]);
@@ -852,6 +888,28 @@ static void apply_sound(kk_config *c, const warner *w, const char *name)
         unknown_key(w);
 }
 
+static void apply_timer(kk_config *c, const warner *w, const char *name)
+{
+    kk_config_timer *t = NULL;
+    for (int i = 0; i < c->n_timers && !t; i++)
+        if (strcmp(c->timers[i].name, name) == 0)
+            t = &c->timers[i];
+    if (!t && !(t = add_timer(c, name)))
+        return;
+    if (key_is(w, "command"))
+        get_str(w, &t->command);
+    else if (key_is(w, "minutes"))
+        get_double(w, &t->minutes, 0, 1440);
+    else if (key_is(w, "messages"))
+        get_int(w, &t->messages, 0, 100000, false);
+    else if (key_is(w, "viewers"))
+        get_int(w, &t->viewers, 0, 1000, false);
+    else if (key_is(w, "enabled"))
+        get_bool(w, &t->enabled);
+    else
+        unknown_key(w);
+}
+
 static void apply_points(kk_config *c, const warner *w)
 {
     if (key_is(w, "enabled"))
@@ -965,6 +1023,12 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
                 apply_sound(c, &w, name);
             else
                 warnf(&w, "[%s]: nome de som inválido", s);
+        } else if (strncasecmp(s, TIMER_PREFIX, strlen(TIMER_PREFIX)) == 0) {
+            char name[MAX_NAME];
+            if (normalize_word(name, sizeof name, s + strlen(TIMER_PREFIX)))
+                apply_timer(c, &w, name);
+            else
+                warnf(&w, "[%s]: nome de timer inválido", s);
         } else if (strncasecmp(s, CMD_PREFIX, strlen(CMD_PREFIX)) == 0) {
             char name[MAX_NAME];
             if (normalize_word(name, sizeof name, s + strlen(CMD_PREFIX)))
@@ -995,6 +1059,20 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             warnf(&w, "[%s]: comando novo sem \"action\"; ignorado", section);
             remove_command(c, i);
         }
+    /* A timer needs something to run, and a reason not to run every second. */
+    for (int i = c->n_timers - 1; i >= 0; i--) {
+        kk_config_timer *t = &c->timers[i];
+        const char *why = !t->command                          ? "sem \"command\""
+                          : t->minutes <= 0 && t->messages <= 0 ? "sem \"minutes\" nem \"messages\""
+                                                                : NULL;
+        if (!why)
+            continue;
+        w.line = 0;
+        warnf(&w, "[" TIMER_PREFIX "%s]: %s; ignorado", t->name, why);
+        timer_free(t);
+        memmove(t, t + 1, (size_t)(c->n_timers - i - 1) * sizeof *t);
+        c->n_timers--;
+    }
     for (int i = c->n_sounds - 1; i >= 0; i--)
         if (!c->sounds[i].file) {
             w.line = 0;

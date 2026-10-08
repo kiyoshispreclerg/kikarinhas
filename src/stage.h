@@ -121,6 +121,10 @@ kk_avatar *kk_stage_find_by_name(kk_stage *s, const char *name);
 /* A random avatar other than not, or NULL. */
 kk_avatar *kk_stage_random_other(kk_stage *s, const kk_avatar *not);
 
+/* Someone on screen at random, from the chat if there is anyone; NULL if
+ * the stage is empty. */
+kk_avatar *kk_stage_random_avatar(kk_stage *s);
+
 /* a walks to b and hugs/attacks it. */
 bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act);
 

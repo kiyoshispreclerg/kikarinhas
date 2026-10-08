@@ -940,6 +940,21 @@ GtkWidget *commands_page(editor *e, const kk_config *cfg)
     return box;
 }
 
+void commands_each_name(editor *e, void (*fn)(const char *name, void *ud), void *ud)
+{
+    GtkTreeModel *m = GTK_TREE_MODEL(e->commands);
+    GtkTreeIter it;
+    for (bool more = gtk_tree_model_get_iter_first(m, &it); more;
+         more = gtk_tree_model_iter_next(m, &it)) {
+        gchar *name;
+        gboolean enabled;
+        gtk_tree_model_get(m, &it, COL_NAME, &name, COL_ENABLED, &enabled, -1);
+        if (enabled && name)
+            fn(name, ud);
+        g_free(name);
+    }
+}
+
 /* ---- costs, for the Points tab ------------------------------------------- */
 
 static void on_cost_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)

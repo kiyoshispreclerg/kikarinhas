@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 14:58-0300\n"
+"POT-Creation-Date: 2026-10-08 15:03-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -41,78 +41,78 @@ msgstr "owner"
 msgid "automatic"
 msgstr "automatic"
 
-#: config/main.c:350
+#: config/main.c:351
 #, c-format
 msgid "line %d: "
 msgstr "line %d: "
 
-#: config/main.c:369
+#: config/main.c:370
 #, c-format
 msgid "Could not write %s: %s"
 msgstr "Could not write %s: %s"
 
-#: config/main.c:374
+#: config/main.c:375
 #, c-format
 msgid "Saved to %s, but with a problem: %s"
 msgstr "Saved to %s, but with a problem: %s"
 
-#: config/main.c:376
+#: config/main.c:377
 #, c-format
 msgid "Saved to %s."
 msgstr "Saved to %s."
 
-#: config/main.c:410
+#: config/main.c:411
 #, c-format
 msgid "kikarinhas: not running"
 msgstr "kikarinhas: not running"
 
-#: config/main.c:416
+#: config/main.c:417
 #, c-format
 msgid "kikarinhas running: v%s"
 msgstr "kikarinhas running: v%s"
 
-#: config/main.c:418
+#: config/main.c:419
 #, c-format
 msgid "kikarinhas running"
 msgstr "kikarinhas running"
 
-#: config/main.c:444
+#: config/main.c:445
 msgid "Saved. The socket is off: restart kikarinhas to apply."
 msgstr "Saved. The socket is off: restart kikarinhas to apply."
 
-#: config/main.c:448
+#: config/main.c:449
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 msgstr "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 
-#: config/main.c:457
+#: config/main.c:458
 #, c-format
 msgid "Saved, but kikarinhas did not apply it: %s"
 msgstr "Saved, but kikarinhas did not apply it: %s"
 
-#: config/main.c:460
+#: config/main.c:461
 #, c-format
 msgid "Applied, with %d warning(s): %s"
 msgstr "Applied, with %d warning(s): %s"
 
-#: config/main.c:463
+#: config/main.c:464
 msgid "Saved and applied."
 msgstr "Saved and applied."
 
-#: config/main.c:473
+#: config/main.c:474
 #, c-format
 msgid "Kikarinhas v%s — settings"
 msgstr "Kikarinhas v%s — settings"
 
-#: config/main.c:484
+#: config/main.c:485
 msgid "Window"
 msgstr "Window"
 
-#: config/main.c:489
+#: config/main.c:490
 msgid "Mode"
 msgstr "Mode"
 
-#: config/main.c:490
+#: config/main.c:491
 msgid ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
@@ -120,31 +120,31 @@ msgstr ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 
-#: config/main.c:500 config/wall.c:71
+#: config/main.c:501 config/wall.c:71
 msgid "Size"
 msgstr "Size"
 
-#: config/main.c:500
+#: config/main.c:501
 msgid "Only in obs mode."
 msgstr "Only in obs mode."
 
-#: config/main.c:501
+#: config/main.c:502
 msgid "Frames per second"
 msgstr "Frames per second"
 
-#: config/main.c:504
+#: config/main.c:505
 msgid "Avatars"
 msgstr "Avatars"
 
-#: config/main.c:505
+#: config/main.c:506
 msgid "Scale"
 msgstr "Scale"
 
-#: config/main.c:507
+#: config/main.c:508
 msgid "Ground"
 msgstr "Ground"
 
-#: config/main.c:508
+#: config/main.c:509
 msgid ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
@@ -152,11 +152,11 @@ msgstr ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
 
-#: config/main.c:509
+#: config/main.c:510
 msgid "Random"
 msgstr "Random"
 
-#: config/main.c:510
+#: config/main.c:511
 msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
@@ -164,27 +164,27 @@ msgstr ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 
-#: config/main.c:511
+#: config/main.c:512
 msgid "Always on screen"
 msgstr "Always on screen"
 
-#: config/main.c:512
+#: config/main.c:513
 msgid "Avatar names separated by commas."
 msgstr "Avatar names separated by commas."
 
-#: config/main.c:516
+#: config/main.c:517
 msgid "Everyone's avatar"
 msgstr "Everyone's avatar"
 
-#: config/main.c:517
+#: config/main.c:518
 msgid "Empty: a random one per person, always the same."
 msgstr "Empty: a random one per person, always the same."
 
-#: config/main.c:518
+#: config/main.c:519
 msgid "Stream Avatars folder"
 msgstr "Stream Avatars folder"
 
-#: config/main.c:520
+#: config/main.c:521
 msgid ""
 "The \"data\" folder; empty: searches the Steam libraries; off: don't use "
 "Stream Avatars."
@@ -192,11 +192,11 @@ msgstr ""
 "The \"data\" folder; empty: searches the Steam libraries; off: don't use "
 "Stream Avatars."
 
-#: config/main.c:522
+#: config/main.c:523
 msgid "More avatar folders"
 msgstr "More avatar folders"
 
-#: config/main.c:523
+#: config/main.c:524
 msgid ""
 "Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) "
 "or folders of those. Your own folder is read first, then these, then Stream "
@@ -208,47 +208,47 @@ msgstr ""
 "Avatars; on a repeated name the first one wins. Only changes when kikarinhas "
 "restarts."
 
-#: config/main.c:529
+#: config/main.c:530
 msgid "below"
 msgstr "below"
 
-#: config/main.c:530
+#: config/main.c:531
 msgid "above"
 msgstr "above"
 
-#: config/main.c:532
+#: config/main.c:533
 msgid "Avatar name"
 msgstr "Avatar name"
 
-#: config/main.c:533
+#: config/main.c:534
 msgid "Show names"
 msgstr "Show names"
 
-#: config/main.c:534
+#: config/main.c:535
 msgid "Above or below the avatar."
 msgstr "Above or below the avatar."
 
-#: config/main.c:535
+#: config/main.c:536 config/timers.c:330
 msgid "Messages"
 msgstr "Messages"
 
-#: config/main.c:536
+#: config/main.c:537
 msgid "Show a speech bubble with the message"
 msgstr "Show a speech bubble with the message"
 
-#: config/main.c:538
+#: config/main.c:539
 msgid "Message bubble stays"
 msgstr "Message bubble stays"
 
-#: config/main.c:541
+#: config/main.c:542
 msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 msgstr "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 
-#: config/main.c:546
+#: config/main.c:547
 msgid "Name font"
 msgstr "Name font"
 
-#: config/main.c:547
+#: config/main.c:548
 msgid ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
@@ -256,23 +256,23 @@ msgstr ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
 
-#: config/main.c:552
+#: config/main.c:553
 msgid "Bubble font"
 msgstr "Bubble font"
 
-#: config/main.c:553
+#: config/main.c:554
 msgid "Empty: Sans. Applies to the next bubbles."
 msgstr "Empty: Sans. Applies to the next bubbles."
 
-#: config/main.c:555
+#: config/main.c:556
 msgid "Chat"
 msgstr "Chat"
 
-#: config/main.c:556
+#: config/main.c:557
 msgid "Lives"
 msgstr "Lives"
 
-#: config/main.c:557
+#: config/main.c:558
 msgid ""
 "Every live in the list is read at the same time, YouTube and Twitch "
 "together. Double-click a link to edit it."
@@ -280,11 +280,11 @@ msgstr ""
 "Every live in the list is read at the same time, YouTube and Twitch "
 "together. Double-click a link to edit it."
 
-#: config/main.c:560
+#: config/main.c:561
 msgid "BTTV, FFZ and 7TV emotes on Twitch"
 msgstr "BTTV, FFZ and 7TV emotes on Twitch"
 
-#: config/main.c:561
+#: config/main.c:562
 msgid ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
@@ -292,31 +292,31 @@ msgstr ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
 
-#: config/main.c:563
+#: config/main.c:564
 msgid "Fake chat (to test without a stream)"
 msgstr "Fake chat (to test without a stream)"
 
-#: config/main.c:564
+#: config/main.c:565
 msgid "Avatars at the same time"
 msgstr "Avatars at the same time"
 
-#: config/main.c:566
+#: config/main.c:567
 msgid "Leaves after"
 msgstr "Leaves after"
 
-#: config/main.c:567
+#: config/main.c:568
 msgid "Seconds of silence until the avatar leaves."
 msgstr "Seconds of silence until the avatar leaves."
 
-#: config/main.c:569
+#: config/main.c:570
 msgid "Print the messages in the terminal"
 msgstr "Print the messages in the terminal"
 
-#: config/main.c:570
+#: config/main.c:571
 msgid "People file"
 msgstr "People file"
 
-#: config/main.c:571
+#: config/main.c:572
 msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
@@ -324,51 +324,55 @@ msgstr ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 
-#: config/main.c:573
+#: config/main.c:574
 msgid "Control socket"
 msgstr "Control socket"
 
-#: config/main.c:575
+#: config/main.c:576
 msgid "For bridges and the Apply button; empty: the default; off: disabled."
 msgstr "For bridges and the Apply button; empty: the default; off: disabled."
 
-#: config/main.c:579
+#: config/main.c:580
 msgid "Installed avatars"
 msgstr "Installed avatars"
 
-#: config/main.c:581 config/points.c:102
+#: config/main.c:582 config/points.c:102
 msgid "Commands"
 msgstr "Commands"
 
-#: config/main.c:583 config/points.c:104
+#: config/main.c:584 config/points.c:104
 msgid "Sounds"
 msgstr "Sounds"
 
-#: config/main.c:585
+#: config/main.c:586
 msgid "Emote wall"
 msgstr "Emote wall"
 
-#: config/main.c:587 config/audience.c:469
+#: config/main.c:588 config/audience.c:469
 msgid "Points"
 msgstr "Points"
 
-#: config/main.c:589
+#: config/main.c:590
+msgid "Timers"
+msgstr "Timers"
+
+#: config/main.c:592
 msgid "Viewers"
 msgstr "Viewers"
 
-#: config/main.c:608
+#: config/main.c:611
 msgid "_Close"
 msgstr "_Close"
 
-#: config/main.c:609
+#: config/main.c:612
 msgid "_Save"
 msgstr "_Save"
 
-#: config/main.c:610
+#: config/main.c:613
 msgid "Save and _apply"
 msgstr "Save and _apply"
 
-#: config/main.c:654
+#: config/main.c:657
 #, c-format
 msgid ""
 "Usage: kikarinhas-config [FILE]\n"
@@ -379,17 +383,17 @@ msgstr ""
 "       kikarinhas-config -V, --version\n"
 "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
 
-#: config/main.c:662
+#: config/main.c:665
 #, c-format
 msgid "kikarinhas-config: no $HOME\n"
 msgstr "kikarinhas-config: no $HOME\n"
 
-#: config/main.c:669
+#: config/main.c:672
 #, c-format
 msgid "kikarinhas-config: could not read %s: %s\n"
 msgstr "kikarinhas-config: could not read %s: %s\n"
 
-#: config/main.c:674
+#: config/main.c:677
 msgid ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
@@ -397,7 +401,7 @@ msgstr ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
 
-#: config/main.c:683
+#: config/main.c:686
 #, c-format
 msgid "kikarinhas-config: out of memory\n"
 msgstr "kikarinhas-config: out of memory\n"
@@ -458,12 +462,12 @@ msgid "Add sounds"
 msgstr "Add sounds"
 
 #: config/sounds.c:432 config/sources.c:67 config/avatars.c:85
-#: config/avatars.c:655 config/commands.c:415
+#: config/avatars.c:655 config/commands.c:415 config/timers.c:103
 msgid "_Cancel"
 msgstr "_Cancel"
 
 #: config/sounds.c:432 config/sources.c:68 config/sources.c:184
-#: config/avatars.c:85 config/commands.c:927
+#: config/avatars.c:85 config/commands.c:927 config/timers.c:365
 msgid "_Add"
 msgstr "_Add"
 
@@ -540,7 +544,7 @@ msgid "Empty: \"default\" (PipeWire or PulseAudio, if present)"
 msgstr "Empty: \"default\" (PipeWire or PulseAudio, if present)"
 
 #: config/sounds.c:619 config/commands.c:427 config/commands.c:902
-#: config/commands.c:966
+#: config/commands.c:981
 msgid "Command"
 msgstr "Command"
 
@@ -575,7 +579,7 @@ msgid "_Add…"
 msgstr "_Add…"
 
 #: config/sounds.c:666 config/sources.c:185 config/avatars.c:152
-#: config/commands.c:929
+#: config/commands.c:929 config/timers.c:367
 msgid "_Remove"
 msgstr "_Remove"
 
@@ -603,7 +607,7 @@ msgstr "_Import from Stream Avatars"
 msgid "(as !sound)"
 msgstr "(as !sound)"
 
-#: config/sounds.c:757 config/commands.c:953
+#: config/sounds.c:757 config/commands.c:968
 #, c-format
 msgid "Invalid cost: \"%s\" (a number of points)."
 msgstr "Invalid cost: \"%s\" (a number of points)."
@@ -613,7 +617,7 @@ msgid "Sound"
 msgstr "Sound"
 
 #: config/sounds.c:776 config/commands.c:457 config/commands.c:909
-#: config/commands.c:976
+#: config/commands.c:991
 msgid "Cost"
 msgstr "Cost"
 
@@ -822,7 +826,8 @@ msgstr "Search"
 msgid "_Refresh"
 msgstr "_Refresh"
 
-#: config/audience.c:441 config/avatars.c:505
+#: config/audience.c:441 config/avatars.c:505 config/timers.c:111
+#: config/timers.c:329
 msgid "Name"
 msgstr "Name"
 
@@ -863,10 +868,10 @@ msgstr ""
 "Double-click someone to pick their avatar by its picture (with a search "
 "box). With kikarinhas running, the change takes effect at once. Empty "
 "avatar: a random one, always the same. Level: what the chat badges said on "
-"the latest message. Trusted: ticked by hand, for commands limited to "
-"trusted people and up. Points: double-click to change the balance. People "
-"from Stream Avatars without a name or dates: run kikarinhas "
-"--import-sa-users once."
+"the latest message. Trusted: ticked by hand, for commands limited to trusted "
+"people and up. Points: double-click to change the balance. People from "
+"Stream Avatars without a name or dates: run kikarinhas --import-sa-users "
+"once."
 
 #: config/sources.c:64
 msgid "Add a live"
@@ -1012,7 +1017,7 @@ msgstr ""
 msgid "_Random (always the same)"
 msgstr "_Random (always the same)"
 
-#: config/avatars.c:656 config/commands.c:416
+#: config/avatars.c:656 config/commands.c:416 config/timers.c:104
 msgid "_OK"
 msgstr "_OK"
 
@@ -1076,11 +1081,12 @@ msgstr "Show the music playing"
 msgid "One word, without \"!\": what people type in the chat."
 msgstr "One word, without \"!\": what people type in the chat."
 
-#: config/commands.c:436 config/commands.c:903 config/commands.c:970
+#: config/commands.c:436 config/commands.c:903 config/commands.c:985
 msgid "Action"
 msgstr "Action"
 
-#: config/commands.c:438 config/commands.c:901
+#: config/commands.c:438 config/commands.c:901 config/timers.c:119
+#: config/timers.c:323
 msgid "Active"
 msgstr "Active"
 
@@ -1292,7 +1298,7 @@ msgstr ""
 "(links, rules), a picture on the screen, play a sound, change avatar... The "
 "channel owner never waits."
 
-#: config/commands.c:928
+#: config/commands.c:928 config/timers.c:366
 msgid "_Edit"
 msgstr "_Edit"
 
@@ -1340,7 +1346,7 @@ msgstr "Watching"
 msgid "points every"
 msgstr "points every"
 
-#: config/points.c:82
+#: config/points.c:82 config/timers.c:121
 msgid "minutes"
 msgstr "minutes"
 
@@ -1399,6 +1405,101 @@ msgstr ""
 "does something; the channel owner never pays. A sound \"(as !sound)\" costs "
 "what !sound costs. !points shows the balance, !give @name N gives some "
 "away, !award @name N (moderators) creates them and !top shows the ranking."
+
+#: config/timers.c:111
+msgid "One word, only to tell the timers apart."
+msgstr "One word, only to tell the timers apart."
+
+#: config/timers.c:115 config/timers.c:329
+msgid "Runs"
+msgstr "Runs"
+
+#: config/timers.c:116
+msgid ""
+"Any chat command, with what it takes: !logo, !discord, !sound horn, !song... "
+"It runs as if the channel owner typed it (no cooldown, no cost); bubbles go "
+"over someone on screen."
+msgstr ""
+"Any chat command, with what it takes: !logo, !discord, !sound horn, "
+"!song... It runs as if the channel owner typed it (no cooldown, no cost); "
+"bubbles go over someone on screen."
+
+#: config/timers.c:121 config/timers.c:330
+msgid "Every"
+msgstr "Every"
+
+#: config/timers.c:121
+msgid "0: no time condition."
+msgstr "0: no time condition."
+
+#: config/timers.c:123
+msgid "After"
+msgstr "After"
+
+#: config/timers.c:123
+msgid "chat messages since it last ran"
+msgstr "chat messages since it last ran"
+
+#: config/timers.c:124
+msgid "0: no message condition. Minutes or messages (or both) must be set."
+msgstr "0: no message condition. Minutes or messages (or both) must be set."
+
+#: config/timers.c:126
+msgid "Only with"
+msgstr "Only with"
+
+#: config/timers.c:126
+msgid "or more people of the chat on screen"
+msgstr "or more people of the chat on screen"
+
+#: config/timers.c:127
+msgid "0: any number. Every condition set must hold for the timer to run."
+msgstr "0: any number. Every condition set must hold for the timer to run."
+
+#: config/timers.c:148
+msgid "Invalid name: use a single word, no spaces."
+msgstr "Invalid name: use a single word, no spaces."
+
+#: config/timers.c:154
+msgid "There is already a timer with that name."
+msgstr "There is already a timer with that name."
+
+#: config/timers.c:166
+msgid "Pick the command to run."
+msgstr "Pick the command to run."
+
+#: config/timers.c:167
+msgid "Set the minutes, the messages or both."
+msgstr "Set the minutes, the messages or both."
+
+#: config/timers.c:202
+#, c-format
+msgid "Timer %s"
+msgstr "Timer %s"
+
+#: config/timers.c:204
+msgid "New timer"
+msgstr "New timer"
+
+#: config/timers.c:242 config/timers.c:253
+msgid "Pick a timer in the list."
+msgstr "Pick a timer in the list."
+
+#: config/timers.c:331
+msgid "People on screen"
+msgstr "People on screen"
+
+#: config/timers.c:354
+msgid ""
+"A timer runs a command by itself when every condition set holds: every N "
+"minutes, after N chat messages, only with N people on screen. E.g. the logo "
+"every 15 minutes; the Discord link every 10 minutes, but only if 30 messages "
+"went by. It runs as the channel owner: no cooldown, no cost."
+msgstr ""
+"A timer runs a command by itself when every condition set holds: every N "
+"minutes, after N chat messages, only with N people on screen. E.g. the logo "
+"every 15 minutes; the Discord link every 10 minutes, but only if 30 "
+"messages went by. It runs as the channel owner: no cooldown, no cost."
 
 #, c-format
 #~ msgid "There is no avatar \"%s\" in the avatar folders."

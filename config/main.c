@@ -338,6 +338,7 @@ static void collect(editor *e)
     sounds_collect(e);
     wall_collect(e);
     points_collect(e);
+    timers_collect(e);
 }
 
 /* Checks what will be written the same way kikarinhas will read it. */
@@ -585,6 +586,8 @@ static void build(editor *e, const kk_config *cfg)
                              gtk_label_new(_("Emote wall")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), points_page(e, cfg),
                              gtk_label_new(_("Points")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), timers_page(e, cfg),
+                             gtk_label_new(_("Timers")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
                              gtk_label_new(_("Viewers")));
 
@@ -700,6 +703,7 @@ int main(int argc, char **argv)
     audience_free(&e);
     wall_free(&e);
     points_free(&e);
+    timers_free(&e);
     kk_ini_free(e.ini);
     commands_free(&e);
     return 0;

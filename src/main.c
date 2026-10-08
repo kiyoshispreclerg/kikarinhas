@@ -27,6 +27,7 @@
 #include "mpris.h"
 #include "overlay.h"
 #include "points.h"
+#include "timers.h"
 #include "sa.h"
 #include "soundboard.h"
 #include "stage.h"
@@ -505,6 +506,7 @@ typedef struct {
     kk_commands *commands;
     kk_actions *actions;
     kk_emotewall *wall;
+    kk_timers *timers;
     bool verbose;
 } chat_sink;
 
@@ -523,6 +525,7 @@ static void on_chat(void *ud, const kk_chat_msg *m)
 {
     chat_sink *sink = ud;
     kk_emotewall_message(sink->wall, m, now_seconds());
+    kk_timers_message(sink->timers);
     kk_avatar *a = kk_stage_chatter(sink->stage, m);
     kk_cmd_result r = KK_CMD_NONE;
     if (a) {
@@ -555,6 +558,23 @@ static void on_chat(void *ud, const kk_chat_msg *m)
                 kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
                 m->text, results[r]);
     }
+}
+
+/* A timer's command, as if the channel owner typed it (no cooldown, no
+ * cost); bubbles go over someone on screen, picked at random. */
+static void run_timer(chat_sink *sink, const char *name, const char *command)
+{
+    kk_chat_msg m = {.platform = "timer", .user_id = name, .name = "Kikarinhas",
+                     .text = command, .badges = KK_BADGE_OWNER};
+    char key[128];
+    snprintf(key, sizeof key, "timer:%s", name);
+    sink->actions->self = kk_stage_random_avatar(sink->stage);
+    kk_cmd_result r = kk_commands_handle(sink->commands, &m, key, now_seconds());
+    if (sink->verbose || r == KK_CMD_NONE)
+        kk_log_info("timer %s: %s%s", name, command,
+                    r == KK_CMD_RAN    ? ""
+                    : r == KK_CMD_NONE ? " (não é um comando)"
+                                       : " (não fez nada)");
 }
 
 static void on_reaction(void *ud, const kk_reaction *r)
@@ -657,6 +677,7 @@ typedef struct {
     kk_overlay *overlay;  /* pictures shown by commands */
     kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
     kk_points *points;    /* NULL without a people file */
+    kk_timers *timers;
     source sources[KK_MAX_SOURCES]; /* the lives being read */
     int n_sources;
     kk_demochat demo;
@@ -874,6 +895,7 @@ static bool reload(app *a, cJSON *warnings)
     }
     kk_commands_free(a->sink.commands);
     a->sink.commands = commands;
+    kk_timers_configure(a->timers, &cfg, now_seconds());
     kk_overlay_clear(a->overlay); /* a changed picture is read again */
     a->sink.verbose = cfg.verbose;
     kk_soundboard_configure(a->sounds, &cfg);
@@ -1149,7 +1171,7 @@ static void run(app *a)
         }
         if (a->demo_on)
             kk_demochat_tick(&a->demo, t);
-        if (a->points && t >= next_watch) {
+        if (t >= next_watch) {
             /* Everyone whose avatar is up is watching. */
             const char *keys[256];
             int n = 0;
@@ -1158,7 +1180,12 @@ static void run(app *a)
                 if (k && strncmp(k, "demo:", 5) != 0)
                     keys[n++] = k;
             }
-            kk_points_watch(a->points, keys, n, t);
+            if (a->points)
+                kk_points_watch(a->points, keys, n, t);
+            const char *cmds[16], *names[16];
+            int due = kk_timers_due(a->timers, t, n, cmds, names, 16);
+            for (int i = 0; i < due; i++)
+                run_timer(&a->sink, names[i], cmds[i]);
             next_watch = t + 1.0;
         }
         if (a->users && t >= next_save) {
@@ -1389,6 +1416,12 @@ int main(int argc, char **argv)
 
     a.mpris = kk_mpris_new();
     a.points = a.users ? kk_points_new(a.users) : NULL;
+    a.timers = kk_timers_new();
+    if (!a.timers) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_timers_configure(a.timers, &a.cfg, now_seconds());
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
                           .overlay = a.overlay, .mpris = a.mpris, .points = a.points};
     a.actions = &actions;
@@ -1397,6 +1430,7 @@ int main(int argc, char **argv)
         .actions = &actions,
         .wall = a.wall,
         .verbose = a.cfg.verbose,
+        .timers = a.timers,
         .commands = build_commands(&a, &a.cfg, &warn),
     };
     a.chat = (kk_chat_sink){.on_msg = on_chat, .on_reaction = on_reaction, .ud = &a.sink};
@@ -1428,6 +1462,7 @@ int main(int argc, char **argv)
     kk_overlay_free(a.overlay);
     kk_mpris_free(a.mpris);
     kk_points_free(a.points);
+    kk_timers_free(a.timers);
     kk_emotes_free(a.emotes);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);

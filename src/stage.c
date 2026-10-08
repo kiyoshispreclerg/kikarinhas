@@ -606,6 +606,20 @@ kk_avatar *kk_stage_random_other(kk_stage *s, const kk_avatar *not)
     return b == not ? &s->avatars[s->count - 1] : b;
 }
 
+kk_avatar *kk_stage_random_avatar(kk_stage *s)
+{
+    int chatters = 0;
+    for (int i = 0; i < s->count; i++)
+        chatters += s->avatars[i].user_id != NULL;
+    if (chatters == 0)
+        return s->count ? &s->avatars[kk_rng_int(&s->rng, s->count)] : NULL;
+    int k = kk_rng_int(&s->rng, chatters);
+    for (int i = 0; i < s->count; i++)
+        if (s->avatars[i].user_id && k-- == 0)
+            return &s->avatars[i];
+    return NULL;
+}
+
 bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act)
 {
     (void)s;

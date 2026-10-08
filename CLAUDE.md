@@ -68,6 +68,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
 | `src/users.c` | `users.tsv`: escolhas de cada pessoa, nível, pontos, gravação atômica |
 | `src/points.c` | pontos: ganhos (mensagem, presença, chegada, pagos, membros), saldo, ranking |
+| `src/timers.c` | timers: quando cada `[timer.NOME]` vence (minutos, mensagens, pessoas na tela) |
 | `src/demochat.c` | chat de mentira para testes |
 | `src/ini.c` | .ini lido e editado no lugar (mantém comentários) |
 | `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
@@ -87,6 +88,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
+| `config/timers.c` | aba Timers: lista e diálogo de cada timer |
 | `config/commands.c` | aba Comandos: lista e diálogo de edição por ação (texto, imagem com prévia, som...) |
 | `config/sources.c`, `config/avatars.c` | lista de lives da aba Chat; pastas de avatares e biblioteca carregada uma vez |
 
