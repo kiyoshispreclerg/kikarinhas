@@ -604,6 +604,15 @@ static void sprite_centre(const kk_avatar *a, const kk_view *v, double *cx, doub
     *cy = sy + cell_h(a) / 2.0;
 }
 
+/* The tag is shown unless names are off, or they only show with activity
+ * and this avatar has been quiet for too long (a bubble counts as activity). */
+static bool tag_visible(const kk_avatar *a, const kk_view *v)
+{
+    if (!v->show_names)
+        return false;
+    return v->name_idle <= 0 || a->quiet < v->name_idle || a->bubble;
+}
+
 /* Below the feet (default), or above the head when v->name_above. Either
  * way, stacked by row so neighbours' tags don't overlap. */
 static void tag_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
@@ -631,7 +640,7 @@ static void bubble_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
         *x = v->width - a->bubble_w;
     if (*x < 0)
         *x = 0;
-    int above_tag = v->show_names && v->name_above
+    int above_tag = tag_visible(a, v) && v->name_above
                         ? TAG_GAP + a->tag_h + a->tag_row * (a->tag_h - 2)
                         : 0;
     *y = sy + (int)lround(a->sheet->head_pad * a->size) - above_tag - a->bubble_h;
@@ -713,7 +722,7 @@ kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
         int rad = (int)ceil(hypot(dx, dy)) + 1;
         r = (kk_rect){(int)floor(cx) - rad, (int)floor(cy) - rad, 2 * rad + 1, 2 * rad + 1};
     }
-    if (v->show_names) {
+    if (tag_visible(a, v)) {
         int tx, ty;
         tag_origin(a, v, &tx, &ty);
         r = kk_rect_union(r, (kk_rect){tx, ty, a->tag_w, a->tag_h});
@@ -752,7 +761,7 @@ void kk_avatar_draw_body(const kk_avatar *a, cairo_t *cr, const kk_view *v)
     kk_sheet_draw_zoom(a->sheet, cr, a->anim.row, a->anim.frame, a->left, sx, sy, a->size);
     draw_gear(a, cr, v, false);
     cairo_restore(cr);
-    if (v->show_names) {
+    if (tag_visible(a, v)) {
         int tx, ty;
         tag_origin(a, v, &tx, &ty);
         cairo_set_source_surface(cr, a->tag, tx, ty);

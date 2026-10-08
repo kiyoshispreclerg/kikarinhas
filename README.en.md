@@ -175,7 +175,9 @@ In the Avatars tab, `show_names`/`name_position` (below or above the avatar)
 and `show_bubbles` turn the name tag and the speech bubble on or off.
 `name_font`/`name_size` and `bubble_font`/`bubble_size` set the font (Pango
 family and style, such as `Sans Bold`) and the size in points of the name and
-of the bubble.
+of the bubble. `name_idle_hide`/`name_idle_seconds` hide the name after that
+many seconds without activity (arrival, message, command or bubble), leaving
+only the drawing; it is separate from `despawn`, which removes the avatar.
 
 To apply changes without closing the program: **Save and apply**,
 `kikarinhas --reload` or `kill -HUP`. Commands, default avatar, avatar limit,

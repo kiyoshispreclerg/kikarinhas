@@ -29,6 +29,7 @@ typedef struct {
     uint64_t seed;
     bool show_names;   /* name tag under (or over) each avatar */
     bool name_above;   /* false: below the feet; true: above the head */
+    double name_idle;  /* > 0: seconds of silence until the name hides */
     bool show_bubbles; /* speech bubble with the chat message */
     double bubble_seconds; /* how long a chat bubble stays; <= 0: by length */
     /* Pango family and style ("Sans Bold") plus size in points; NULL or 0

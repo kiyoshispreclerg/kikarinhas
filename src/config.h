@@ -20,7 +20,8 @@
  *   [window]   mode = obs|desktop, size = 1280x720, fps = 30
  *   [avatars]  scale, ground = auto|N, count = auto|N, show = a, b
  *              default, sa_dir = PATH|off, paths = a, b,
- *              show_names = yes|no,
+ *              show_names = yes|no, name_idle_hide = yes|no,
+ *              name_idle_seconds,
  *              name_position = below|above, show_bubbles = yes|no,
  *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
@@ -121,6 +122,8 @@ typedef struct {
     char *avatar_paths;   /* more folders, comma separated (kk_library) */
     bool show_names;       /* name tag under (or over) each avatar */
     bool name_above;       /* false: below the feet; true: above the head */
+    bool name_idle_hide;   /* show the name only while there is activity */
+    int name_idle_seconds; /* quiet time before the name hides */
     bool show_bubbles;     /* speech bubble with the chat message */
     double bubble_seconds; /* how long it stays; -1 = by length */
     char *name_font;       /* Pango family and style; NULL = "Sans Bold" */

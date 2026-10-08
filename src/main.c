@@ -1002,6 +1002,7 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.default_avatar = find_default_avatar(a, &cfg, &warn);
     a->stage->cfg.show_names = cfg.show_names;
     a->stage->cfg.name_above = cfg.name_above;
+    a->stage->cfg.name_idle = cfg.name_idle_hide ? cfg.name_idle_seconds : 0;
     a->stage->cfg.show_bubbles = cfg.show_bubbles;
     a->stage->cfg.bubble_seconds = cfg.bubble_seconds;
     kk_stage_set_bubble_font(a->stage, cfg.bubble_font, cfg.bubble_size);
@@ -1468,6 +1469,7 @@ int main(int argc, char **argv)
         .seed = x.seed,
         .show_names = a.cfg.show_names,
         .name_above = a.cfg.name_above,
+        .name_idle = a.cfg.name_idle_hide ? a.cfg.name_idle_seconds : 0,
         .show_bubbles = a.cfg.show_bubbles,
         .bubble_seconds = a.cfg.bubble_seconds,
         .name_font = a.cfg.name_font,

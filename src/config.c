@@ -310,6 +310,7 @@ void kk_config_defaults(kk_config *c)
         .sound_voices = 8,
         .sound_commands = true,
         .show_names = true,
+        .name_idle_seconds = 30,
         .show_bubbles = true,
         .bubble_seconds = -1,
         .help_seconds = -1,
@@ -766,6 +767,10 @@ static void apply_avatars(kk_config *c, const warner *w)
         get_str(w, &c->avatar_paths);
     else if (key_is(w, "show_names"))
         get_bool(w, &c->show_names);
+    else if (key_is(w, "name_idle_hide"))
+        get_bool(w, &c->name_idle_hide);
+    else if (key_is(w, "name_idle_seconds"))
+        get_int(w, &c->name_idle_seconds, 1, 86400, false);
     else if (key_is(w, "name_position")) {
         if (strcasecmp(w->value, "below") == 0)
             c->name_above = false;

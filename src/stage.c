@@ -276,7 +276,8 @@ static kk_view view(const kk_stage *s)
     return (kk_view){.ground_y = s->height - s->cfg.ground_margin,
                      .width = s->width,
                      .show_names = s->cfg.show_names,
-                     .name_above = s->cfg.name_above};
+                     .name_above = s->cfg.name_above,
+                     .name_idle = s->cfg.name_idle};
 }
 
 kk_view kk_stage_view(const kk_stage *s)

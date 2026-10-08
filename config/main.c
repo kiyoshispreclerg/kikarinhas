@@ -312,6 +312,9 @@ static void collect(editor *e)
     put(e, "avatars", "sa_dir", text_of(e->sa_dir), NULL);
     avatar_dirs_collect(e);
     put_bool(e, "avatars", "show_names", e->show_names, d.show_names);
+    put_bool(e, "avatars", "name_idle_hide", e->name_idle, d.name_idle_hide);
+    put_int(e, "avatars", "name_idle_seconds", spin_int(e->name_idle_secs),
+            d.name_idle_seconds);
     put(e, "avatars", "name_position",
         gtk_combo_box_get_active(GTK_COMBO_BOX(e->name_position)) == 1 ? "above" : "below",
         d.name_above ? "above" : "below");
@@ -533,6 +536,17 @@ static void build(editor *e, const kk_config *cfg)
     row(t, _("Avatar name"),
         check_with(&e->show_names, _("Show names"), cfg->show_names, e->name_position),
         _("Above or below the avatar."));
+    e->name_idle_secs = spin(1, 86400, 5, 0);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->name_idle_secs), cfg->name_idle_seconds);
+    GtkWidget *idle_box = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(idle_box), e->name_idle_secs, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(idle_box), gtk_label_new(_("seconds")), FALSE, FALSE, 0);
+    row(t, NULL,
+        check_with(&e->name_idle, _("Hide the name after inactivity of"), cfg->name_idle_hide,
+                   idle_box),
+        _("The name shows on arrival, on a message or command and while a bubble is up; "
+          "after this quiet time only the drawing stays. Independent of the time until "
+          "the avatar leaves."));
     e->show_bubbles = row(t, _("Messages"),
                           check(_("Show a speech bubble with the message"), cfg->show_bubbles), NULL);
 

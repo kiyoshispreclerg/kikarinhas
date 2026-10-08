@@ -56,6 +56,7 @@ typedef struct {
     int width;
     bool show_names;
     bool name_above; /* false: below the feet (default); true: above the head */
+    double name_idle; /* > 0: the name hides after this many quiet seconds */
 } kk_view;
 
 /* Avatar size limits for kk_avatar_set_size (1 = the stage's scale). */

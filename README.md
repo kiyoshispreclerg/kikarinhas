@@ -170,7 +170,9 @@ do `!song`, a espera e o nível mínimo.
 
 Na aba Avatares, `show_names`/`name_position` (embaixo ou em cima do
 avatar) e `show_bubbles` ligam ou desligam o nome e o balão com a mensagem
-de cada um. `name_font`/`name_size` e `bubble_font`/`bubble_size` trocam a
+de cada um. `name_idle_hide`/`name_idle_seconds` escondem o nome depois de
+tantos segundos sem atividade (chegada, mensagem, comando ou balão), deixando
+só o desenho; é separado do `despawn`, que remove o avatar. `name_font`/`name_size` e `bubble_font`/`bubble_size` trocam a
 fonte (família e estilo do Pango, como `Sans Bold`) e o tamanho em pontos do
 nome e do balão.
 
