@@ -89,6 +89,18 @@ bool kk_image_load(kk_image *img, const char *path)
     return ok;
 }
 
+cairo_surface_t *kk_image_decode_still(const void *data, size_t len)
+{
+    int w, h, n, *delays;
+    unsigned char *px = kk_decode_image(data, len, &w, &h, &n, &delays);
+    cairo_surface_t *s = NULL;
+    if (px && n >= 1 && (long)w * h * n <= MAX_PIXELS)
+        s = to_surface(px, w, h);
+    kk_decode_image_free(px);
+    kk_decode_image_free(delays);
+    return s;
+}
+
 void kk_image_free(kk_image *img)
 {
     for (int i = 0; i < img->n; i++)

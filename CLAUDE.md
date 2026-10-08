@@ -23,6 +23,7 @@ make pot                           # recria po/kikarinhas.pot e mescla nos .po
 build/kikarinhas --check           # valida todas as folhas do SA instalado
 build/kikarinhas --demo-chat -v    # chat de mentira, sem rede
 build/kikarinhas -y <link-da-live> -v
+build/kikarinhas -k <canal-do-kick> -o @canal-do-odysee -v
 build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ```
 
@@ -35,8 +36,16 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 - Áudio em teste: o dispositivo ALSA `null` não precisa de placa de som
   (`device = null` ou `kk_audio_new("null", ...)`). Fora disso, o teste
   toca de verdade nas caixas do usuário: volume baixo.
-- Captura de tela da janela: `xwd -root | convert xwd:- -crop ...`
-  (`xwd -id`, `import` e `scrot` falham neste X).
+- Captura de tela da janela: num X à parte, sem mexer no desktop do
+  usuário: `Xvfb :77 -screen 0 1400x800x24 &`, rode com `DISPLAY=:77` e
+  capture com `python3 -c "from PIL import ImageGrab;
+  ImageGrab.grab(xdisplay=':77').save('x.png')"`. No X do usuário, `xwd
+  -root` passou a dar segfault, e a janela costuma ficar atrás do editor
+  (`xwd -id`, `import` e `scrot` também falham).
+- Lives para teste: o Kick lista as que estão no ar em
+  `https://kick.com/stream/featured-livestreams/pt`; o Odysee em
+  `https://api.odysee.live/livestream/all` (chat bem parado: escolha pelo
+  `comment.List` recente); a Twitch, `https://decapi.me/twitch/uptime/CANAL`.
 - Socket em teste: caminho curto (`$XDG_RUNTIME_DIR/kk-*.sock`); o do
   scratchpad passa dos 108 bytes de um socket unix.
 - `pkill`/`pgrep` sem `-f` casam pelo `comm` (`/proc/PID/comm`), truncado em
@@ -63,7 +72,10 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/sa.c` | leitura do Stream Avatars: avatares, gear, pivôs, paletas, userData; pacotes e junção de bibliotecas |
 | `src/library.c` | de onde vêm os avatares: pasta própria, `[avatars] paths` e o SA, nessa ordem |
 | `src/youtube.c`, `src/http.c` | chat do YouTube (InnerTube) sobre libcurl multi |
+| `src/tls.c`, `src/ws.c` | TLS sem bloquear (BIOs de memória, fd no `poll()`) e websocket por cima |
 | `src/twitch.c` | chat da Twitch (IRC anônimo sobre TLS), emotes do BTTV/FFZ/7TV |
+| `src/kick.c` | chat do Kick (websocket do Pusher), emotes do Kick e do 7TV, Kicks e subs |
+| `src/odysee.c`, `src/odysee_emotes.h` | chat do Odysee (websocket do Commentron), canal → live; tabela de emotes gerada por `tools/gen_odysee_emotes.py` |
 | `src/commands.c` | registro genérico de comandos: aliases, papéis, esperas |
 | `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
 | `src/users.c` | `users.tsv`: escolhas de cada pessoa, nível, pontos, gravação atômica |
@@ -106,7 +118,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 
 ## Próximas fases (ver PLANO.md)
 
-5. Odysee (a Twitch já foi); pode nascer como bridge no socket.
+5. Feita: Twitch, Kick e Odysee.
 6. Camadas HTML (WPE WebKit), opcional.
 7. Extras que faltam: fundos e zips do SA, emotes como imagem no balão,
    emotes animados. (Mesa de som, espectadores e emote wall já feitos.)

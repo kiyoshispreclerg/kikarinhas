@@ -8,7 +8,7 @@ e leve: C, Xlib, Cairo e Pango, com GTK2 apenas no configurador.
 
 - Janela ARGB que o OBS captura com transparência (Xcomposite).
 - Um avatar por pessoa do chat, andando à toa, reagindo a mensagens e comandos.
-- Chat: YouTube e Twitch; depois Odysee.
+- Chat: YouTube, Twitch, Kick e Odysee.
 - Ler os avatares do Stream Avatars já instalados pelo usuário.
 - Opcional: camadas HTML num processo à parte, para aposentar alguns
   obs-browser.
@@ -22,7 +22,7 @@ kikarinhas          (C11, Xlib + Cairo + Pango; laço único com poll())
  ├─ janela ARGB 32 bits ─ modo OBS: janela normal, capturada pelo Xcomposite com alfa
  │                      └─ modo desktop: sobreposição em tela cheia, clique atravessa (XShape)
  ├─ motor de sprites  (atlas, animação, máquina de estados, pulo/gravidade, chão)
- ├─ chat              (YouTube, depois Twitch e Odysee) → eventos internos
+ ├─ chat              (YouTube, Twitch, Kick, Odysee) → eventos internos
  ├─ socket unix       ◄── bridges externas (JSON por linha) e comandos do configurador
  └─ memória compart.  ◄── kikarinhas-web (processo à parte, opcional)
 kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
@@ -46,8 +46,8 @@ kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 |---|---|
 | libX11, libXext (MIT-SHM, Shape) | janela, envio de quadros, clique atravessando |
 | cairo, pangocairo | desenho, nomes e balões de fala |
-| libcurl (multi) | HTTPS do YouTube/Odysee, integrado ao `poll()` |
-| OpenSSL | TLS do IRC da Twitch e do websocket da Odysee |
+| libcurl (multi) | HTTPS (YouTube, APIs do Kick/Odysee, listas de emotes), integrado ao `poll()` |
+| OpenSSL | TLS do IRC da Twitch e dos websockets do Kick e do Odysee; SHA-1/base64 do handshake |
 | cJSON (embutido) | JSON do SA e das APIs |
 | miniz (embutido, ainda não incluído) | ler os zips do SA/workshop |
 | libdbus-1 | players MPRIS (a música tocando, `!song`) |
@@ -131,12 +131,27 @@ inscrito, de seguidor); a imagem é
 canal pelo `room-id` (tag do ROOMSTATE) e procurar as palavras no texto;
 7TV serve WebP/AVIF por padrão, pedir PNG/GIF.
 
-### Odysee (depois)
+### Kick (feito, ver fase 5)
 
-Chat das lives é baseado no Commentron: websocket
-`wss://sockety.odysee.tv/ws/commentron?id=<claim_id>` para novos
-comentários e `comments.odysee.tv/api/v2` (`comment.List`) para o histórico.
-*A confirmar na fase em que for implementado.*
+O site lê o chat pelo Pusher: websocket
+`wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0`
+(chave pública do app do Kick), `pusher:subscribe` em `chatrooms.<id>.v2`
+(mensagens, subs, banimentos) e `channel.<id>` (Kicks). Os ids vêm de
+`https://kick.com/api/v2/channels/<slug>` (`chatroom.id`, `id`, `user_id`),
+que responde a clientes comuns sem login. Cada evento chega como
+`{"event","channel","data"}` com `data` sendo JSON dentro de uma string.
+
+### Odysee (feito, ver fase 5)
+
+O chat da live é a seção de comentários do claim da live, empurrada pelo
+Commentron: websocket
+`wss://sockety.odysee.tv/ws/commentron?id=<claim_id>&category=<@canal>&sub_category=viewer`,
+eventos `delta` (comentário novo), `viewers`, `removed`, `pinned`. Link →
+claim: `resolve` no proxy do SDK (`api.na-backend.odysee.com/api/v1/proxy`,
+JSON-RPC); canal → live: `api.odysee.live/livestream/is_live?channel_claim_id=`
+(`Live`, `ActiveClaim.ClaimID`). O histórico (`comment.List` em
+`comments.odysee.tv/api/v2`) não é usado: como na Twitch, só o que chega
+depois de conectar.
 
 ### Bridges externas
 
@@ -156,11 +171,18 @@ Serve para plataformas que não valem ir para o núcleo e para testes
 
 Todo conector recebe um `kk_chat_sink` (`src/chat.h`) e só entrega eventos
 neutros: `kk_chat_msg` (com emojis Unicode no próprio texto e os emotes de
-imagem da plataforma em `emotes`, com URL https de um PNG e a posição no
-texto) e, se houver, `kk_reaction` (contagens agregadas, com `delay` para
-espalhar um lote no tempo). Dali para a frente nada sabe de onde veio: o
-`emoji.c` acha os emojis no texto, o `emotes.c` baixa e guarda as imagens
-(cache em disco por plataforma e id) e o `emotewall.c` decide o que sobe.
+imagem da plataforma em `emotes`, com URL https de um PNG (ou GIF, do qual
+vale o 1º quadro) e a posição no texto) e, se houver, `kk_reaction`
+(contagens agregadas, com `delay` para espalhar um lote no tempo). Dali
+para a frente nada sabe de onde veio: o `emoji.c` acha os emojis no texto,
+o `emotes.c` baixa e guarda as imagens (cache em disco por plataforma e id)
+e o `emotewall.c` decide o que sobe.
+
+Protocolos sobre socket próprio usam o `kk_tls` (TLS cru, como o IRC) ou o
+`kk_ws` (websocket); HTTP comum vai pelo `kk_http`. No programa, uma
+plataforma é uma entrada do `platform` do `main.c` (lista do `[chat]`,
+validação do alvo, criação, `pollfd` e `tick`), uma chave no `config.c`
+e uma linha na aba Chat do configurador (`config/sources.c`).
 
 ## Comportamento dos avatares
 
@@ -308,7 +330,7 @@ data/         avatar padrão original, exemplo de .ini
    (abre, salva sem mudar nada do arquivo, aplica no programa aberto e
    grava um campo alterado); não deu para capturar a tela aqui, então a
    edição da lista de comandos pela interface ficou sem teste.
-5. **Twitch** *(feita)*, **Odysee** *(adiada)*. `src/twitch.c`: IRC sobre
+5. **Twitch** *(feita)*, **Kick** e **Odysee** *(feitos, ver abaixo)*. `src/twitch.c`: IRC sobre
    TLS em `irc.chat.twitch.tv:6697` como `justinfanNNNNN`, com
    `twitch.tv/tags` e `twitch.tv/commands`. Nada bloqueia: o
    `kk_http_connect` pede ao libcurl só DNS + TCP (`CONNECT_ONLY`) e
@@ -353,6 +375,56 @@ data/         avatar padrão original, exemplo de .ini
    de emotes por conta própria (3 pedidos a mais por canal).
    Fora: espectadores calados (JOIN/PART só dão o login, sem `user-id`) e
    responder no chat (precisa de OAuth).
+   **Kick e Odysee** *(feitos)*. O TLS sem bloquear saiu do `twitch.c`
+   para `src/tls.c` (o mesmo esquema: `kk_http_connect`, BIOs de memória,
+   `recv`/`send` com `MSG_NOSIGNAL`, fd no `poll()`), e por cima dele
+   `src/ws.c`, um cliente websocket mínimo (RFC 6455: handshake com
+   `Sec-WebSocket-Accept` conferido, quadros mascarados, fragmentos
+   juntados, ping/pong, close; ping nosso após 40 s calado e queda após
+   80 s). A libcurl daqui (7.81) não fala websocket. `src/kick.c`: alvo é
+   o nome ou link `kick.com/canal`; pede os ids do canal, conecta no Pusher
+   e responde `pusher:ping`. Mensagens (`message` e `reply`): chave
+   `kick:<sender.id>`, selos broadcaster/moderator/subscriber+founder/
+   verified; `[emote:ID:NOME]` vira `NOME` no texto e emote de imagem
+   (`files.kick.com/emotes/ID/fullsize`); com `third_party_emotes`, 7TV
+   global e do canal (`7tv.io/v3/users/kick/<user_id>`, mesma tabela da
+   Twitch). `KicksGifted` vira mensagem paga ("500 Kicks"); `SubscriptionEvent`
+   e `GiftedSubscriptionsEvent` só trazem o nome, então viram mensagem de
+   membro se a pessoa falou no chat há pouco (anel de 512 nomes → id).
+   `src/odysee.c`: alvo é um claim id (40 hex), link da live
+   (`odysee.com/@canal:x/live:y` ou `lbry://`) ou canal (`@canal`); canal
+   espera entrar ao vivo (pergunta a cada 60 s) e, lendo, confere a cada
+   2 min se começou outra live, e troca. Chave `odysee:<channel_id>` de
+   quem comenta (todo comentário é de um canal), nome `@canal`;
+   `is_creator` = dono, `is_moderator`/`is_global_mod` = mod;
+   `support_amount` > 0 vira paga (LBC, ou `USD 5.00` se `is_fiat`).
+   Emotes `:nome:` do Odysee viram imagem (48 px), `:nome:` de twemoji
+   viram o emoji Unicode, `<stkr>:NOME:<stkr>` vira sticker (imagem);
+   tabelas geradas do código do site por `tools/gen_odysee_emotes.py`
+   (`src/odysee_emotes.h`); menção `@nome:c` vira `@nome`. Emotes que só
+   existem animados (GIF do Kick) entram pelo 1º quadro
+   (`kk_image_decode_still`). `-k`/`-o` e `[chat] kick`/`odysee`, com
+   `reload` e lista na aba Chat do configurador. 16 testes novos (ws, Kick,
+   Odysee). Testado ao vivo, juntos e com ASan: Kick na live do gabepeixe
+   (~5 mil espectadores), Odysee em duas lives pequenas (por canal e por
+   claim id), Twitch junto; `reload` tirando e pondo o Kick e com alvo
+   inválido. Lições:
+   - Kick: a API `kick.com/api/v2` respondeu sem bloqueio do Cloudflare,
+     inclusive sem User-Agent; a API oficial (`api.kick.com/public`) pede
+     OAuth;
+   - Odysee: `comments.odysee.tv` recusa (403) o User-Agent do Python, não
+     o do curl; o `resolve` às vezes diz NOT_FOUND para o que existe
+     (tentar de novo);
+   - o chat do Odysee é pequeno: a live mais ativa entre ~130 tinha 13
+     mensagens em 15 min;
+   - SIGPIPE: a libcurl 7.81 deixa o OpenSSL escrever direto nos sockets
+     HTTPS e, com `CURLOPT_NOSIGNAL`, não ignora mais o SIGPIPE; um teste
+     com várias lives morreu assim uma vez (não reproduzido depois). Agora
+     o processo ignora SIGPIPE (e volta ao padrão antes do `exec` do
+     configurador).
+   Não verificado ao vivo: Kicks, subs e presentes do Kick (só nos testes:
+   em 7 min de 4 canais grandes veio 1 sub e nenhum Kick; o formato dos
+   Kicks vem da KickLib) e gorjetas/stickers do Odysee.
 6. **kikarinhas-web** (WPE) como camadas. *Adiada* (opcional).
 7. **Extras**. Feitos:
    - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na

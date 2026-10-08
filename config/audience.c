@@ -78,6 +78,8 @@ static const char *platform_label(const char *key, char *buf, size_t size)
         return "Twitch";
     if (n == 6 && strncmp(key, "odysee", 6) == 0)
         return "Odysee";
+    if (n == 4 && strncmp(key, "kick", 4) == 0)
+        return "Kick";
     snprintf(buf, size, "%.*s", (int)n, key);
     return buf;
 }

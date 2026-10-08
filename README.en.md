@@ -7,14 +7,14 @@ gets a little character that strolls, jumps and reacts in a transparent
 window that OBS captures. Similar to Stream Avatars and Desktop Ponies, but
 native to Linux (X11) and light on resources: C, Cairo and Pango.
 
-> **Phases 4, 5 and 7 (partly).** Reads the public chat of a YouTube or
-> Twitch livestream (no login or key needed): each person who talks gets a Stream Avatars
+> **Phases 4, 5 and 7 (partly).** Reads the public chat of a YouTube,
+> Twitch, Kick or Odysee livestream (no login or key needed): each person who talks gets a Stream Avatars
 > avatar that jumps and shows the message in a speech bubble. Through the
 > chat, everyone picks an avatar, a color and accessories (saved for the next
 > stream), makes the avatar dance, sit, hug or attack, and plays sounds from
 > the sound board. Chat emoji, YouTube member emotes, Twitch emotes (BTTV,
-> FFZ and 7TV included) and YouTube reactions fly across the screen (emote
-> wall). Everything is configured in an `.ini` file
+> FFZ and 7TV included), Kick emotes (and 7TV), Odysee emotes and YouTube
+> reactions fly across the screen (emote wall). Everything is configured in an `.ini` file
 > or in `kikarinhas-config`, which also lists the viewers. Other programs
 > send messages through a unix socket. See [PLANO.md](PLANO.md) (in Portuguese).
 
@@ -85,6 +85,8 @@ Portuguese only for now), with a working example kit.
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # a livestream's chat
 build/kikarinhas -y @YourChannel        # waits for the channel to go live
 build/kikarinhas -t yourchannel         # Twitch chat
+build/kikarinhas -k yourchannel         # Kick chat
+build/kikarinhas -o @YourChannel        # Odysee: waits for the channel to go live
 build/kikarinhas -y @YourChannel -t yourchannel -t otherchannel   # several streams at once
 build/kikarinhas --demo-chat            # fake chat, for testing
 build/kikarinhas                        # 6 random avatars, 1280x720 window
@@ -102,6 +104,8 @@ build/kikarinhas --check                # checks every spritesheet
 | `-f, --fps N` | frames per second (default 30) |
 | `-y, --youtube TARGET` | livestream or channel link, `@handle` or video id |
 | `-t, --twitch CHANNEL` | Twitch channel: the name or the `twitch.tv/channel` link |
+| `-k, --kick CHANNEL` | Kick channel: the name or the `kick.com/channel` link |
+| `-o, --odysee TARGET` | Odysee: link to the stream or channel, `@channel` or the stream's claim id |
 | `--demo-chat` | fake chat with made-up people |
 | `--max N` | chat avatars on screen at once (default 30); whoever has been silent the longest leaves first |
 | `--despawn S` | seconds of silence until the avatar leaves (default 300) |
@@ -120,14 +124,16 @@ build/kikarinhas --check                # checks every spritesheet
 | `--socket PATH\|off` | control socket (default `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | asks the running kikarinhas to reread its configuration and exits |
 
-Several streams can be read at once, from one platform or both: repeat
-`-y`/`-t`, separate them with commas in the `.ini` (`youtube = @one,
-@two`, `twitch = channel1, channel2`), or use the **Add** button in the Chat
+Several streams can be read at once, from one platform or several: repeat
+`-y`/`-t`/`-k`/`-o`, separate them with commas in the `.ini` (`youtube =
+@one, @two`, `twitch = channel1, channel2`, `kick = ...`, `odysee = ...`),
+or use the **Add** button in the Chat
 tab of `kikarinhas-config`, which builds up a list of streams (and tells
 the platform from the link). The avatars and emotes of all of
 them show up together; the same person in two streams of the same platform
 is a single avatar. With `-v`, each message says where it came from
-(`[twitch #channel]`, `[youtube @handle]`). On `reload`, only the streams
+(`[twitch #channel]`, `[youtube @handle]`, `[kick kick.com/channel]`,
+`[odysee @channel]`). On `reload`, only the streams
 that entered or left the list connect or disconnect.
 
 Right-click the window (`obs` mode) to open `kikarinhas-config` on the same
@@ -173,8 +179,8 @@ of the bubble.
 
 To apply changes without closing the program: **Save and apply**,
 `kikarinhas --reload` or `kill -HUP`. Commands, default avatar, avatar limit,
-despawn time, fps, fake chat, `verbose`, the YouTube and Twitch
-targets, name
+despawn time, fps, fake chat, `verbose`, the streams (YouTube, Twitch,
+Kick and Odysee), name
 visibility/position, bubbles and the bubble font change on the spot. Size,
 mode, scale, ground, fixed avatars, the name font, the avatar folders,
 the people file and the socket only change on restart, and the log warns
@@ -352,9 +358,10 @@ viewers = 3
 
 Chat emoji fly across the screen, over the avatars: common emoji (drawn
 from the emoji font), the channel's YouTube member emotes, Twitch emotes and
-the channel's BTTV, FFZ and 7TV emotes (downloaded once and kept in
-`~/.cache/kikarinhas/emotes`; `third_party_emotes = no` in `[chat]` turns
-off the last three) and, if you want, YouTube
+the channel's BTTV, FFZ and 7TV emotes, Kick emotes (and the channel's 7TV
+ones on Kick) and Odysee emotes and stickers, downloaded once and kept in
+`~/.cache/kikarinhas/emotes` (`third_party_emotes = no` in `[chat]` turns
+off BTTV, FFZ and 7TV), and, if you want, YouTube
 reactions (the floating hearts), mixed in with the rest. Three effects:
 `rise` (they rise in waves), `bounce` (diagonals bouncing off the edges,
 like the DVD logo) and `fly` (they cross the screen).
@@ -498,10 +505,13 @@ transparent on screen too.
 GPL-3.0-or-later. See [LICENSE](LICENSE). Includes
 [cJSON](vendor/cjson) (MIT), [dr_wav and dr_mp3](vendor/dr_libs) (public
 domain or MIT-0) and [stb_vorbis and stb_image](vendor/stb) (public domain or
-MIT).
+MIT). The list of Odysee emotes and stickers (`src/odysee_emotes.h`) comes
+from [odysee-frontend](https://github.com/OdyseeTeam/odysee-frontend) (MIT).
 
 YouTube chat is read from the same endpoints the browser's pop-out chat
 window uses; it is not an official API and may change. Twitch chat is read
-over IRC, as an anonymous guest.
+over IRC, as an anonymous guest. Kick chat comes from the same websocket
+(Pusher) the site uses, and Odysee chat from its comments websocket
+(Commentron); these are not official APIs either.
 
 The avatar artwork belongs to its authors and is not part of Kikarinhas.

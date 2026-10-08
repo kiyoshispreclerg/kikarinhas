@@ -253,6 +253,8 @@ void kk_config_free(kk_config *c)
     free(c->bubble_font);
     free(c->youtube);
     free(c->twitch);
+    free(c->kick);
+    free(c->odysee);
     free(c->users);
     free(c->socket);
     for (int i = 0; i < c->n_commands; i++)
@@ -328,8 +330,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
 {
     *dst = *src;
     dst->avatar_paths = NULL;
-    dst->default_avatar = dst->sa_dir = dst->youtube = dst->twitch = dst->users =
-        dst->socket = NULL;
+    dst->default_avatar = dst->sa_dir = dst->youtube = dst->twitch = dst->kick = dst->odysee =
+        dst->users = dst->socket = NULL;
     dst->name_font = dst->bubble_font = NULL;
     dst->commands = NULL;
     dst->n_commands = 0;
@@ -351,6 +353,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->bubble_font, src->bubble_font) && ok;
     ok = kk_config_set_str(&dst->youtube, src->youtube) && ok;
     ok = kk_config_set_str(&dst->twitch, src->twitch) && ok;
+    ok = kk_config_set_str(&dst->kick, src->kick) && ok;
+    ok = kk_config_set_str(&dst->odysee, src->odysee) && ok;
     ok = kk_config_set_str(&dst->users, src->users) && ok;
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
     ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
@@ -771,6 +775,10 @@ static void apply_chat(kk_config *c, const warner *w)
         get_str(w, &c->youtube);
     else if (key_is(w, "twitch"))
         get_str(w, &c->twitch);
+    else if (key_is(w, "kick"))
+        get_str(w, &c->kick);
+    else if (key_is(w, "odysee"))
+        get_str(w, &c->odysee);
     else if (key_is(w, "third_party_emotes"))
         get_bool(w, &c->extra_emotes);
     else if (key_is(w, "demo"))

@@ -2,23 +2,17 @@
 #include "twitch.h"
 
 #include <ctype.h>
-#include <errno.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-#include <openssl/x509v3.h>
 
 #include "cJSON.h"
 #include "json.h"
 #include "log.h"
+#include "tls.h"
 #include "util.h"
 
 #define HOST "irc.chat.twitch.tv"
@@ -28,7 +22,6 @@
 #define IDLE_PING_S 240.0
 /* ...and after this long the connection is taken as dead. */
 #define IDLE_DROP_S 300.0
-#define HANDSHAKE_TIMEOUT_S 20.0
 #define JOIN_TIMEOUT_S 20.0
 /* "2.0" is 56 px, close to the wall's sizes; static: the first frame of an
  * animated one, as PNG. */
@@ -646,31 +639,18 @@ bool kk_tw_emit_line(char *line, const kk_tw_emotes *extra, const kk_chat_sink *
 
 /* ---- client -------------------------------------------------------------- */
 
-typedef enum {
-    ST_WAIT,    /* until next_at, then connect */
-    ST_CONNECT, /* kk_http_connect running */
-    ST_TLS,     /* handshake */
-    ST_ONLINE,
-} state;
-
 struct kk_twitch {
     kk_http *http;
     kk_chat_sink sink;
     char channel[32];
     char label[34]; /* "#channel": the source of its messages */
 
-    SSL_CTX *ctx;
-    SSL *ssl;
-    BIO *rbio, *wbio; /* network → SSL, SSL → network */
-    int fd;
+    kk_tls *tls;
     char in[16384]; /* plain text not yet split into lines */
     size_t in_len;
-    char *out; /* encrypted bytes waiting for send() */
-    size_t out_len, out_cap;
 
-    state st;
-    double now, next_at, since; /* since: start of the handshake or JOIN */
-    double last_rx;
+    bool waiting; /* closed until next_at, then connect */
+    double now, next_at, since; /* since: when the JOIN went */
     bool pinged, in_room, warned_join, reconnect;
     int failures;
 
@@ -680,23 +660,12 @@ struct kk_twitch {
     unsigned loaded, pending; /* bits by kk_tw_source */
 };
 
-static void close_conn(kk_twitch *tw)
-{
-    if (tw->ssl)
-        SSL_free(tw->ssl); /* frees the BIOs too */
-    tw->ssl = NULL;
-    tw->rbio = tw->wbio = NULL;
-    if (tw->fd >= 0)
-        close(tw->fd);
-    tw->fd = -1;
-    tw->in_len = tw->out_len = 0;
-    tw->in_room = tw->pinged = tw->warned_join = tw->reconnect = false;
-}
-
 static void retry(kk_twitch *tw, double delay)
 {
-    close_conn(tw);
-    tw->st = ST_WAIT;
+    kk_tls_close(tw->tls);
+    tw->in_len = 0;
+    tw->in_room = tw->pinged = tw->warned_join = tw->reconnect = false;
+    tw->waiting = true;
     tw->next_at = tw->now + delay;
 }
 
@@ -709,66 +678,6 @@ static void fail(kk_twitch *tw, const char *what, const char *err)
     retry(tw, delay);
 }
 
-/* OpenSSL's reason for the last failure, or fallback. */
-static const char *ssl_reason(const kk_twitch *tw, const char *fallback)
-{
-    static char buf[256];
-    long v = tw->ssl ? SSL_get_verify_result(tw->ssl) : X509_V_OK;
-    unsigned long e = ERR_get_error();
-    ERR_clear_error();
-    if (v != X509_V_OK)
-        return X509_verify_cert_error_string(v);
-    if (e) {
-        ERR_error_string_n(e, buf, sizeof buf);
-        return buf;
-    }
-    return fallback;
-}
-
-static bool append_out(kk_twitch *tw, const char *data, size_t n)
-{
-    if (tw->out_len + n > tw->out_cap) {
-        size_t cap = tw->out_cap ? tw->out_cap : 4096;
-        while (cap < tw->out_len + n)
-            cap *= 2;
-        /* Something is very wrong if this much never leaves. */
-        if (cap > (1u << 20))
-            return false;
-        char *o = realloc(tw->out, cap);
-        if (!o)
-            return false;
-        tw->out = o;
-        tw->out_cap = cap;
-    }
-    memcpy(tw->out + tw->out_len, data, n);
-    tw->out_len += n;
-    return true;
-}
-
-/* Moves what SSL produced to the socket, as much as it takes now. */
-static bool flush(kk_twitch *tw)
-{
-    char buf[4096];
-    int n;
-    while ((n = BIO_read(tw->wbio, buf, sizeof buf)) > 0)
-        if (!append_out(tw, buf, (size_t)n))
-            return false;
-    size_t sent = 0;
-    while (sent < tw->out_len) {
-        ssize_t w = send(tw->fd, tw->out + sent, tw->out_len - sent,
-                         MSG_NOSIGNAL | MSG_DONTWAIT);
-        if (w < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-                break;
-            return false;
-        }
-        sent += (size_t)w;
-    }
-    memmove(tw->out, tw->out + sent, tw->out_len - sent);
-    tw->out_len -= sent;
-    return true;
-}
-
 static void send_line(kk_twitch *tw, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
@@ -779,10 +688,10 @@ static void send_line(kk_twitch *tw, const char *fmt, ...)
     va_start(ap, fmt);
     int n = vsnprintf(line, sizeof line - 2, fmt, ap);
     va_end(ap);
-    if (n < 0 || n >= (int)sizeof line - 2 || !tw->ssl)
+    if (n < 0 || n >= (int)sizeof line - 2)
         return;
     memcpy(line + n, "\r\n", 2);
-    SSL_write(tw->ssl, line, n + 2); /* memory BIO: all or nothing */
+    kk_tls_write(tw->tls, line, (size_t)n + 2);
 }
 
 /* ---- BTTV/FFZ/7TV lists -------------------------------------------------- */
@@ -927,95 +836,24 @@ static void login(kk_twitch *tw)
     tw->since = tw->now;
 }
 
-/* Runs SSL on what arrived; false (with *why) when the connection is over. */
-static bool drive(kk_twitch *tw, const char **why)
+static void on_tls_open(void *ud)
 {
-    if (tw->st == ST_TLS) {
-        int r = SSL_do_handshake(tw->ssl);
-        if (r == 1) {
-            tw->st = ST_ONLINE;
-            login(tw);
-        } else {
-            int e = SSL_get_error(tw->ssl, r);
-            if (e != SSL_ERROR_WANT_READ && e != SSL_ERROR_WANT_WRITE) {
-                *why = ssl_reason(tw, "falha no TLS");
-                return false;
-            }
-        }
-    }
-    while (tw->st == ST_ONLINE && !tw->reconnect) {
-        int n = SSL_read(tw->ssl, tw->in + tw->in_len, (int)(sizeof tw->in - 1 - tw->in_len));
-        if (n > 0) {
-            tw->in_len += (size_t)n;
-            take_lines(tw);
-            continue;
-        }
-        int e = SSL_get_error(tw->ssl, n);
-        if (e == SSL_ERROR_WANT_READ || e == SSL_ERROR_WANT_WRITE)
-            break;
-        *why = e == SSL_ERROR_ZERO_RETURN ? "conexão encerrada pelo servidor"
-                                          : ssl_reason(tw, "erro de leitura");
-        return false;
-    }
-    if (!flush(tw)) {
-        *why = strerror(errno);
-        return false;
-    }
-    return true;
+    login(ud);
 }
 
-/* Feeds what the socket has to SSL. */
-static bool pump_in(kk_twitch *tw, const char **why)
-{
-    char buf[16384];
-    for (;;) {
-        ssize_t n = recv(tw->fd, buf, sizeof buf, MSG_DONTWAIT);
-        if (n > 0) {
-            BIO_write(tw->rbio, buf, (int)n);
-            tw->last_rx = tw->now;
-            tw->pinged = false;
-            continue;
-        }
-        if (n == 0) {
-            *why = "conexão encerrada";
-            return false;
-        }
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return true;
-        if (errno != EINTR) {
-            *why = strerror(errno);
-            return false;
-        }
-    }
-}
-
-static void on_connected(void *ud, int fd, const char *err)
+static void on_tls_data(void *ud, char *data, size_t len)
 {
     kk_twitch *tw = ud;
-    if (fd < 0) {
-        fail(tw, "conexão", err ? err : "?");
-        return;
+    tw->pinged = false;
+    while (len > 0 && !tw->reconnect) {
+        size_t room = sizeof tw->in - 1 - tw->in_len;
+        size_t n = len < room ? len : room;
+        memcpy(tw->in + tw->in_len, data, n);
+        tw->in_len += n;
+        data += n;
+        len -= n;
+        take_lines(tw);
     }
-    tw->fd = fd;
-    tw->ssl = SSL_new(tw->ctx);
-    tw->rbio = BIO_new(BIO_s_mem());
-    tw->wbio = BIO_new(BIO_s_mem());
-    if (!tw->ssl || !tw->rbio || !tw->wbio) {
-        BIO_free(tw->rbio);
-        BIO_free(tw->wbio);
-        tw->rbio = tw->wbio = NULL;
-        fail(tw, "TLS", "sem memória");
-        return;
-    }
-    SSL_set_bio(tw->ssl, tw->rbio, tw->wbio);
-    SSL_set_connect_state(tw->ssl);
-    SSL_set_tlsext_host_name(tw->ssl, HOST);
-    SSL_set1_host(tw->ssl, HOST);
-    tw->st = ST_TLS;
-    tw->since = tw->last_rx = tw->now;
-    const char *why = NULL;
-    if (!drive(tw, &why))
-        fail(tw, "TLS", why);
 }
 
 kk_twitch *kk_twitch_new(kk_http *http, const char *target,
@@ -1024,7 +862,6 @@ kk_twitch *kk_twitch_new(kk_http *http, const char *target,
     kk_twitch *tw = calloc(1, sizeof *tw);
     if (!tw)
         return NULL;
-    tw->fd = -1;
     if (!kk_tw_parse_target(target, tw->channel, sizeof tw->channel)) {
         kk_log_error("Twitch: não entendi \"%s\" (use o nome do canal ou o link "
                      "twitch.tv/canal)",
@@ -1035,17 +872,14 @@ kk_twitch *kk_twitch_new(kk_http *http, const char *target,
     snprintf(tw->label, sizeof tw->label, "#%s", tw->channel);
     tw->http = http;
     tw->sink = *sink;
-    tw->ctx = SSL_CTX_new(TLS_client_method());
+    tw->tls = kk_tls_new(http, &(kk_tls_cb){on_tls_open, on_tls_data}, tw);
     if (extra_emotes)
         tw->extra = kk_tw_emotes_new();
-    if (!tw->ctx || (extra_emotes && !tw->extra)) {
+    if (!tw->tls || (extra_emotes && !tw->extra)) {
         kk_twitch_free(tw);
         return NULL;
     }
-    SSL_CTX_set_min_proto_version(tw->ctx, TLS1_2_VERSION);
-    SSL_CTX_set_default_verify_paths(tw->ctx);
-    SSL_CTX_set_verify(tw->ctx, SSL_VERIFY_PEER, NULL);
-    tw->st = ST_WAIT;
+    tw->waiting = true;
     return tw;
 }
 
@@ -1054,66 +888,49 @@ void kk_twitch_free(kk_twitch *tw)
     if (!tw)
         return;
     kk_http_cancel(tw->http, tw);
-    close_conn(tw);
-    SSL_CTX_free(tw->ctx);
+    kk_tls_free(tw->tls);
     kk_tw_emotes_free(tw->extra);
-    free(tw->out);
     free(tw);
 }
 
 int kk_twitch_pollfd(const kk_twitch *tw, struct pollfd *fd)
 {
-    if (tw->fd < 0 || (tw->st != ST_TLS && tw->st != ST_ONLINE))
-        return 0;
-    *fd = (struct pollfd){.fd = tw->fd, .events = (short)(POLLIN | (tw->out_len ? POLLOUT : 0))};
-    return 1;
+    return kk_tls_pollfd(tw->tls, fd);
 }
 
 void kk_twitch_tick(kk_twitch *tw, const struct pollfd *fd, double now)
 {
     tw->now = now;
-    if (tw->st == ST_WAIT) {
+    if (tw->waiting) {
         if (now < tw->next_at)
             return;
-        tw->st = ST_CONNECT;
-        if (kk_http_connect(tw->http, HOST, PORT, on_connected, tw) < 0)
+        tw->waiting = false;
+        if (!kk_tls_connect(tw->tls, HOST, PORT, now))
             fail(tw, "conexão", "não consegui iniciar");
         return;
     }
-    if (tw->st == ST_CONNECT)
+    const char *why;
+    bool was_open = kk_tls_get_state(tw->tls) == KK_TLS_OPEN;
+    if (!kk_tls_pump(tw->tls, fd, now, &why)) {
+        fail(tw, was_open ? "leitura do chat" : "conexão", why);
         return;
-
-    if (fd && fd->revents) {
-        const char *why_in = NULL, *why = NULL;
-        bool in_ok = !(fd->revents & (POLLIN | POLLHUP | POLLERR)) || pump_in(tw, &why_in);
-        /* Even after an error: what arrived before it is still read. */
-        bool ok = drive(tw, &why);
-        if (!in_ok || !ok) {
-            fail(tw, "leitura do chat", why_in ? why_in : why ? why : "erro");
-            return;
-        }
     }
     if (tw->reconnect) {
         kk_log_info("Twitch #%s: o servidor pediu para reconectar", tw->channel);
         retry(tw, 0);
         return;
     }
-    if (tw->st == ST_TLS && now - tw->since > HANDSHAKE_TIMEOUT_S) {
-        fail(tw, "TLS", "o servidor não respondeu");
-        return;
-    }
-    if (tw->st != ST_ONLINE)
+    if (kk_tls_get_state(tw->tls) != KK_TLS_OPEN)
         return;
     if (!tw->in_room && !tw->warned_join && now - tw->since > JOIN_TIMEOUT_S) {
         kk_log_warn("Twitch: #%s não respondeu ao JOIN (o canal existe?)", tw->channel);
         tw->warned_join = true;
     }
-    if (now - tw->last_rx > IDLE_DROP_S) {
+    double last_rx = kk_tls_last_rx(tw->tls);
+    if (now - last_rx > IDLE_DROP_S) {
         fail(tw, "leitura do chat", "sem resposta do servidor");
-    } else if (now - tw->last_rx > IDLE_PING_S && !tw->pinged) {
+    } else if (now - last_rx > IDLE_PING_S && !tw->pinged) {
         send_line(tw, "PING :kikarinhas");
         tw->pinged = true;
-        if (!flush(tw))
-            fail(tw, "escrita", strerror(errno));
     }
 }

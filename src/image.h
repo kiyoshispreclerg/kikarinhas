@@ -7,6 +7,7 @@
  * every frame and its delay. */
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include <cairo.h>
 
@@ -22,6 +23,10 @@ typedef struct {
  * take too much memory (a long, big GIF). */
 bool kk_image_load(kk_image *img, const char *path);
 void kk_image_free(kk_image *img);
+
+/* The first frame of a picture in memory (PNG, JPEG, GIF, BMP), or NULL:
+ * for image emotes that only come animated (Kick's GIFs). */
+cairo_surface_t *kk_image_decode_still(const void *data, size_t len);
 
 /* The frame to show t seconds after it started, looping. */
 cairo_surface_t *kk_image_frame(const kk_image *img, double t);

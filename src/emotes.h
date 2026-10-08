@@ -7,7 +7,8 @@
  *
  *  - Unicode emoji are drawn with Pango from the colour emoji font (Noto
  *    Color Emoji or whatever fontconfig picks for "emoji").
- *  - Platform emotes are PNGs downloaded through kk_http (never blocking)
+ *  - Platform emotes are PNGs (or, for the few only served animated, the
+ *    first frame of a GIF) downloaded through kk_http (never blocking)
  *    and kept on disk, under cache_dir/<platform>/, so a channel's emotes
  *    load instantly on the next live.
  *

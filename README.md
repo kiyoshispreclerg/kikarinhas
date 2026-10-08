@@ -7,13 +7,15 @@ bonequinho que passeia, pula e reage numa janela transparente que o OBS
 captura. Parecido com o Stream Avatars e o Desktop Ponies, mas nativo para
 Linux (X11) e leve: C, Cairo e Pango.
 
-> **Fases 4, 5 e 7 (em parte).** Lê o chat público de uma live do YouTube
-> ou da Twitch (sem login nem chave): cada pessoa que fala ganha um avatar do Stream Avatars,
+> **Fases 4, 5 e 7 (em parte).** Lê o chat público de uma live do YouTube,
+> da Twitch, do Kick ou do Odysee (sem login nem chave): cada pessoa que
+> fala ganha um avatar do Stream Avatars,
 > que pula e mostra a mensagem num balão. Pelo chat, cada um escolhe avatar,
 > cor e acessórios (guardados para a próxima live), manda o avatar dançar,
 > sentar, abraçar ou atacar, e toca sons da mesa de som. Os emojis do chat,
-> os emotes de membros do YouTube, os da Twitch (inclusive BTTV, FFZ e 7TV)
-> e as reações do YouTube voam pela tela (emote wall).
+> os emotes de membros do YouTube, os da Twitch (inclusive BTTV, FFZ e 7TV),
+> do Kick (e 7TV) e do Odysee e as reações do YouTube voam pela tela (emote
+> wall).
 > Tudo se configura num `.ini` ou no `kikarinhas-config`, que também lista
 > os espectadores. Outros programas mandam mensagens por um socket unix. Veja o
 > [PLANO.md](PLANO.md).
@@ -81,6 +83,8 @@ do Stream Avatars e está explicado em [docs/avatares](docs/avatares/README.md)
 build/kikarinhas -y https://www.youtube.com/watch?v=ID   # chat de uma live
 build/kikarinhas -y @SeuCanal           # espera o canal entrar ao vivo
 build/kikarinhas -t seucanal            # chat da Twitch
+build/kikarinhas -k seucanal            # chat do Kick
+build/kikarinhas -o @SeuCanal           # Odysee: espera o canal entrar ao vivo
 build/kikarinhas -y @SeuCanal -t seucanal -t outrocanal   # várias lives juntas
 build/kikarinhas --demo-chat            # chat de mentira, para testar
 build/kikarinhas                        # 6 avatares sorteados, janela 1280x720
@@ -98,6 +102,8 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `-f, --fps N` | quadros por segundo (padrão 30) |
 | `-y, --youtube ALVO` | link da live ou do canal, `@handle` ou id do vídeo |
 | `-t, --twitch CANAL` | canal da Twitch: o nome ou o link `twitch.tv/canal` |
+| `-k, --kick CANAL` | canal do Kick: o nome ou o link `kick.com/canal` |
+| `-o, --odysee ALVO` | Odysee: link da live ou do canal, `@canal` ou o id da live (claim id) |
 | `--demo-chat` | chat de mentira com gente inventada |
 | `--max N` | avatares do chat ao mesmo tempo (padrão 30); quem está calado há mais tempo sai primeiro |
 | `--despawn S` | segundos em silêncio até o avatar sair (padrão 300) |
@@ -116,13 +122,15 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `--socket CAMINHO\|off` | socket de controle (padrão `$XDG_RUNTIME_DIR/kikarinhas.sock`) |
 | `--reload` | pede ao kikarinhas aberto para reler a configuração e sai |
 
-Dá para ler várias lives ao mesmo tempo, de uma plataforma ou das duas:
-repita `-y`/`-t`, separe por vírgula no `.ini` (`youtube = @um, @dois`,
-`twitch = canal1, canal2`) ou use o botão **Adicionar** da aba Chat do
+Dá para ler várias lives ao mesmo tempo, de uma plataforma ou de várias:
+repita `-y`/`-t`/`-k`/`-o`, separe por vírgula no `.ini` (`youtube = @um,
+@dois`, `twitch = canal1, canal2`, `kick = ...`, `odysee = ...`) ou use o
+botão **Adicionar** da aba Chat do
 `kikarinhas-config`, que vai juntando as lives numa lista (e reconhece a
 plataforma pelo link). Os avatares e emotes de todas aparecem juntos;
 a mesma pessoa em duas lives da mesma plataforma é um avatar só. Com `-v`,
-cada mensagem diz de onde veio (`[twitch #canal]`, `[youtube @handle]`). No
+cada mensagem diz de onde veio (`[twitch #canal]`, `[youtube @handle]`,
+`[kick kick.com/canal]`, `[odysee @canal]`). No
 `reload`, só as lives que entraram ou saíram da lista conectam ou
 desconectam.
 
@@ -168,8 +176,8 @@ nome e do balão.
 
 Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
 --reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
-tempo de sumiço, fps, chat de mentira, `verbose`, os alvos do YouTube e da
-Twitch, nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo,
+tempo de sumiço, fps, chat de mentira, `verbose`, as lives (YouTube,
+Twitch, Kick e Odysee), nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo,
 escala, chão, avatares fixos, fonte dos nomes, pastas de avatares,
 arquivo de pessoas e socket só mudam reiniciando, e o log avisa.
 Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
@@ -345,9 +353,10 @@ viewers = 3
 
 Os emojis do chat voam pela tela, por cima dos avatares: emojis comuns
 (desenhados pela fonte de emoji), os emotes de membros do canal do YouTube,
-os da Twitch e os do BTTV, FFZ e 7TV do canal (baixados uma vez e guardados
-em `~/.cache/kikarinhas/emotes`; `third_party_emotes = no` em `[chat]`
-desliga os três últimos) e, se quiser,
+os da Twitch e os do BTTV, FFZ e 7TV do canal, os do Kick (e os do 7TV do
+canal no Kick) e os do Odysee (emotes e stickers), baixados uma vez e
+guardados em `~/.cache/kikarinhas/emotes` (`third_party_emotes = no` em
+`[chat]` desliga BTTV, FFZ e 7TV), e, se quiser,
 as reações do YouTube (os corações flutuantes), misturadas com o resto.
 Três efeitos: `rise` (sobem em ondas), `bounce` (diagonal quicando nas
 bordas, como o logo do DVD) e `fly` (atravessam a tela).
@@ -491,11 +500,14 @@ transparente também na tela.
 GPL-3.0-or-later. Veja [LICENSE](LICENSE). Inclui o
 [cJSON](vendor/cjson) (MIT), o [dr_wav e o dr_mp3](vendor/dr_libs) (domínio
 público ou MIT-0) e o [stb_vorbis e o stb_image](vendor/stb) (domínio público ou
-MIT).
+MIT). A lista de emotes e stickers do Odysee (`src/odysee_emotes.h`) vem do
+[odysee-frontend](https://github.com/OdyseeTeam/odysee-frontend) (MIT).
 
 O chat do YouTube é lido pelos mesmos endereços que o chat em janela
 separada do navegador usa; não é uma API oficial e pode mudar. O da Twitch
-é lido pelo IRC, como visitante anônimo.
+é lido pelo IRC, como visitante anônimo. O do Kick vem do mesmo websocket
+(Pusher) que o site usa, e o do Odysee do websocket de comentários
+(Commentron); também não são APIs oficiais.
 
 As artes dos avatares pertencem aos seus autores e não fazem parte do
 Kikarinhas.

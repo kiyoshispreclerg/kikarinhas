@@ -8,9 +8,8 @@
  * sender's id, display name, badges and the positions of the Twitch
  * emotes in it.
  *
- * The connection never blocks: kk_http_connect resolves the name and opens
- * the TCP socket, OpenSSL runs on memory BIOs and we move the bytes with
- * recv/send (MSG_NOSIGNAL: a dropped connection is an error, not SIGPIPE).
+ * The connection never blocks: it is a kk_tls (tls.h), with its socket in
+ * the main loop's poll().
  *
  * Emotes:
  *  - Twitch's own (global, subscriber, follower) come marked in the

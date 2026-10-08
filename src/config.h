@@ -24,7 +24,8 @@
  *              name_position = below|above, show_bubbles = yes|no,
  *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
- *   [chat]     youtube = a, b, twitch = a, b, third_party_emotes = yes|no,
+ *   [chat]     youtube = a, b, twitch = a, b, kick = a, b, odysee = a, b,
+ *              third_party_emotes = yes|no,
  *              demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
  *   [commands] shortcuts = yes|no, shortcut_cooldown = 5, shortcut_cost = 0,
@@ -127,7 +128,9 @@ typedef struct {
     /* [chat] */
     char *youtube;      /* lives, channels: a list (kk_config_next_target) */
     char *twitch;       /* channel names or links: a list too */
-    bool extra_emotes;  /* BTTV/FFZ/7TV on Twitch */
+    char *kick;         /* channel names or links */
+    char *odysee;       /* links, @channels, claim ids */
+    bool extra_emotes;  /* BTTV/FFZ/7TV on Twitch, 7TV on Kick */
     bool demo;
     int max_avatars;
     double despawn;
@@ -213,7 +216,7 @@ const kk_config_sound *kk_config_find_sound(const kk_config *c, const char *word
  * nothing usable is left. */
 bool kk_config_sound_name(char *out, size_t size, const char *file);
 
-/* youtube and twitch name several lives at once, separated by commas or
+/* youtube, twitch, kick and odysee name several lives at once, separated by commas or
  * white space. Copies the item at *p to out and moves *p past it; false
  * when there is none left. Items that don't fit in out are skipped. */
 bool kk_config_next_target(const char **p, char *out, size_t size);

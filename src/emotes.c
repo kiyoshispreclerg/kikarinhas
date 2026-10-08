@@ -9,6 +9,7 @@
 #include <pango/pangocairo.h>
 
 #include "emoji.h"
+#include "image.h"
 #include "log.h"
 #include "util.h"
 
@@ -174,10 +175,13 @@ static bool is_png(const char *data, size_t len)
     return len > 8 && memcmp(data, "\x89PNG\r\n\x1a\n", 8) == 0;
 }
 
-static cairo_surface_t *decode_png(const char *data, size_t len, int px)
+static cairo_surface_t *decode_image(const char *data, size_t len, int px)
 {
-    if (!is_png(data, len))
-        return NULL;
+    if (!is_png(data, len)) {
+        /* Some only come animated (Kick's GIFs): their first frame. */
+        cairo_surface_t *s = kk_image_decode_still(data, len);
+        return s ? fit(s, px) : NULL;
+    }
     png_reader r = {(const unsigned char *)data, len};
     cairo_surface_t *s = cairo_image_surface_create_from_png_stream(read_png, &r);
     if (cairo_surface_status(s) != CAIRO_STATUS_SUCCESS) {
@@ -251,7 +255,7 @@ static cairo_surface_t *load_file(const char *path, int px)
     char *data = kk_read_file(path, &len);
     if (!data)
         return NULL;
-    cairo_surface_t *s = decode_png(data, len, px);
+    cairo_surface_t *s = decode_image(data, len, px);
     free(data);
     return s;
 }
@@ -283,7 +287,7 @@ static void on_image(void *ud, long status, const char *body, size_t len,
     entry *en = ud;
     kk_emotes *e = en->owner;
     e->inflight--;
-    cairo_surface_t *img = status == 200 ? decode_png(body, len, e->px) : NULL;
+    cairo_surface_t *img = status == 200 ? decode_image(body, len, e->px) : NULL;
     if (img) {
         en->img = img;
         en->st = E_READY;
@@ -296,7 +300,7 @@ static void on_image(void *ud, long status, const char *body, size_t len,
         else if (status != 200)
             kk_log_warn("emote %s: HTTP %ld", en->url, status);
         else
-            kk_log_warn("emote %s: não é uma imagem PNG", en->url);
+            kk_log_warn("emote %s: não é uma imagem que eu consiga ler", en->url);
     }
     free(en->url);
     en->url = NULL;

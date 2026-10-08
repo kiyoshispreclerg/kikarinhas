@@ -558,7 +558,7 @@ static void build(editor *e, const kk_config *cfg)
         _("Every live in the list is read at the same time, YouTube and Twitch together. "
           "Double-click a link to edit it."));
     e->extra_emotes = row(t, NULL,
-                          check(_("BTTV, FFZ and 7TV emotes on Twitch"), cfg->extra_emotes),
+                          check(_("BTTV, FFZ and 7TV emotes on Twitch, 7TV on Kick"), cfg->extra_emotes),
                           _("Downloads the global lists and the channel's, so those emotes "
                             "also fly on the emote wall."));
     e->demo = row(t, NULL, check(_("Fake chat (to test without a stream)"), cfg->demo), NULL);

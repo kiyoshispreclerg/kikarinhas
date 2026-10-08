@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 15:03-0300\n"
+"POT-Creation-Date: 2026-10-08 17:31-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -281,8 +281,8 @@ msgstr ""
 "Clique duas vezes num link para editar."
 
 #: config/main.c:561
-msgid "BTTV, FFZ and 7TV emotes on Twitch"
-msgstr "Emotes do BTTV, FFZ e 7TV na Twitch"
+msgid "BTTV, FFZ and 7TV emotes on Twitch, 7TV on Kick"
+msgstr "Emotes do BTTV, FFZ e 7TV na Twitch e do 7TV no Kick"
 
 #: config/main.c:562
 msgid ""
@@ -348,7 +348,7 @@ msgstr "Sons"
 msgid "Emote wall"
 msgstr "Emote wall"
 
-#: config/main.c:588 config/audience.c:469
+#: config/main.c:588 config/audience.c:471
 msgid "Points"
 msgstr "Pontos"
 
@@ -461,12 +461,12 @@ msgstr "Volume inválido: de 0 a 400%%."
 msgid "Add sounds"
 msgstr "Adicionar sons"
 
-#: config/sounds.c:432 config/sources.c:67 config/avatars.c:85
+#: config/sounds.c:432 config/sources.c:118 config/avatars.c:85
 #: config/avatars.c:655 config/commands.c:415 config/timers.c:103
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: config/sounds.c:432 config/sources.c:68 config/sources.c:184
+#: config/sounds.c:432 config/sources.c:119 config/sources.c:236
 #: config/avatars.c:85 config/commands.c:927 config/timers.c:365
 msgid "_Add"
 msgstr "_Adicionar"
@@ -578,7 +578,7 @@ msgstr ""
 msgid "_Add…"
 msgstr "_Adicionar…"
 
-#: config/sounds.c:666 config/sources.c:185 config/avatars.c:152
+#: config/sounds.c:666 config/sources.c:237 config/avatars.c:152
 #: config/commands.c:929 config/timers.c:367
 msgid "_Remove"
 msgstr "_Remover"
@@ -640,12 +640,12 @@ msgstr "Emojis e emotes do chat voam pela tela"
 #: config/wall.c:57
 msgid ""
 "Common emoji come from the colour emoji font (Noto Color Emoji); YouTube "
-"member emotes and Twitch emotes (also BTTV, FFZ and 7TV) are downloaded and "
-"kept in ~/.cache/kikarinhas/emotes."
+"member emotes and Twitch, Kick and Odysee emotes (also BTTV, FFZ and 7TV) "
+"are downloaded and kept in ~/.cache/kikarinhas/emotes."
 msgstr ""
 "Os emojis comuns vêm da fonte de emoji colorido (Noto Color Emoji); os "
-"emotes de membros do YouTube e os da Twitch (também BTTV, FFZ e 7TV) são "
-"baixados e guardados em ~/.cache/kikarinhas/emotes."
+"emotes de membros do YouTube e os da Twitch, do Kick e do Odysee (também "
+"BTTV, FFZ e 7TV) são baixados e guardados em ~/.cache/kikarinhas/emotes."
 
 #: config/wall.c:66
 msgid "Effect"
@@ -750,113 +750,113 @@ msgstr "moderador"
 msgid "%Y-%m-%d %H:%M"
 msgstr "%d/%m/%Y %H:%M"
 
-#: config/audience.c:98
+#: config/audience.c:100
 #, c-format
 msgid "%d viewer"
 msgid_plural "%d viewers"
 msgstr[0] "%d espectador"
 msgstr[1] "%d espectadores"
 
-#: config/audience.c:100
+#: config/audience.c:102
 #, c-format
 msgid "%d of %d viewers"
 msgstr "%d de %d espectadores"
 
-#: config/audience.c:115
+#: config/audience.c:117
 #, c-format
 msgid "Could not read the people file %s."
 msgstr "Não consegui ler o arquivo de pessoas %s."
 
-#: config/audience.c:149
+#: config/audience.c:151
 msgid " (just read from the running kikarinhas)"
 msgstr " (lido agora do kikarinhas aberto)"
 
-#: config/audience.c:254
+#: config/audience.c:256
 #, c-format
 msgid "kikarinhas refused: %s"
 msgstr "O kikarinhas recusou: %s"
 
-#: config/audience.c:290
+#: config/audience.c:292
 #, c-format
 msgid "%s is now trusted."
 msgstr "%s agora é confiável."
 
-#: config/audience.c:290
+#: config/audience.c:292
 #, c-format
 msgid "%s is no longer trusted."
 msgstr "%s não é mais confiável."
 
-#: config/audience.c:292 config/audience.c:334 config/audience.c:365
+#: config/audience.c:294 config/audience.c:336 config/audience.c:367
 msgid "Could not write the people file."
 msgstr "Não consegui gravar o arquivo de pessoas."
 
-#: config/audience.c:321
+#: config/audience.c:323
 #, c-format
 msgid "Invalid points: \"%s\" (0 to 1000000000)."
 msgstr "Pontos inválidos: \"%s\" (de 0 a 1000000000)."
 
-#: config/audience.c:332
+#: config/audience.c:334
 #, c-format
 msgid "%s now has %ld points."
 msgstr "%s agora tem %ld pontos."
 
-#: config/audience.c:353
+#: config/audience.c:355
 msgid "random"
 msgstr "sorteado"
 
-#: config/audience.c:356
+#: config/audience.c:358
 #, c-format
 msgid "%s is now %s (already in effect in the running kikarinhas)."
 msgstr "%s agora é %s (já valendo no kikarinhas aberto)."
 
-#: config/audience.c:362
+#: config/audience.c:364
 #, c-format
 msgid "%s is now %s (saved to the file; takes effect next time)."
 msgstr "%s agora é %s (gravado no arquivo; vale na próxima vez)."
 
-#: config/audience.c:391
+#: config/audience.c:393
 #, c-format
 msgid "Avatar of %s"
 msgstr "Avatar de %s"
 
-#: config/audience.c:411 config/avatars.c:473 config/avatars.c:663
+#: config/audience.c:413 config/avatars.c:473 config/avatars.c:663
 msgid "Search"
 msgstr "Procurar"
 
-#: config/audience.c:417
+#: config/audience.c:419
 msgid "_Refresh"
 msgstr "A_tualizar"
 
-#: config/audience.c:441 config/avatars.c:505 config/timers.c:111
+#: config/audience.c:443 config/avatars.c:505 config/timers.c:111
 #: config/timers.c:329
 msgid "Name"
 msgstr "Nome"
 
-#: config/audience.c:442 config/sources.c:87 config/sources.c:164
+#: config/audience.c:444 config/sources.c:139 config/sources.c:216
 msgid "Platform"
 msgstr "Plataforma"
 
-#: config/audience.c:443
+#: config/audience.c:445
 msgid "First seen"
 msgstr "Primeira vez"
 
-#: config/audience.c:444
+#: config/audience.c:446
 msgid "Latest"
 msgstr "Mais recente"
 
-#: config/audience.c:445
+#: config/audience.c:447
 msgid "Level"
 msgstr "Nível"
 
-#: config/audience.c:462
+#: config/audience.c:464
 msgid "Trusted"
 msgstr "Confiável"
 
-#: config/audience.c:478 config/commands.c:468
+#: config/audience.c:480 config/commands.c:468
 msgid "Avatar"
 msgstr "Avatar"
 
-#: config/audience.c:491
+#: config/audience.c:493
 msgid ""
 "Double-click someone to pick their avatar by its picture (with a search "
 "box). With kikarinhas running, the change takes effect at once. Empty "
@@ -873,30 +873,7 @@ msgstr ""
 "e acima. Pontos: clique duas vezes para mudar o saldo. Quem veio do Stream "
 "Avatars sem nome ou datas: rode uma vez kikarinhas --import-sa-users."
 
-#: config/sources.c:64
-msgid "Add a live"
-msgstr "Adicionar live"
-
-#: config/sources.c:83 config/sources.c:169
-msgid "Live or channel"
-msgstr "Live ou canal"
-
-#: config/sources.c:84
-msgid ""
-"YouTube: link to the stream or channel, @handle or video id; with a channel, "
-"it waits for it to go live. Twitch: channel name or twitch.tv link (read "
-"without logging in)."
-msgstr ""
-"YouTube: link da live ou do canal, @handle ou id do vídeo; com um canal, "
-"espera ele entrar ao vivo. Twitch: nome do canal ou link twitch.tv (lido sem "
-"login)."
-
-#: config/sources.c:99
-#, c-format
-msgid "%s: %s added. Save and apply to connect."
-msgstr "%s: %s adicionado. Salve e aplique para conectar."
-
-#: config/sources.c:104
+#: config/sources.c:87
 #, c-format
 msgid ""
 "Twitch: could not understand \"%s\" (use the channel name or the twitch.tv/"
@@ -904,7 +881,24 @@ msgid ""
 msgstr ""
 "Twitch: não entendi \"%s\" (use o nome do canal ou o link twitch.tv/canal)."
 
-#: config/sources.c:106
+#: config/sources.c:93
+#, c-format
+msgid ""
+"Kick: could not understand \"%s\" (use the channel name or the kick.com/"
+"channel link)."
+msgstr ""
+"Kick: não entendi \"%s\" (use o nome do canal ou o link kick.com/canal)."
+
+#: config/sources.c:99
+#, c-format
+msgid ""
+"Odysee: could not understand \"%s\" (use the link to the stream or channel, "
+"the @channel or the stream's claim id)."
+msgstr ""
+"Odysee: não entendi \"%s\" (use o link da live ou do canal, o @canal ou o id"
+" da live)."
+
+#: config/sources.c:105
 #, c-format
 msgid ""
 "YouTube: could not understand \"%s\" (use the link to the stream or channel, "
@@ -912,11 +906,36 @@ msgid ""
 msgstr ""
 "YouTube: não entendi \"%s\" (use o link da live ou do canal, ou o @handle)."
 
-#: config/sources.c:124
+#: config/sources.c:115
+msgid "Add a live"
+msgstr "Adicionar live"
+
+#: config/sources.c:134 config/sources.c:221
+msgid "Live or channel"
+msgstr "Live ou canal"
+
+#: config/sources.c:135
+msgid ""
+"YouTube: link to the stream or channel, @handle or video id; with a channel, "
+"it waits for it to go live. Twitch and Kick: channel name or link (read "
+"without logging in). Odysee: link to the stream or channel, @channel or the "
+"stream's claim id; with a channel, it waits for it to go live."
+msgstr ""
+"YouTube: link da live ou do canal, @handle ou id do vídeo; com um canal, "
+"espera ele entrar ao vivo. Twitch e Kick: nome do canal ou link (lido sem "
+"login). Odysee: link da live ou do canal, @canal ou id da live; com um "
+"canal, espera ele entrar ao vivo."
+
+#: config/sources.c:151
+#, c-format
+msgid "%s: %s added. Save and apply to connect."
+msgstr "%s: %s adicionado. Salve e aplique para conectar."
+
+#: config/sources.c:171
 msgid "Pick a live in the list."
 msgstr "Escolha uma live na lista."
 
-#: config/sources.c:147
+#: config/sources.c:197
 #, c-format
 msgid "%s: could not understand \"%s\"."
 msgstr "%s: não entendi \"%s\"."
@@ -1417,8 +1436,8 @@ msgid ""
 "It runs as if the channel owner typed it (no cooldown, no cost); bubbles go "
 "over someone on screen."
 msgstr ""
-"Qualquer comando do chat, com o que ele pede: !logo, !discord, !som buzina, "
-"!song... Roda como se o dono do canal tivesse digitado (sem espera, sem "
+"Qualquer comando do chat, com o que ele pede: !logo, !discord, !som buzina, !"
+"song... Roda como se o dono do canal tivesse digitado (sem espera, sem "
 "custo); balões aparecem sobre alguém na tela."
 
 #: config/timers.c:121 config/timers.c:330
