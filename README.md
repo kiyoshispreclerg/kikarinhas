@@ -192,6 +192,15 @@ global_cooldown = 10
 [command.pika]
 action = avatar
 data = pikachu
+
+# !discord mostra um texto num balão sobre o avatar de quem pediu (mesmo com
+# os balões de mensagem desligados). \n quebra a linha e {name} vira o nome
+# de quem pediu; seconds é quanto tempo fica (auto: pelo tamanho).
+[command.discord]
+action = text
+data = Oi, {name}! Entre no Discord:\ndiscord.gg/exemplo
+aliases = dc
+seconds = 10
 ```
 
 ### Mesa de som

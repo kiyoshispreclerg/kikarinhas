@@ -32,7 +32,8 @@
  *              help_seconds = auto|N
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
- *              role = anyone|member|trusted|mod|owner, enabled = yes|no
+ *              role = anyone|member|trusted|mod|owner, enabled = yes|no,
+ *              seconds = auto|N, x = 50, y = 50, scale = 100 (image)
  *   [soundboard] enabled, volume = 100 (%), device = default,
  *              voices = 8, commands = yes
  *   [sound.NAME] file, aliases = a, b, volume = 100 (%)
@@ -61,6 +62,7 @@ typedef struct {
     double user_cd, global_cd;
     kk_role role;
     bool enabled;
+    kk_cmd_params params; /* seconds, and the place of an image */
 } kk_config_command;
 
 /* A sound-board clip, played by "!sound NAME" (or one of its aliases) and,

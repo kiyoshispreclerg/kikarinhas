@@ -29,9 +29,12 @@ static int calls;
 static char last_name[64], last_args[256], last_data[64];
 static bool handler_result = true;
 
+static kk_cmd_params last_params;
+
 static bool record(const kk_cmd_call *c)
 {
     calls++;
+    last_params = *c->params;
     snprintf(last_name, sizeof last_name, "%s", c->name);
     snprintf(last_args, sizeof last_args, "%s", c->args);
     snprintf(last_data, sizeof last_data, "%s", c->data ? c->data : "");
@@ -71,6 +74,20 @@ TEST(commands_aliases_and_args)
     CHECK_INT_EQ(calls, 2);
     CHECK_STR_EQ(last_name, "sound");
     CHECK_STR_EQ(last_args, "x");
+}
+
+TEST(commands_params)
+{
+    kk_commands *c = kk_commands_new(NULL);
+    kk_commands_add(c, "logo", record, "logo.png", 0, 0, KK_ROLE_ANYONE);
+    send(c, "!logo", 0, "a", 0);
+    kk_cmd_params defaults = last_params;
+    kk_cmd_params p = {.seconds = 3, .x = 10, .y = 20, .scale = 200};
+    kk_commands_set_params(c, "logo", &p);
+    send(c, "!logo", 0, "b", 0);
+    kk_commands_free(c);
+    CHECK(defaults.seconds < 0 && defaults.x == 50 && defaults.scale == 100);
+    CHECK(last_params.seconds == 3 && last_params.y == 20 && last_params.scale == 200);
 }
 
 TEST(commands_cooldowns)
@@ -361,6 +378,7 @@ int main(void)
     RUN(commands_aliases_and_args);
     RUN(commands_cooldowns);
     RUN(commands_failed_handler_starts_no_cooldown);
+    RUN(commands_params);
     RUN(commands_roles);
     RUN(commands_trusted);
     RUN(commands_fallback);

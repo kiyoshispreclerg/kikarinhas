@@ -19,6 +19,7 @@ typedef struct {
     kk_role role;
     char *group; /* cooldowns are kept under this name; NULL = own name */
     char *help;  /* usage line for the help command, or NULL */
+    kk_cmd_params params;
 } command;
 
 /* When someone may use a command again, keyed by hash(command, person). */
@@ -102,6 +103,7 @@ int kk_commands_add(kk_commands *c, const char *name, kk_cmd_fn fn,
     }
     free(cmd->data);
     cmd->data = data ? strdup(data) : NULL;
+    cmd->params = KK_CMD_PARAMS_DEFAULT;
     cmd->fn = fn;
     cmd->user_cd = user_cooldown;
     cmd->global_cd = global_cooldown;
@@ -124,6 +126,15 @@ int kk_commands_set_group(kk_commands *c, const char *name, const char *group)
     }
     free(cmd->group);
     cmd->group = g;
+    return 0;
+}
+
+int kk_commands_set_params(kk_commands *c, const char *name, const kk_cmd_params *p)
+{
+    command *cmd = find(c, name);
+    if (!cmd)
+        return -1;
+    cmd->params = *p;
     return 0;
 }
 
@@ -308,6 +319,7 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
         trim_copy(args, sizeof args, p + n);
         call.name = cmd->names[0];
         call.data = cmd->data;
+        call.params = &cmd->params;
         if (!cmd->fn(&call))
             return KK_CMD_FAILED;
         if (cmd->global_cd > 0)
@@ -322,6 +334,8 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
     trim_copy(args, sizeof args, p);
     lower_ascii(args);
     call.name = "";
+    kk_cmd_params defaults = KK_CMD_PARAMS_DEFAULT;
+    call.params = &defaults;
     h = hash2("", user_key);
     /* Can't tell yet whether "!xyz" is a name: while cooling down, let it
      * through as a normal message rather than swallow it. */

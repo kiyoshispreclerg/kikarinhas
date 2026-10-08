@@ -285,6 +285,34 @@ TEST(config_commands)
     kk_config_free(&c);
 }
 
+/* seconds, x, y and scale: defaults on new and built-in commands alike. */
+TEST(config_command_params)
+{
+    kk_config c = load_text("[command.discord]\naction = text\ndata = discord.gg/x\n"
+                            "seconds = 8\n"
+                            "[command.logo]\naction = text\ndata = a\nx = 10\ny = 90\n"
+                            "scale = 250\nseconds = auto\n"
+                            "[command.ruim]\naction = text\nseconds = 0\nscale = 0\n");
+    CHECK_INT_EQ(n_warnings, 2); /* seconds and scale out of range */
+    kk_config_command *d = kk_config_find_command(&c, "discord");
+    kk_config_command *l = kk_config_find_command(&c, "logo");
+    kk_config_command *r = kk_config_find_command(&c, "ruim");
+    kk_config_command *j = kk_config_find_command(&c, "jump");
+    CHECK(d && l && r && j);
+    CHECK_STR_EQ(d->action, "text");
+    CHECK(d->params.seconds == 8);
+    CHECK(d->params.x == 50 && d->params.y == 50 && d->params.scale == 100);
+    CHECK(l->params.x == 10 && l->params.y == 90 && l->params.scale == 250);
+    CHECK(l->params.seconds < 0);
+    CHECK(r->params.seconds < 0 && r->params.scale == 100);
+    CHECK(j->params.seconds < 0 && j->params.scale == 100);
+    kk_config copy;
+    CHECK(kk_config_copy(&copy, &c));
+    CHECK(kk_config_find_command(&copy, "logo")->params.y == 90);
+    kk_config_free(&copy);
+    kk_config_free(&c);
+}
+
 TEST(every_config_action_has_a_handler)
 {
     for (const char *const *a = kk_config_actions(); *a; a++)
@@ -601,6 +629,7 @@ int main(void)
     RUN(config_chat_sources);
     RUN(config_bad_values_are_skipped);
     RUN(config_commands);
+    RUN(config_command_params);
     RUN(every_config_action_has_a_handler);
     RUN(config_commands_register);
     RUN(config_fonts);

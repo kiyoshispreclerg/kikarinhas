@@ -18,7 +18,7 @@
 
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
-    "emote", "hug", "attack", "sound", "help", NULL,
+    "emote", "hug", "attack", "sound", "help", "text", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. */
@@ -26,7 +26,8 @@ static const char *const ACTIONS[] = {
     {.name = (char *)n, .action = (char *)n, .aliases = {__VA_ARGS__},       \
      .n_aliases = (int)(sizeof((const char *[]){__VA_ARGS__}) /              \
                         sizeof(const char *)),                               \
-     .user_cd = ucd, .global_cd = gcd, .role = KK_ROLE_ANYONE, .enabled = true}
+     .user_cd = ucd, .global_cd = gcd, .role = KK_ROLE_ANYONE, .enabled = true, \
+     .params = KK_CMD_PARAMS_INIT}
 
 static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("avatar", 5, 0, "personagem", "char"),
@@ -154,6 +155,7 @@ static bool command_copy(kk_config_command *dst, const kk_config_command *src)
         .global_cd = src->global_cd,
         .role = src->role,
         .enabled = src->enabled,
+        .params = src->params,
     };
     bool ok = kk_config_set_str(&dst->name, src->name) &&
               kk_config_set_str(&dst->action, src->action) &&
@@ -826,14 +828,20 @@ static void apply_command(kk_config *c, const warner *w, const char *name)
         if (!(k = add_command(c)) || !kk_config_set_str(&k->name, name))
             return;
         k->enabled = true;
+        k->params = KK_CMD_PARAMS_DEFAULT;
     }
     if (key_is(w, "action")) {
         char a[MAX_NAME];
-        if (normalize_word(a, sizeof a, w->value) && is_action(a))
+        if (normalize_word(a, sizeof a, w->value) && is_action(a)) {
             kk_config_set_str(&k->action, a);
-        else
-            bad_value(w, "avatar, color, gear, jump, sit, dance, emote, hug, "
-                         "attack ou sound");
+        } else {
+            char list[256] = "";
+            size_t n = 0;
+            for (int i = 0; ACTIONS[i] && n < sizeof list; i++)
+                n += (size_t)snprintf(list + n, sizeof list - n, "%s%s",
+                                      i == 0 ? "" : ACTIONS[i + 1] ? ", " : " ou ", ACTIONS[i]);
+            bad_value(w, list);
+        }
     } else if (key_is(w, "data")) {
         get_str(w, &k->data);
     } else if (key_is(w, "aliases")) {
@@ -848,6 +856,14 @@ static void apply_command(kk_config *c, const warner *w, const char *name)
             bad_value(w, "anyone, member, trusted, mod ou owner");
     } else if (key_is(w, "enabled")) {
         get_bool(w, &k->enabled);
+    } else if (key_is(w, "seconds")) {
+        get_auto_seconds(w, &k->params.seconds);
+    } else if (key_is(w, "x")) {
+        get_double(w, &k->params.x, -100, 200);
+    } else if (key_is(w, "y")) {
+        get_double(w, &k->params.y, -100, 200);
+    } else if (key_is(w, "scale")) {
+        get_double(w, &k->params.scale, 1, 10000);
     } else {
         unknown_key(w);
     }

@@ -198,6 +198,15 @@ global_cooldown = 10
 [command.pika]
 action = avatar
 data = pikachu
+
+# !discord shows a text in a bubble over the sender's avatar (even with
+# message bubbles off). \n breaks the line and {name} becomes the sender's
+# name; seconds is how long it stays (auto: by its length).
+[command.discord]
+action = text
+data = Hi, {name}! Join the Discord:\ndiscord.gg/example
+aliases = dc
+seconds = 10
 ```
 
 ### Sound board

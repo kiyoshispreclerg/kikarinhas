@@ -30,6 +30,17 @@ typedef enum {
 
 typedef struct kk_commands kk_commands;
 
+/* Settings some actions read besides data (an image's place, how long a
+ * bubble stays...). Every command has them, with these defaults. */
+typedef struct {
+    double seconds;     /* on screen; <= 0: the action decides */
+    double x, y;        /* percent of the window, where an image's centre goes */
+    double scale;       /* percent of an image's own size */
+} kk_cmd_params;
+
+#define KK_CMD_PARAMS_INIT {.seconds = -1, .x = 50, .y = 50, .scale = 100}
+#define KK_CMD_PARAMS_DEFAULT ((kk_cmd_params)KK_CMD_PARAMS_INIT)
+
 typedef struct {
     const kk_chat_msg *msg;
     const char *user_key; /* "platform:id" */
@@ -37,6 +48,7 @@ typedef struct {
     const char *args;     /* trimmed text after the command word */
     const char *data;     /* the command's data, or NULL */
     kk_role role;         /* the sender's level (badges and trust) */
+    const kk_cmd_params *params; /* never NULL */
     void *ud;             /* given to kk_commands_new */
     kk_commands *commands; /* the table the command was found in */
 } kk_cmd_call;
@@ -66,6 +78,8 @@ bool kk_commands_has(kk_commands *c, const char *word);
 /* Cooldowns of name are shared with every command of the same group (e.g.
  * each sound's own !command and !sound itself). */
 int kk_commands_set_group(kk_commands *c, const char *name, const char *group);
+/* Replaces the params of name (copied). */
+int kk_commands_set_params(kk_commands *c, const char *name, const kk_cmd_params *p);
 /* Extra word for an existing command. Fails if the word is taken. */
 int kk_commands_alias(kk_commands *c, const char *name, const char *alias);
 /* A short usage line ("!hug [@name]") for the help command to show. Commands

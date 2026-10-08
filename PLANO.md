@@ -477,6 +477,11 @@ data/         avatar padrão original, exemplo de .ini
      de gear e pasta, com busca. As miniaturas carregam aos poucos num
      `g_idle_add` (6 por vez) para a janela não travar; "Ler de novo" relê
      as pastas como a aba Avatares diz.
+   - **Comando `text`**: `data` é um texto fixo mostrado no balão azul da
+     ajuda sobre o avatar de quem pediu (`!discord`, `!regras`); `\n`
+     quebra a linha e `{name}` vira o nome de quem pediu. Cada comando
+     ganhou `kk_cmd_params` (`seconds`, e `x`/`y`/`scale` para imagens),
+     no `.ini` e em `kk_cmd_call.params`.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

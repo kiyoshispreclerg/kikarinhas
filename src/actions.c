@@ -169,6 +169,52 @@ static bool cmd_help(const kk_cmd_call *c)
     return true;
 }
 
+/* Seconds a bubble with text stays: the command's own, else by length. */
+static double text_seconds(const kk_cmd_call *c, const char *text)
+{
+    if (c->params->seconds > 0)
+        return c->params->seconds;
+    double t = 4.0 + 0.06 * (double)strlen(text);
+    return t > 15.0 ? 15.0 : t;
+}
+
+/* Copies a text command's data into out: "\n" breaks the line and {name}
+ * becomes the sender's name. */
+static void expand_text(char *out, size_t size, const char *in, const char *name)
+{
+    size_t n = 0;
+    while (*in && n + 1 < size) {
+        if (in[0] == '\\' && in[1] == 'n') {
+            out[n++] = '\n';
+            in += 2;
+        } else if (strncmp(in, "{name}", 6) == 0) {
+            int w = snprintf(out + n, size - n, "%s", name ? name : "");
+            if (w > 0) /* snprintf cut it short if it didn't fit */
+                n += (size_t)w < size - n ? (size_t)w : size - n - 1;
+            in += 6;
+        } else {
+            out[n++] = *in++;
+        }
+    }
+    out[n] = '\0';
+}
+
+/* !discord, !regras...: data is the text, shown in a bubble over the
+ * sender's avatar (even with message bubbles off, like !help). */
+static bool cmd_text(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!c->data || !c->data[0] || !a->self)
+        return false;
+    char text[600];
+    expand_text(text, sizeof text, c->data, c->msg->name);
+    int lines = 1;
+    for (const char *p = text; *p; p++)
+        lines += *p == '\n';
+    kk_stage_help_bubble(a->stage, a->self, text, 0, lines + 6, text_seconds(c, text));
+    return true;
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -194,7 +240,7 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"avatar", cmd_avatar}, {"color", cmd_color}, {"gear", cmd_gear},
         {"jump", cmd_jump},     {"sit", cmd_sit},     {"dance", cmd_dance},
         {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
-        {"sound", cmd_sound},   {"help", cmd_help},
+        {"sound", cmd_sound},   {"help", cmd_help},   {"text", cmd_text},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
@@ -248,6 +294,7 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
             problems++;
             continue;
         }
+        kk_commands_set_params(c, k->name, &k->params);
         bool is_help = strcmp(k->action, "help") == 0;
         bool is_sound = strcmp(k->action, "sound") == 0 && !k->data;
         if (!is_help && !(is_sound && (sounds_listed || !cfg->sound_enabled ||
