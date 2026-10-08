@@ -112,6 +112,8 @@ GtkWidget *avatar_dirs_widget(editor *e, const kk_config *cfg);
 void avatar_dirs_collect(editor *e);
 const kk_sa_library *editor_library(editor *e);
 void editor_library_forget(editor *e);
+/* The "Avatares instalados" tab: every avatar of every folder. */
+GtkWidget *avatars_page(editor *e);
 void avatars_free(editor *e);
 
 /* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */

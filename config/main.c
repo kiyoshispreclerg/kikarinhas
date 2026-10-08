@@ -995,6 +995,9 @@ static void build(editor *e, const kk_config *cfg)
                     entry(raw_or(e, "control", "socket", cfg->socket)),
                     _("For bridges and the Apply button; empty: the default; off: disabled."));
 
+    /* Right after the Avatars tab, which sets the folders it lists. */
+    gtk_notebook_insert_page(GTK_NOTEBOOK(nb), avatars_page(e),
+                             gtk_label_new(_("Installed avatars")), 2);
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), commands_page(e, cfg),
                              gtk_label_new(_("Commands")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), sounds_page(e, cfg),

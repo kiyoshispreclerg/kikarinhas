@@ -470,6 +470,13 @@ data/         avatar padrão original, exemplo de .ini
      programa roda com o resto; sem avatar nenhum, sai com a dica das
      pastas. O configurador carrega a biblioteca uma vez para as abas que
      listam avatares (`editor_library`). As páginas de formulário rolam.
+   - **Aba Avatares instalados** (`config/avatars.c`): todos os avatares
+     da biblioteca juntada, com miniatura (1º quadro do idle, sem a borda
+     transparente, ampliado por passos inteiros com nearest se for pixel
+     art), célula, animações (base; custom pelo nome), paletas, conjuntos
+     de gear e pasta, com busca. As miniaturas carregam aos poucos num
+     `g_idle_add` (6 por vez) para a janela não travar; "Ler de novo" relê
+     as pastas como a aba Avatares diz.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

@@ -12,6 +12,7 @@ escolhas dos espectadores:
 echo '[main]' > /tmp/teste.ini
 
 build/kikarinhas --sa-dir meu-kit --list       # nome, tamanho, ppu, nº de animações
+# (no kikarinhas-config, a aba "Avatares instalados" mostra o mesmo, com miniatura)
 build/kikarinhas --sa-dir meu-kit --check      # confere imagens e JSON
 build/kikarinhas -c /tmp/teste.ini --users /tmp/users.tsv \
     --sa-dir meu-kit -a bloco --scale 4        # mostra o avatar na janela

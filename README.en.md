@@ -154,9 +154,12 @@ Everything the options do can also live in
 `~/.config/kikarinhas/kikarinhas.ini`; command-line options win over the
 file. [data/kikarinhas.ini](data/kikarinhas.ini) explains every key (the
 comments are in Portuguese). The easiest way to edit it is
-`kikarinhas-config` (GTK2): tabs Window, Avatars, Chat, Commands, Sounds and
-Viewers, and the **Save and apply** button. It keeps the file's comments and
-only writes what differs from the default.
+`kikarinhas-config` (GTK2): tabs Window, Avatars, Installed avatars, Chat,
+Commands, Sounds, Emote wall and Viewers, and the **Save and apply** button.
+It keeps the file's comments and only writes what differs from the default.
+The **Installed avatars** tab lists the avatars of every folder, with a
+thumbnail, cell size, animations (the ones `!emote` takes), palettes, gear
+sets and the folder each one came from, with search.
 
 In the Avatars tab, `show_names`/`name_position` (below or above the avatar)
 and `show_bubbles` turn the name tag and the speech bubble on or off.

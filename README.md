@@ -149,9 +149,12 @@ Tudo o que as opções fazem também pode ficar em
 `~/.config/kikarinhas/kikarinhas.ini`; as opções da linha de comando valem
 por cima do arquivo. O [data/kikarinhas.ini](data/kikarinhas.ini) explica
 cada chave. O jeito mais fácil de editar é o `kikarinhas-config` (GTK2):
-abas Janela, Avatares, Chat, Comandos, Sons e Espectadores, e o botão
-**Salvar e aplicar**. Ele mantém os comentários do arquivo e só grava o que
-for diferente do padrão.
+abas Janela, Avatares, Avatares instalados, Chat, Comandos, Sons, Emote wall
+e Espectadores, e o botão **Salvar e aplicar**. Ele mantém os comentários do
+arquivo e só grava o que for diferente do padrão. A aba **Avatares
+instalados** lista os avatares de todas as pastas, com miniatura, tamanho da
+célula, animações (as que o `!emote` aceita), paletas, conjuntos de gear e a
+pasta de onde cada um veio, com busca.
 
 Na aba Avatares, `show_names`/`name_position` (embaixo ou em cima do
 avatar) e `show_bubbles` ligam ou desligam o nome e o balão com a mensagem
