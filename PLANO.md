@@ -633,6 +633,43 @@ data/         avatar padrão original, exemplo de .ini
      `on_chat`: não cria avatar nem dá pontos); o balão vai para
      `kk_stage_random_avatar`. No `reload`, um timer que continua com o
      mesmo nome guarda o relógio e a contagem.
+   - **Interações do Stream Avatars** (comandos e números tirados do
+     `commandList` do SA instalado): `!left`/`!right`/`!move`/`!stand`
+     (`kk_avatar_walk_to`, `kk_avatar_stand`); `!freeze` e `!scale` (mods,
+     como no SA: alvo `@nome` opcional; valem só na sessão). O avatar ganhou
+     estado de voo (`KK_ST_FLY`: velocidade nos dois eixos, quica nas
+     paredes, no teto e no chão até ficar lento, rodopia com `angle`/`spin`,
+     e o retângulo de dano vira o quadrado do círculo que o contém) e
+     tamanho próprio (`size`, desenhado com `kk_sheet_draw_zoom`; folhas
+     já em escala de tela usam filtro GOOD fora de 1x). `!sling ângulo
+     força`: força 100 chega ao topo da janela (a altura cresce com o
+     quadrado da velocidade). `src/props.c` é uma camada nova do palco
+     (entre as imagens e o emote wall), toda desenhada em Cairo: `!bomb`
+     (custa 10, como no SA) voa em arco até o alvo, o pavio queima 2 s e a
+     explosão (clarão, faíscas, fumaça) arremessa quem está a até 75 px x
+     escala, mais forte perto; `!spawn` (o "jump catch game" do SA, mods)
+     solta estrelas (12% de gemas, valem 3x) na altura da cabeça mediana
+     mais 45% a 70% do pulo mediano: parado embaixo não alcança, pulando
+     sim (testado); quem encosta pega, `+N` sobe e os pontos de `[points]
+     catch` vão para a pessoa. Os objetos nunca guardam ponteiro de
+     avatar (o palco realoca e troca de lugar): procuram a cada quadro.
+     `src/games.c`: `!roll` (1-100, 1-N, XdY), `!bola8` (20 respostas),
+     `!slots` com a tabela do SA (46% ganham; cereja/laranja/7/moeda/saco
+     com pesos 31/25/24/14/6 e 1x/0,5x/2x/4x/10x: ~95% de retorno, conferido
+     em 200 mil giros) e roleta (`!bet N TIPO`: rodada de
+     `roulette_seconds`, número/verde 36x, cores/par/metades 2x, dúzias 3x,
+     o zero perde as apostas de fora). Apostas entre `min_bet` e `max_bet`,
+     tiradas do saldo na hora e devolvidas se o programa fechar com a
+     rodada aberta (`kk_actions_refund`); a roleta gira em
+     `kk_actions_tick`, chamado a cada volta do laço. O configurador passou
+     a listar todas as ações no diálogo de comandos: antes `points`,
+     `give`, `award` e `top` caíam em "Trocar avatar" ao editar. 9 testes
+     novos (física, bomba, pegar estrela pulando, jogos). Testado num X
+     virtual (Xvfb) com seis pessoas inventadas pelo socket: bomba
+     arremessando três (que pegaram estrelas voando), estilingue,
+     `!scale 250`, `!freeze`, dado, bola 8, caça-níquel e roleta.
+     Não verificado: a interface nova do configurador (só compila e a
+     tradução está completa).
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

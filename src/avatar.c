@@ -14,6 +14,33 @@
 #define JUMP_HEIGHT 0.6
 /* Gap between the feet and the name tag. */
 #define TAG_GAP 2
+/* Flying: what a bounce keeps of the speed, and the slowest landing that
+ * still bounces (px/s). */
+#define BOUNCE_KEEP 0.45
+#define WALL_KEEP 0.6
+#define MIN_BOUNCE 260.0
+
+/* ---- size ---------------------------------------------------------------- */
+
+static double cell_w(const kk_avatar *a)
+{
+    return a->sheet->cell_w * a->size;
+}
+
+static double cell_h(const kk_avatar *a)
+{
+    return a->sheet->cell_h * a->size;
+}
+
+double kk_avatar_width(const kk_avatar *a)
+{
+    return cell_w(a);
+}
+
+double kk_avatar_height(const kk_avatar *a)
+{
+    return (a->sheet->cell_h - a->sheet->foot_pad - a->sheet->head_pad) * a->size;
+}
 
 /* ---- animation ----------------------------------------------------------- */
 
@@ -100,7 +127,7 @@ static void enter_idle(kk_avatar *a, kk_rng *rng)
 
 static void enter_walk(kk_avatar *a, int width, kk_rng *rng)
 {
-    double margin = a->sheet->cell_w / 2.0;
+    double margin = cell_w(a) / 2.0;
     double lo = margin, hi = width - margin;
     if (hi <= lo) {
         enter_idle(a, rng);
@@ -109,7 +136,7 @@ static void enter_walk(kk_avatar *a, int width, kk_rng *rng)
     /* Pick a destination at least a body length away when possible. */
     for (int tries = 0; tries < 4; tries++) {
         a->target = kk_rng_range(rng, lo, hi);
-        if (fabs(a->target - a->x) >= a->sheet->cell_w)
+        if (fabs(a->target - a->x) >= cell_w(a))
             break;
     }
     a->left = a->target < a->x;
@@ -171,7 +198,7 @@ static bool enter_emote(kk_avatar *a, kk_rng *rng)
 
 bool kk_avatar_emote(kk_avatar *a, const char *name, kk_rng *rng)
 {
-    if (a->state == KK_ST_JUMP)
+    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
         return false;
     if (!name)
         return enter_emote(a, rng);
@@ -184,7 +211,7 @@ bool kk_avatar_emote(kk_avatar *a, const char *name, kk_rng *rng)
 
 bool kk_avatar_sit(kk_avatar *a)
 {
-    if (!has_row(a, KK_ANIM_SIT) || a->state == KK_ST_JUMP ||
+    if (!has_row(a, KK_ANIM_SIT) || a->state == KK_ST_JUMP || a->state == KK_ST_FLY ||
         a->state == KK_ST_SIT || a->state == KK_ST_SITTING)
         return false;
     a->state = KK_ST_SIT;
@@ -214,23 +241,96 @@ void kk_avatar_stop(kk_avatar *a, kk_rng *rng)
     enter_idle(a, rng);
 }
 
-void kk_avatar_jump(kk_avatar *a)
+static void drop_goal(kk_avatar *a)
 {
-    if (a->state == KK_ST_JUMP)
-        return;
-    /* Talking interrupts sitting, emotes and approaches. */
     free(a->goal_key);
     a->goal_key = NULL;
     a->goal_act = KK_ACT_NONE;
-    double h = a->sheet->cell_h * JUMP_HEIGHT;
+    a->arrived = false;
+}
+
+static int air_row(const kk_avatar *a)
+{
+    return has_row(a, KK_ANIM_JUMP) ? KK_ANIM_JUMP : idle_row(a);
+}
+
+void kk_avatar_jump(kk_avatar *a)
+{
+    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
+        return;
+    /* Talking interrupts sitting, emotes and approaches. */
+    drop_goal(a);
+    double h = cell_h(a) * JUMP_HEIGHT;
     a->vy = sqrt(2.0 * GRAVITY * h);
     a->state = KK_ST_JUMP;
-    play(a, has_row(a, KK_ANIM_JUMP) ? KK_ANIM_JUMP : idle_row(a), 1, 0.0);
+    play(a, air_row(a), 1, 0.0);
+}
+
+void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin)
+{
+    drop_goal(a);
+    a->vx = vx;
+    a->vy = vy;
+    a->spin = spin;
+    if (fabs(vx) > 1.0)
+        a->left = vx < 0;
+    /* Thrown from the ground: off it, or the landing test fires at once. */
+    if (a->lift <= 0.0)
+        a->lift = 0.5;
+    a->state = KK_ST_FLY;
+    play(a, air_row(a), 1, 0.0);
+}
+
+bool kk_avatar_flying(const kk_avatar *a)
+{
+    return a->state == KK_ST_FLY;
+}
+
+bool kk_avatar_walk_to(kk_avatar *a, double x, int width)
+{
+    if (a->frozen || a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
+        return false;
+    double half = cell_w(a) / 2.0;
+    x = fmax(half, fmin(width - half, x));
+    if (fabs(x - a->x) < 1.0)
+        return false;
+    drop_goal(a);
+    a->lift = 0.0;
+    a->target = x;
+    a->left = x < a->x;
+    a->state = KK_ST_WALK;
+    play(a, walk_row(a), 0, 0.0);
+    return true;
+}
+
+bool kk_avatar_stand(kk_avatar *a)
+{
+    if (a->state != KK_ST_SIT && a->state != KK_ST_SITTING)
+        return false;
+    if (has_row(a, KK_ANIM_STAND)) {
+        a->state = KK_ST_STAND;
+        play(a, KK_ANIM_STAND, 1, 0.0);
+    } else {
+        a->state = KK_ST_IDLE;
+        a->timer = 1.0;
+        play(a, idle_row(a), idle_row(a) == KK_ANIM_IDLE ? 0 : 1, 0.0);
+    }
+    return true;
+}
+
+void kk_avatar_set_size(kk_avatar *a, double size)
+{
+    a->size = fmax(KK_AVATAR_MIN_SIZE, fmin(KK_AVATAR_MAX_SIZE, size));
 }
 
 static void pick_next(kk_avatar *a, int width, kk_rng *rng)
 {
     double r = kk_rng_range(rng, 0.0, 1.0);
+    /* Frozen: stays put, though it still fidgets in place. */
+    if (a->frozen && r < 0.55) {
+        enter_idle(a, rng);
+        return;
+    }
     if (r < 0.55) {
         enter_walk(a, width, rng);
     } else if (r < 0.70 && has_row(a, KK_ANIM_SIT)) {
@@ -262,8 +362,45 @@ void kk_avatar_say(kk_avatar *a, cairo_surface_t *bubble, double seconds)
     a->quiet = 0.0;
 }
 
-void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
+/* Flying: both axes, off the walls and the ceiling, bouncing on the
+ * ground until too slow to. */
+static void fly(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
 {
+    double half = cell_w(a) / 2.0;
+    a->x += a->vx * dt;
+    a->lift += a->vy * dt;
+    a->vy -= GRAVITY * dt;
+    a->angle = fmod(a->angle + a->spin * dt, 2.0 * M_PI);
+    if (a->x < half && a->vx < 0) {
+        a->x = half;
+        a->vx = -a->vx * WALL_KEEP;
+        a->spin = -a->spin;
+    } else if (a->x > v->width - half && a->vx > 0) {
+        a->x = v->width - half;
+        a->vx = -a->vx * WALL_KEEP;
+        a->spin = -a->spin;
+    }
+    double top = v->ground_y - cell_h(a);
+    if (a->lift > top && a->vy > 0) {
+        a->lift = fmax(0.0, top);
+        a->vy = -a->vy * WALL_KEEP;
+    }
+    if (a->lift > 0.0 || a->vy >= 0.0)
+        return;
+    a->lift = 0.0;
+    if (-a->vy * BOUNCE_KEEP >= MIN_BOUNCE) {
+        a->vy = -a->vy * BOUNCE_KEEP;
+        a->vx *= BOUNCE_KEEP;
+        a->spin *= BOUNCE_KEEP;
+        return;
+    }
+    a->vx = a->vy = a->spin = a->angle = 0.0;
+    enter_idle(a, rng);
+}
+
+void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
+{
+    int width = v->width;
     anim_update(a, dt);
     a->quiet += dt;
     a->clock += dt;
@@ -285,7 +422,7 @@ void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
             pick_next(a, width, rng);
         break;
     case KK_ST_WALK: {
-        double step = a->speed * dt;
+        double step = a->speed * a->size * dt;
         if (fabs(a->target - a->x) <= step) {
             a->x = a->target;
             enter_idle(a, rng);
@@ -318,7 +455,7 @@ void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
         break;
     case KK_ST_APPROACH: {
         a->timer -= dt;
-        double gap = a->target - a->x, step = a->speed * dt;
+        double gap = a->target - a->x, step = a->speed * a->size * dt;
         if (a->timer <= 0.0) {
             kk_avatar_stop(a, rng);
         } else if (fabs(gap) <= step) {
@@ -339,10 +476,13 @@ void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng)
             enter_idle(a, rng);
         }
         break;
+    case KK_ST_FLY:
+        fly(a, dt, v, rng);
+        break;
     }
 
     /* The window may have shrunk under the avatar. */
-    double half = a->sheet->cell_w / 2.0;
+    double half = cell_w(a) / 2.0;
     if (a->x > width - half)
         a->x = fmax(half, width - half);
 }
@@ -362,6 +502,7 @@ void kk_avatar_init(kk_avatar *a, const kk_sa_avatar *def, const kk_sheet *sheet
     a->tag_w = cairo_image_surface_get_width(tag);
     a->tag_h = cairo_image_surface_get_height(tag);
     a->x = x;
+    a->size = 1.0;
     a->speed = WALK_SPEED * scale * def->move_speed;
     a->left = kk_rng_int(rng, 2);
     a->drawn_frame = -1;
@@ -393,6 +534,7 @@ void kk_avatar_set_look(kk_avatar *a, const kk_sa_avatar *def,
     }
     a->n_gear = kept;
     a->lift = 0.0;
+    a->vx = a->vy = a->spin = a->angle = 0.0;
     enter_idle(a, rng);
 }
 
@@ -440,9 +582,26 @@ void kk_avatar_free(kk_avatar *a)
 
 static void sprite_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
 {
-    *x = (int)lround(a->x) - a->sheet->cell_w / 2;
-    *y = v->ground_y - (a->sheet->cell_h - a->sheet->foot_pad) -
+    *x = (int)lround(a->x - cell_w(a) / 2.0);
+    *y = v->ground_y - (int)lround((a->sheet->cell_h - a->sheet->foot_pad) * a->size) -
          (int)lround(a->lift);
+}
+
+/* Where the sprite is and how big, before any tumbling. */
+static kk_rect sprite_rect(const kk_avatar *a, const kk_view *v)
+{
+    int sx, sy;
+    sprite_origin(a, v, &sx, &sy);
+    return (kk_rect){sx, sy, (int)ceil(cell_w(a)), (int)ceil(cell_h(a))};
+}
+
+/* The middle of the sprite: what it tumbles around. */
+static void sprite_centre(const kk_avatar *a, const kk_view *v, double *cx, double *cy)
+{
+    int sx, sy;
+    sprite_origin(a, v, &sx, &sy);
+    *cx = sx + cell_w(a) / 2.0;
+    *cy = sy + cell_h(a) / 2.0;
 }
 
 /* Below the feet (default), or above the head when v->name_above. Either
@@ -453,7 +612,7 @@ static void tag_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
     if (v->name_above) {
         int sx, sy;
         sprite_origin(a, v, &sx, &sy);
-        *y = sy + a->sheet->head_pad - TAG_GAP - a->tag_h -
+        *y = sy + (int)lround(a->sheet->head_pad * a->size) - TAG_GAP - a->tag_h -
              a->tag_row * (a->tag_h - 2);
     } else {
         *y = v->ground_y + TAG_GAP + a->tag_row * (a->tag_h - 2) -
@@ -475,7 +634,7 @@ static void bubble_origin(const kk_avatar *a, const kk_view *v, int *x, int *y)
     int above_tag = v->show_names && v->name_above
                         ? TAG_GAP + a->tag_h + a->tag_row * (a->tag_h - 2)
                         : 0;
-    *y = sy + a->sheet->head_pad - above_tag - a->bubble_h;
+    *y = sy + (int)lround(a->sheet->head_pad * a->size) - above_tag - a->bubble_h;
     if (*y < 0)
         *y = 0;
 }
@@ -509,14 +668,15 @@ static bool gear_place(const kk_avatar *a, const kk_view *v, int i,
      * bottom centre; pivots are avatar pixels with y up (see sa.h). */
     int sx, sy;
     sprite_origin(a, v, &sx, &sy);
-    double k = (double)a->sheet->cell_w / a->def->frame_w;
+    double k = (double)a->sheet->cell_w / a->def->frame_w * a->size;
     double dx = px * k;
     if (a->left)
         dx = -dx;
-    double cx = sx + a->sheet->cell_w / 2.0 + dx;
-    double bottom = sy + a->sheet->cell_h - py * k;
-    *r = (kk_rect){(int)lround(cx - gs->cell_w / 2.0),
-                   (int)lround(bottom) - gs->cell_h, gs->cell_w, gs->cell_h};
+    double cx = sx + cell_w(a) / 2.0 + dx;
+    double bottom = sy + cell_h(a) - py * k;
+    double gw = gs->cell_w * a->size, gh = gs->cell_h * a->size;
+    *r = (kk_rect){(int)lround(cx - gw / 2.0), (int)lround(bottom - gh), (int)ceil(gw),
+                   (int)ceil(gh)};
     return true;
 }
 
@@ -529,26 +689,34 @@ static void draw_gear(const kk_avatar *a, cairo_t *cr, const kk_view *v,
         kk_rect r;
         int row, col;
         if (gear_place(a, v, i, &r, &row, &col))
-            kk_sheet_draw(a->gear[i].sheet, cr, row, col,
-                          a->left && a->gear[i].piece->flips, r.x, r.y);
+            kk_sheet_draw_zoom(a->gear[i].sheet, cr, row, col,
+                               a->left && a->gear[i].piece->flips, r.x, r.y, a->size);
     }
 }
 
 kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
 {
-    int sx, sy;
-    sprite_origin(a, v, &sx, &sy);
-    kk_rect r = {sx, sy, a->sheet->cell_w, a->sheet->cell_h};
-    if (v->show_names) {
-        int tx, ty;
-        tag_origin(a, v, &tx, &ty);
-        r = kk_rect_union(r, (kk_rect){tx, ty, a->tag_w, a->tag_h});
-    }
+    kk_rect r = sprite_rect(a, v);
     for (int i = 0; i < a->n_gear; i++) {
         kk_rect g;
         int row, col;
         if (gear_place(a, v, i, &g, &row, &col))
             r = kk_rect_union(r, g);
+    }
+    if (a->angle != 0.0) {
+        /* Tumbling: whatever the angle, the body stays inside the circle
+         * through its farthest corner. */
+        double cx, cy;
+        sprite_centre(a, v, &cx, &cy);
+        double dx = fmax(fabs(r.x - cx), fabs(r.x + r.w - cx));
+        double dy = fmax(fabs(r.y - cy), fabs(r.y + r.h - cy));
+        int rad = (int)ceil(hypot(dx, dy)) + 1;
+        r = (kk_rect){(int)floor(cx) - rad, (int)floor(cy) - rad, 2 * rad + 1, 2 * rad + 1};
+    }
+    if (v->show_names) {
+        int tx, ty;
+        tag_origin(a, v, &tx, &ty);
+        r = kk_rect_union(r, (kk_rect){tx, ty, a->tag_w, a->tag_h});
     }
     if (a->bubble) {
         int bx, by;
@@ -561,7 +729,8 @@ kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
 bool kk_avatar_changed(const kk_avatar *a, const kk_view *v)
 {
     return a->anim.frame != a->drawn_frame || a->anim.row != a->drawn_row ||
-           a->left != a->drawn_left || a->bubble_serial != a->drawn_serial ||
+           a->left != a->drawn_left || a->angle != a->drawn_angle ||
+           a->bubble_serial != a->drawn_serial ||
            a->gear_tick != a->drawn_gear_tick ||
            !kk_rect_equal(kk_avatar_bounds(a, v), a->drawn);
 }
@@ -571,9 +740,18 @@ void kk_avatar_draw_body(const kk_avatar *a, cairo_t *cr, const kk_view *v)
     int sx, sy;
     sprite_origin(a, v, &sx, &sy);
 
+    cairo_save(cr);
+    if (a->angle != 0.0) {
+        double cx, cy;
+        sprite_centre(a, v, &cx, &cy);
+        cairo_translate(cr, cx, cy);
+        cairo_rotate(cr, a->left ? -a->angle : a->angle);
+        cairo_translate(cr, -cx, -cy);
+    }
     draw_gear(a, cr, v, true);
-    kk_sheet_draw(a->sheet, cr, a->anim.row, a->anim.frame, a->left, sx, sy);
+    kk_sheet_draw_zoom(a->sheet, cr, a->anim.row, a->anim.frame, a->left, sx, sy, a->size);
     draw_gear(a, cr, v, false);
+    cairo_restore(cr);
     if (v->show_names) {
         int tx, ty;
         tag_origin(a, v, &tx, &ty);
@@ -598,6 +776,7 @@ void kk_avatar_mark_drawn(kk_avatar *a, const kk_view *v)
     a->drawn_frame = a->anim.frame;
     a->drawn_row = a->anim.row;
     a->drawn_left = a->left;
+    a->drawn_angle = a->angle;
     a->drawn_serial = a->bubble_serial;
     a->drawn_gear_tick = a->gear_tick;
 }

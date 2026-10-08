@@ -297,6 +297,7 @@ desliga cada forma de ganhar):
 | Super Chat, Super Sticker, bits (`paid`) | 100 |
 | membro ou inscrito novo, renovação, presente (`member`) | 100 |
 | quem nunca apareceu começa com (`start`) | 0 |
+| cada estrela pega no `!spawn` (`catch`; uma gema vale o triplo) | 5 |
 
 Gasta: cada comando pode ter um custo (`cost` em `[command.NOME]`) e cada som
 também (`cost` em `[sound.NOME]`; sem ele, vale o custo do `!som`), além do
@@ -450,6 +451,48 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!give @nome N` | `!doar`, `!dar`, `!presentear` | passa N pontos para alguém na tela | 30 s |
 | `!award @nome N` | `!premiar`, `!bonus` | cria (ou tira) pontos de alguém; só moderadores | — |
 | `!top` | `!ranking`, `!rank` | os cinco com mais pontos | 30 s (5 s para todos) |
+| `!left [N]` / `!right [N]` | `!esquerda` / `!direita` | anda N% da largura da tela (padrão 15) | 3 s |
+| `!move [N]` | `!mover`, `!andar` | anda até N% da tela (0 é a borda esquerda); sem N, um lugar qualquer | 3 s |
+| `!stand` | `!levantar`, `!levanta` | levanta, se estiver sentado | 3 s |
+| `!sling [ângulo] [força]` | `!estilingue`, `!lancar` | lança o próprio avatar: ângulo 1 a 179 (90 é para cima), força 1 a 100 | 30 s |
+| `!bomb [@nome]` | `!bomba` | joga uma bomba em alguém (ou em qualquer um); custa 10 pontos | 30 s |
+| `!roll [N]` | `!dado`, `!rolar` | sorteia de 1 a 100, de 1 a N, ou dados (`!roll 2d6`) | 10 s |
+| `!bola8 [pergunta]` | `!8ball`, `!bola` | a bola 8 mágica responde | 10 s |
+| `!slots N` | `!cacaniquel`, `!slot` | caça-níquel: aposta N pontos | 30 s |
+| `!bet N TIPO` | `!aposta`, `!roleta` | aposta na roleta (veja abaixo) | 4 s |
+| `!freeze [@nome]` | `!congelar` | congela (ou descongela) o avatar no lugar; só moderadores | — |
+| `!scale [@nome] [N]` | `!tamanho`, `!escala` | muda o tamanho (`150`, `150%` ou `1.5`; de 25% a 400%; sem N, volta ao normal); só moderadores | — |
+| `!spawn [N]` | `!estrelas` | solta N estrelas para pegar (padrão 5); só moderadores | 10 s para todos |
+
+#### Brincadeiras e jogos
+
+Os números seguem os do Stream Avatars.
+
+- **Bomba** (`!bomb`): voa em arco da mão de quem jogou, o pavio queima e a
+  explosão arremessa, rodopiando, quem estiver perto.
+- **Estilingue** (`!sling`): lança o próprio avatar, que quica nas paredes e
+  no chão até parar. Avatares voando não andam, não sentam nem abraçam.
+- **Estrelas** (`!spawn`): flutuam um pouco acima da cabeça dos avatares,
+  onde só um pulo alcança. Quem encosta numa pega e ganha os pontos de
+  `catch` em `[points]` (5 por padrão; uma gema rara vale o triplo). Vale
+  andar até elas (`!left`, `!right`, `!move`) e pular (`!jump`), e também ser
+  arremessado por uma bomba ou pelo estilingue. Elas somem depois de 90 s.
+  Para soltá-las sozinho de tempos em tempos, use um timer
+  (`[timer.estrelas]` com `command = !spawn` e `minutes = 15`).
+- **Caça-níquel** (`!slots N`): 46% dos giros ganham. Três cerejas devolvem
+  a aposta, laranjas metade, setes o dobro, moedas 4× e sacos 10×; em média
+  volta 95% do apostado.
+- **Roleta** (`!bet N TIPO`, ou `TIPO N`): a primeira aposta abre uma rodada
+  de 20 s (`roulette_seconds`); quem apostar nesse tempo entra na mesma
+  rodada, e a bolinha cai de 0 a 36. Número ou `verde` (0) pagam 36×;
+  `vermelho`/`preto`, `par`/`ímpar` e `baixo` (1-18)/`alto` (19-36) pagam
+  2×; `1a12`, `2a12` e `3a12` (dúzias) pagam 3×. O zero perde todas as
+  apostas que não são nele. Cada um vê o resultado num balão.
+- **Limites**: as apostas vão de `min_bet` a `max_bet` pontos (5 e 5000;
+  `max_bet = 0` tira o limite), e `tudo` aposta o máximo possível. A aposta
+  sai do saldo na hora; se o programa fechar com uma rodada aberta, ela volta.
+- `!freeze`, `!scale` e os efeitos de bomba valem até o fim da sessão: não
+  ficam guardados para a próxima live.
 
 `!song` mostra a música que está tocando no computador de quem transmite,
 a mesma que os painéis do Linux mostram (MPRIS pelo D-Bus: Spotify, VLC,

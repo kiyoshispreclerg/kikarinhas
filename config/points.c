@@ -12,7 +12,7 @@
 
 struct points_tab {
     GtkWidget *enabled, *name, *start, *message, *message_cd, *watch, *watch_min, *arrival,
-        *paid, *member, *shortcut;
+        *paid, *member, *shortcut, *catch_pts, *min_bet, *max_bet, *roulette;
 };
 
 static GtkWidget *spin_at(double lo, double hi, double step, int digits, double v)
@@ -93,9 +93,21 @@ GtkWidget *points_page(editor *e, const kk_config *cfg)
     row(table, _("New member"), line(t->member, _("points (also subscriptions and gifts)"),
                                      NULL, NULL),
         NULL);
+    t->catch_pts = points_spin(cfg->points_catch);
+    row(table, _("Catching a star"),
+        line(t->catch_pts, _("points (a gem: three times as many)"), NULL, NULL),
+        _("The stars of !spawn float above the avatars: whoever jumps into one takes it."));
     t->shortcut = points_spin(cfg->shortcut_cost);
     row(table, _("Shortcut \"!name\""), line(t->shortcut, _("points"), NULL, NULL),
         _("Spending: what changing avatar, accessory or palette by name costs (\"!pikachu\")."));
+    t->min_bet = points_spin(cfg->points_min_bet);
+    t->max_bet = points_spin(cfg->points_max_bet);
+    row(table, _("Bets"), line(t->min_bet, _("to"), t->max_bet, _("points")),
+        _("What !slots and !bet accept; a maximum of 0 means no limit."));
+    t->roulette = spin_at(5, 600, 1, 0, cfg->roulette_seconds);
+    row(table, _("Roulette"), line(t->roulette, _("seconds taking bets, then it spins"), NULL,
+                                   NULL),
+        NULL);
     gtk_box_pack_start(GTK_BOX(box), table, FALSE, FALSE, 0);
 
     GtkWidget *lists = gtk_hbox_new(TRUE, 12);
@@ -132,6 +144,11 @@ void points_collect(editor *e)
     put_int(e, "points", "arrival", spin_int(t->arrival), (int)d.points_arrival);
     put_int(e, "points", "paid", spin_int(t->paid), (int)d.points_paid);
     put_int(e, "points", "member", spin_int(t->member), (int)d.points_member);
+    put_int(e, "points", "catch", spin_int(t->catch_pts), (int)d.points_catch);
+    put_int(e, "points", "min_bet", spin_int(t->min_bet), (int)d.points_min_bet);
+    put_int(e, "points", "max_bet", spin_int(t->max_bet), (int)d.points_max_bet);
+    put_num(e, "points", "roulette_seconds",
+            gtk_spin_button_get_value(GTK_SPIN_BUTTON(t->roulette)), d.roulette_seconds);
     put_int(e, "commands", "shortcut_cost", spin_int(t->shortcut), (int)d.shortcut_cost);
     kk_config_free(&d);
 }

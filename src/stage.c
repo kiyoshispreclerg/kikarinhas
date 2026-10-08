@@ -279,6 +279,11 @@ static kk_view view(const kk_stage *s)
                      .name_above = s->cfg.name_above};
 }
 
+kk_view kk_stage_view(const kk_stage *s)
+{
+    return view(s);
+}
+
 static int max_frames(const kk_sa_avatar *a)
 {
     int m = 0;
@@ -623,7 +628,7 @@ kk_avatar *kk_stage_random_avatar(kk_stage *s)
 bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act)
 {
     (void)s;
-    if (!b || a == b || !b->user_id)
+    if (!b || a == b || !b->user_id || a->frozen || kk_avatar_flying(a))
         return false;
     kk_avatar_approach(a, b->user_id, act);
     return true;
@@ -635,6 +640,11 @@ static kk_avatar *find_key(kk_stage *s, const char *key)
         if (s->avatars[i].user_id && strcmp(s->avatars[i].user_id, key) == 0)
             return &s->avatars[i];
     return NULL;
+}
+
+kk_avatar *kk_stage_find_user(kk_stage *s, const char *key)
+{
+    return find_key(s, key);
 }
 
 static cairo_surface_t *heart_bubble(kk_stage *s)
@@ -657,7 +667,7 @@ static void run_interactions(kk_stage *s)
             continue;
         }
         /* Stand beside the other one, on the side we come from. */
-        double gap = (a->sheet->cell_w + b->sheet->cell_w) * 0.3;
+        double gap = (kk_avatar_width(a) + kk_avatar_width(b)) * 0.3;
         a->target = b->x + (a->x < b->x ? -gap : gap);
         if (!a->arrived)
             continue;
@@ -721,8 +731,9 @@ static void assign_tag_rows(kk_stage *s)
 
 void kk_stage_update(kk_stage *s, double dt)
 {
+    kk_view v = view(s);
     for (int i = 0; i < s->count; i++)
-        kk_avatar_update(&s->avatars[i], dt, s->width, &s->rng);
+        kk_avatar_update(&s->avatars[i], dt, &v, &s->rng);
     run_interactions(s);
     for (int i = s->count - 1; i >= 0; i--)
         if (s->avatars[i].user_id && s->avatars[i].quiet > s->cfg.despawn &&

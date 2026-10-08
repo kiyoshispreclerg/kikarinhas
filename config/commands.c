@@ -53,6 +53,23 @@ static const struct {
     {"text", N_("Show a text in a bubble")},
     {"image", N_("Show a picture")},
     {"nowplaying", N_("Show the music playing")},
+    {"points", N_("Show the points balance")},
+    {"give", N_("Give points to someone")},
+    {"award", N_("Create points for someone")},
+    {"top", N_("Show the points ranking")},
+    {"left", N_("Walk left")},
+    {"right", N_("Walk right")},
+    {"move", N_("Walk to a place")},
+    {"stand", N_("Stand up")},
+    {"freeze", N_("Freeze in place")},
+    {"scale", N_("Change the size")},
+    {"sling", N_("Slingshot the avatar")},
+    {"bomb", N_("Throw a bomb")},
+    {"spawn", N_("Spawn stars to catch")},
+    {"roll", N_("Roll dice")},
+    {"8ball", N_("Magic 8-ball")},
+    {"slots", N_("Slot machine")},
+    {"bet", N_("Roulette bet")},
 };
 #define N_ACTIONS (int)(sizeof ACTION_LABELS / sizeof ACTION_LABELS[0])
 
@@ -1039,9 +1056,11 @@ static void save_command(editor *e, GtkTreeIter *it)
     put_num(e, section, "x", k.params.x, 50);
     put_num(e, section, "y", k.params.y, 50);
     put_num(e, section, "scale", k.params.scale, 100);
-    char cost[32];
+    /* Against the built-in's own price (!bomb has one), else 0. */
+    char cost[32], d_cost[32];
     snprintf(cost, sizeof cost, "%ld", k.cost);
-    put(e, section, "cost", cost, "0");
+    snprintf(d_cost, sizeof d_cost, "%ld", d ? d->cost : 0);
+    put(e, section, "cost", cost, d_cost);
     free_row(&k, aliases);
 }
 

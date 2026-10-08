@@ -320,10 +320,18 @@ void kk_sheet_free(kk_sheet *s)
 void kk_sheet_draw(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
                    int x, int y)
 {
+    kk_sheet_draw_zoom(s, cr, row, col, left, x, y, 1.0);
+}
+
+void kk_sheet_draw_zoom(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
+                        double x, double y, double zoom)
+{
     if (row < 0 || row >= s->rows || col < 0 || col >= s->cols)
         return;
     cairo_save(cr);
     cairo_translate(cr, x, y);
+    if (zoom != 1.0)
+        cairo_scale(cr, zoom, zoom);
     if (left) {
         cairo_translate(cr, s->cell_w, 0);
         cairo_scale(cr, -1, 1);
@@ -332,8 +340,12 @@ void kk_sheet_draw(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
                 (double)s->cell_h / s->store_h);
     cairo_set_source_surface(cr, s->pixels, -col * s->store_w,
                              -row * s->store_h);
-    /* Smooth sheets are already at screen size: nearest is an exact copy. */
-    cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+    /* Smooth sheets are already at screen size: nearest is an exact copy,
+     * unless this one avatar is drawn bigger or smaller. */
+    bool presized = s->store_w == s->cell_w && s->store_h == s->cell_h;
+    cairo_pattern_set_filter(cairo_get_source(cr), presized && zoom != 1.0
+                                                       ? CAIRO_FILTER_GOOD
+                                                       : CAIRO_FILTER_NEAREST);
     cairo_rectangle(cr, 0, 0, s->store_w, s->store_h);
     cairo_fill(cr);
     cairo_restore(cr);

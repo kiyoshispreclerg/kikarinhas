@@ -47,5 +47,8 @@ void kk_sheet_free(kk_sheet *s);
 /* Draws cell (row, col) with its top-left corner at (x, y). */
 void kk_sheet_draw(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
                    int x, int y);
+/* Same, zoom times bigger (a single avatar made bigger or smaller). */
+void kk_sheet_draw_zoom(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
+                        double x, double y, double zoom);
 
 #endif

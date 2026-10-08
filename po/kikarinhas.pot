@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 17:31-0300\n"
+"POT-Creation-Date: 2026-10-08 18:08-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,7 +38,7 @@ msgstr ""
 msgid "owner"
 msgstr ""
 
-#: config/main.c:168 config/commands.c:540
+#: config/main.c:168 config/commands.c:557
 msgid "automatic"
 msgstr ""
 
@@ -317,11 +317,11 @@ msgstr ""
 msgid "Installed avatars"
 msgstr ""
 
-#: config/main.c:582 config/points.c:102
+#: config/main.c:582 config/points.c:114
 msgid "Commands"
 msgstr ""
 
-#: config/main.c:584 config/points.c:104
+#: config/main.c:584 config/points.c:116
 msgid "Sounds"
 msgstr ""
 
@@ -438,12 +438,12 @@ msgid "Add sounds"
 msgstr ""
 
 #: config/sounds.c:432 config/sources.c:118 config/avatars.c:85
-#: config/avatars.c:655 config/commands.c:415 config/timers.c:103
+#: config/avatars.c:655 config/commands.c:432 config/timers.c:103
 msgid "_Cancel"
 msgstr ""
 
 #: config/sounds.c:432 config/sources.c:119 config/sources.c:236
-#: config/avatars.c:85 config/commands.c:927 config/timers.c:365
+#: config/avatars.c:85 config/commands.c:944 config/timers.c:365
 msgid "_Add"
 msgstr ""
 
@@ -513,12 +513,12 @@ msgstr ""
 msgid "Empty: \"default\" (PipeWire or PulseAudio, if present)"
 msgstr ""
 
-#: config/sounds.c:619 config/commands.c:427 config/commands.c:902
-#: config/commands.c:981
+#: config/sounds.c:619 config/commands.c:444 config/commands.c:919
+#: config/commands.c:998
 msgid "Command"
 msgstr ""
 
-#: config/sounds.c:620 config/commands.c:443 config/commands.c:905
+#: config/sounds.c:620 config/commands.c:460 config/commands.c:922
 msgid "Aliases"
 msgstr ""
 
@@ -546,7 +546,7 @@ msgid "_Add…"
 msgstr ""
 
 #: config/sounds.c:666 config/sources.c:237 config/avatars.c:152
-#: config/commands.c:929 config/timers.c:367
+#: config/commands.c:946 config/timers.c:367
 msgid "_Remove"
 msgstr ""
 
@@ -574,17 +574,17 @@ msgstr ""
 msgid "(as !sound)"
 msgstr ""
 
-#: config/sounds.c:757 config/commands.c:968
+#: config/sounds.c:757 config/commands.c:985
 #, c-format
 msgid "Invalid cost: \"%s\" (a number of points)."
 msgstr ""
 
-#: config/sounds.c:770 config/commands.c:482
+#: config/sounds.c:770 config/commands.c:499
 msgid "Sound"
 msgstr ""
 
-#: config/sounds.c:776 config/commands.c:457 config/commands.c:909
-#: config/commands.c:991
+#: config/sounds.c:776 config/commands.c:474 config/commands.c:926
+#: config/commands.c:1008
 msgid "Cost"
 msgstr ""
 
@@ -615,11 +615,11 @@ msgstr ""
 msgid "Effect"
 msgstr ""
 
-#: config/wall.c:69 config/commands.c:545
+#: config/wall.c:69 config/commands.c:562
 msgid "On screen for"
 msgstr ""
 
-#: config/wall.c:69 config/wall.c:80 config/commands.c:545 config/points.c:78
+#: config/wall.c:69 config/wall.c:80 config/commands.c:562 config/points.c:78
 msgid "seconds"
 msgstr ""
 
@@ -812,7 +812,7 @@ msgstr ""
 msgid "Trusted"
 msgstr ""
 
-#: config/audience.c:480 config/commands.c:468
+#: config/audience.c:480 config/commands.c:485
 msgid "Avatar"
 msgstr ""
 
@@ -975,7 +975,7 @@ msgstr ""
 msgid "_Random (always the same)"
 msgstr ""
 
-#: config/avatars.c:656 config/commands.c:416 config/timers.c:104
+#: config/avatars.c:656 config/commands.c:433 config/timers.c:104
 msgid "_OK"
 msgstr ""
 
@@ -1035,217 +1035,286 @@ msgstr ""
 msgid "Show the music playing"
 msgstr ""
 
-#: config/commands.c:428
+#: config/commands.c:56
+msgid "Show the points balance"
+msgstr ""
+
+#: config/commands.c:57
+msgid "Give points to someone"
+msgstr ""
+
+#: config/commands.c:58
+msgid "Create points for someone"
+msgstr ""
+
+#: config/commands.c:59
+msgid "Show the points ranking"
+msgstr ""
+
+#: config/commands.c:60
+msgid "Walk left"
+msgstr ""
+
+#: config/commands.c:61
+msgid "Walk right"
+msgstr ""
+
+#: config/commands.c:62
+msgid "Walk to a place"
+msgstr ""
+
+#: config/commands.c:63
+msgid "Stand up"
+msgstr ""
+
+#: config/commands.c:64
+msgid "Freeze in place"
+msgstr ""
+
+#: config/commands.c:65
+msgid "Change the size"
+msgstr ""
+
+#: config/commands.c:66
+msgid "Slingshot the avatar"
+msgstr ""
+
+#: config/commands.c:67
+msgid "Throw a bomb"
+msgstr ""
+
+#: config/commands.c:68
+msgid "Spawn stars to catch"
+msgstr ""
+
+#: config/commands.c:69
+msgid "Roll dice"
+msgstr ""
+
+#: config/commands.c:70
+msgid "Magic 8-ball"
+msgstr ""
+
+#: config/commands.c:71
+msgid "Slot machine"
+msgstr ""
+
+#: config/commands.c:72
+msgid "Roulette bet"
+msgstr ""
+
+#: config/commands.c:445
 msgid "One word, without \"!\": what people type in the chat."
 msgstr ""
 
-#: config/commands.c:436 config/commands.c:903 config/commands.c:985
+#: config/commands.c:453 config/commands.c:920 config/commands.c:1002
 msgid "Action"
 msgstr ""
 
-#: config/commands.c:438 config/commands.c:901 config/timers.c:119
+#: config/commands.c:455 config/commands.c:918 config/timers.c:119
 #: config/timers.c:323
 msgid "Active"
 msgstr ""
 
-#: config/commands.c:443
+#: config/commands.c:460
 msgid "Other words for the same command, separated by commas."
 msgstr ""
 
-#: config/commands.c:447 config/commands.c:906
+#: config/commands.c:464 config/commands.c:923
 msgid "Cooldown"
 msgstr ""
 
-#: config/commands.c:448
+#: config/commands.c:465
 msgid "s per person;"
 msgstr ""
 
-#: config/commands.c:448
+#: config/commands.c:465
 msgid "s for everyone"
 msgstr ""
 
-#: config/commands.c:449
+#: config/commands.c:466
 msgid "The channel owner never waits."
 msgstr ""
 
-#: config/commands.c:454 config/commands.c:908
+#: config/commands.c:471 config/commands.c:925
 msgid "Who can"
 msgstr ""
 
-#: config/commands.c:455
+#: config/commands.c:472
 msgid "The lowest level allowed; trusted people are marked in the Viewers tab."
 msgstr ""
 
-#: config/commands.c:457 config/points.c:73 config/points.c:97
+#: config/commands.c:474 config/points.c:73 config/points.c:101
+#: config/points.c:105
 msgid "points"
 msgstr ""
 
-#: config/commands.c:458
+#: config/commands.c:475
 msgid ""
 "Taken only when the command does something; the channel owner never pays. "
 "See the Points tab."
 msgstr ""
 
-#: config/commands.c:464
+#: config/commands.c:481
 msgid "Fixed argument"
 msgstr ""
 
-#: config/commands.c:465
+#: config/commands.c:482
 msgid "Empty: whatever the person types after the command."
 msgstr ""
 
-#: config/commands.c:469
+#: config/commands.c:486
 msgid ""
 "Empty: whatever the person types (!avatar NAME); filled in, this command "
 "always turns into that avatar."
 msgstr ""
 
-#: config/commands.c:483
+#: config/commands.c:500
 msgid ""
 "A sound of the Sounds tab. Empty: !sound NAME, whatever the person asks for."
 msgstr ""
 
-#: config/commands.c:497
+#: config/commands.c:514
 msgid "Text"
 msgstr ""
 
-#: config/commands.c:498
+#: config/commands.c:515
 msgid ""
 "Shown in a bubble over the avatar of who asked (links, rules...). {name} "
 "becomes their name."
 msgstr ""
 
-#: config/commands.c:501 config/commands.c:515
+#: config/commands.c:518 config/commands.c:532
 msgid "Picture"
 msgstr ""
 
-#: config/commands.c:503
+#: config/commands.c:520
 msgid "Pictures (PNG, JPEG, GIF, BMP)"
 msgstr ""
 
-#: config/commands.c:516
+#: config/commands.c:533
 msgid "PNG, JPEG, BMP or GIF (animated ones play)."
 msgstr ""
 
-#: config/commands.c:521
+#: config/commands.c:538
 msgid "size"
 msgstr ""
 
-#: config/commands.c:524
+#: config/commands.c:541
 msgid "Centre at"
 msgstr ""
 
-#: config/commands.c:526
+#: config/commands.c:543
 #, no-c-format
 msgid ""
 "Where the middle of the picture goes, in % of the window (50 × 50 is the "
 "centre), and its size in % of its own."
 msgstr ""
 
-#: config/commands.c:533
+#: config/commands.c:550
 msgid "Preview"
 msgstr ""
 
-#: config/commands.c:536
+#: config/commands.c:553
 msgid "Only players named"
 msgstr ""
 
-#: config/commands.c:537
+#: config/commands.c:554
 msgid ""
 "Part of the player's name (spotify, vlc...). Empty: any player, browsers "
 "included."
 msgstr ""
 
-#: config/commands.c:546
+#: config/commands.c:563
 msgid "Automatic: a bubble by the length of its text, a picture 5 s."
 msgstr ""
 
-#: config/commands.c:581
+#: config/commands.c:598
 msgid "Invalid command name: use a single word, no spaces."
 msgstr ""
 
-#: config/commands.c:588
+#: config/commands.c:605
 #, c-format
 msgid "A command !%s already exists."
 msgstr ""
 
-#: config/commands.c:618
+#: config/commands.c:635
 msgid "Write the text to show."
 msgstr ""
 
-#: config/commands.c:620
+#: config/commands.c:637
 msgid "Pick the picture to show."
 msgstr ""
 
-#: config/commands.c:622
+#: config/commands.c:639
 msgid "Pick the sound to play."
 msgstr ""
 
-#: config/commands.c:672
+#: config/commands.c:689
 #, c-format
 msgid "Command !%s"
 msgstr ""
 
-#: config/commands.c:686
+#: config/commands.c:703
 msgid "new"
 msgstr ""
 
-#: config/commands.c:693
+#: config/commands.c:710
 msgid "New command"
 msgstr ""
 
-#: config/commands.c:724 config/commands.c:748 config/commands.c:766
+#: config/commands.c:741 config/commands.c:765 config/commands.c:783
 msgid "Pick a command in the list."
 msgstr ""
 
-#: config/commands.c:754
+#: config/commands.c:771
 msgid "Default commands cannot be removed: untick \"Active\" to turn one off."
 msgstr ""
 
-#: config/commands.c:774
+#: config/commands.c:791
 msgid "Only default commands have default values."
 msgstr ""
 
-#: config/commands.c:849
+#: config/commands.c:866
 msgid "Shortcut \"!name\" for an avatar, accessory or palette;"
 msgstr ""
 
-#: config/commands.c:852
+#: config/commands.c:869
 msgid "cooldown"
 msgstr ""
 
-#: config/commands.c:858
+#: config/commands.c:875
 msgid "Help bubble (!help), even with message bubbles off;"
 msgstr ""
 
-#: config/commands.c:862
+#: config/commands.c:879
 msgid "random commands per bubble"
 msgstr ""
 
-#: config/commands.c:865
+#: config/commands.c:882
 msgid "staying"
 msgstr ""
 
-#: config/commands.c:904
+#: config/commands.c:921
 msgid "Data"
 msgstr ""
 
-#: config/commands.c:907
+#: config/commands.c:924
 msgid "Global"
 msgstr ""
 
-#: config/commands.c:918
+#: config/commands.c:935
 msgid ""
 "Double-click a command (or Edit) to change it. New commands can show a text "
 "(links, rules), a picture on the screen, play a sound, change avatar... The "
 "channel owner never waits."
 msgstr ""
 
-#: config/commands.c:928 config/timers.c:366
+#: config/commands.c:945 config/timers.c:366
 msgid "_Edit"
 msgstr ""
 
-#: config/commands.c:930
+#: config/commands.c:947
 msgid "Restore _defaults"
 msgstr ""
 
@@ -1322,16 +1391,49 @@ msgid "points (also subscriptions and gifts)"
 msgstr ""
 
 #: config/points.c:97
-msgid "Shortcut \"!name\""
+msgid "Catching a star"
 msgstr ""
 
 #: config/points.c:98
+msgid "points (a gem: three times as many)"
+msgstr ""
+
+#: config/points.c:99
+msgid ""
+"The stars of !spawn float above the avatars: whoever jumps into one takes it."
+msgstr ""
+
+#: config/points.c:101
+msgid "Shortcut \"!name\""
+msgstr ""
+
+#: config/points.c:102
 msgid ""
 "Spending: what changing avatar, accessory or palette by name costs (\"!"
 "pikachu\")."
 msgstr ""
 
+#: config/points.c:105
+msgid "Bets"
+msgstr ""
+
+#: config/points.c:105
+msgid "to"
+msgstr ""
+
+#: config/points.c:106
+msgid "What !slots and !bet accept; a maximum of 0 means no limit."
+msgstr ""
+
 #: config/points.c:108
+msgid "Roulette"
+msgstr ""
+
+#: config/points.c:108
+msgid "seconds taking bets, then it spins"
+msgstr ""
+
+#: config/points.c:120
 msgid ""
 "Double-click a cost to change it. Points are taken only when the command "
 "does something; the channel owner never pays. A sound \"(as !sound)\" costs "

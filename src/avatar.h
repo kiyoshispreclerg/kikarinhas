@@ -19,6 +19,7 @@ typedef enum {
     KK_ST_JUMP,
     KK_ST_EMOTE, /* playing a custom animation (dance, ...) */
     KK_ST_APPROACH, /* walking up to another avatar to hug/attack it */
+    KK_ST_FLY,      /* thrown (slingshot, a bomb): moving on both axes */
 } kk_state;
 
 typedef enum {
@@ -57,6 +58,10 @@ typedef struct {
     bool name_above; /* false: below the feet (default); true: above the head */
 } kk_view;
 
+/* Avatar size limits for kk_avatar_set_size (1 = the stage's scale). */
+#define KK_AVATAR_MIN_SIZE 0.25
+#define KK_AVATAR_MAX_SIZE 4.0
+
 typedef struct {
     const kk_sa_avatar *def;
     const kk_sheet *sheet; /* already recoloured when a palette is chosen */
@@ -80,9 +85,14 @@ typedef struct {
     double x;      /* horizontal centre, px */
     double lift;   /* height above the ground while jumping, px */
     double vy;     /* px/s, positive is up */
+    double vx;     /* px/s while flying */
+    double angle;  /* radians, while flying (tumbling); 0 otherwise */
+    double spin;   /* radians/s */
     double target; /* walk destination x */
-    double speed;  /* walk speed, px/s */
+    double speed;  /* walk speed, px/s, at size 1 */
+    double size;   /* 1 = the stage's scale; see kk_avatar_set_size */
     bool left;     /* facing left (sheets face right) */
+    bool frozen;   /* stays where it is: no wandering, no walking */
 
     kk_state state;
     double timer; /* seconds left in the current state, where timed */
@@ -96,6 +106,7 @@ typedef struct {
     int drawn_frame;
     int drawn_row;
     bool drawn_left;
+    double drawn_angle;
     unsigned drawn_serial;
     int drawn_gear_tick;
 } kk_avatar;
@@ -107,11 +118,30 @@ void kk_avatar_init(kk_avatar *a, const kk_sa_avatar *def, const kk_sheet *sheet
                     cairo_surface_t *tag, double x, double scale, kk_rng *rng);
 void kk_avatar_free(kk_avatar *a);
 
-/* Advances behaviour and animation; the avatar wanders in [0, width). */
-void kk_avatar_update(kk_avatar *a, double dt, int width, kk_rng *rng);
+/* Advances behaviour and animation; the avatar wanders in [0, v->width)
+ * and flies below the top of the window. */
+void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng);
 
 /* Makes the avatar jump now (if it is on the ground). */
 void kk_avatar_jump(kk_avatar *a);
+
+/* Throws the avatar: vx, vy in px/s (vy positive is up), spinning at spin
+ * radians/s. It bounces off the sides and the ground until it settles. */
+void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin);
+bool kk_avatar_flying(const kk_avatar *a);
+
+/* Walks to x (kept inside [0, width)). False if it can't now: frozen, in
+ * the air, or already there. */
+bool kk_avatar_walk_to(kk_avatar *a, double x, int width);
+/* Gets up if sitting; false otherwise. */
+bool kk_avatar_stand(kk_avatar *a);
+/* Bigger or smaller, from KK_AVATAR_MIN_SIZE to KK_AVATAR_MAX_SIZE. */
+void kk_avatar_set_size(kk_avatar *a, double size);
+
+/* Height of the sprite on screen and where its middle is (for things that
+ * hit it, like a collectible). */
+double kk_avatar_height(const kk_avatar *a);
+double kk_avatar_width(const kk_avatar *a);
 
 /* Changes the avatar's look, keeping position and name. Worn gear the new
  * avatar can't wear is dropped. */

@@ -77,7 +77,9 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/kick.c` | chat do Kick (websocket do Pusher), emotes do Kick e do 7TV, Kicks e subs |
 | `src/odysee.c`, `src/odysee_emotes.h` | chat do Odysee (websocket do Commentron), canal → live; tabela de emotes gerada por `tools/gen_odysee_emotes.py` |
 | `src/commands.c` | registro genérico de comandos: aliases, papéis, esperas |
-| `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
+| `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound, bomb, slots...) |
+| `src/props.c` | objetos do palco (camada): bomba que arremessa os avatares, estrelas para pegar pulando |
+| `src/games.c` | jogos de sorte puros: dado, bola 8, caça-níquel e roleta (números do SA) |
 | `src/users.c` | `users.tsv`: escolhas de cada pessoa, nível, pontos, gravação atômica |
 | `src/points.c` | pontos: ganhos (mensagem, presença, chegada, pagos, membros), saldo, ranking |
 | `src/timers.c` | timers: quando cada `[timer.NOME]` vence (minutos, mensagens, pessoas na tela) |
@@ -121,4 +123,6 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 5. Feita: Twitch, Kick e Odysee.
 6. Camadas HTML (WPE WebKit), opcional.
 7. Extras que faltam: fundos e zips do SA, emotes como imagem no balão,
-   emotes animados. (Mesa de som, espectadores e emote wall já feitos.)
+   emotes animados, duelo e minijogos grandes (battle royale, basquete,
+   boss). (Mesa de som, espectadores, emote wall, bomba, estilingue,
+   estrelas e jogos de sorte já feitos.)

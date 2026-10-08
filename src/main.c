@@ -711,6 +711,7 @@ typedef struct {
     kk_emotes *emotes;
     kk_emotewall *wall;
     kk_overlay *overlay;  /* pictures shown by commands */
+    kk_props *props;      /* bombs and collectibles */
     kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
     kk_points *points;    /* NULL without a people file */
     kk_timers *timers;
@@ -1260,6 +1261,7 @@ static void run(app *a)
 
         double t = now_seconds();
         kk_soundboard_pump(a->sounds, fds + FD_FIXED, n_audio, t);
+        kk_actions_tick(a->actions, t);
         for (int i = 0; i < a->n_sources; i++)
             source_tick(&a->sources[i], src_at[i] >= 0 ? &fds[src_at[i]] : NULL, t);
         if (a->demo_on)
@@ -1294,6 +1296,7 @@ static void run(app *a)
                 last = t;
                 /* After a stall, don't teleport everyone forward. */
                 kk_stage_update(a->stage, dt > 0.1 ? 0.1 : dt);
+                kk_props_update(a->props, dt > 0.1 ? 0.1 : dt);
                 kk_emotewall_update(a->wall, t);
                 kk_overlay_update(a->overlay, t);
                 tick = true;
@@ -1506,8 +1509,14 @@ int main(int argc, char **argv)
         return 1;
     }
     kk_overlay_resize(a.overlay, win.width, win.height);
-    /* Pictures under the emote wall: emotes fly over a logo. */
+    a.props = kk_props_new(&stage, x.seed);
+    if (!a.props) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    /* Pictures under the bombs and stars, the emote wall over all. */
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
+    kk_stage_add_layer(&stage, kk_props_layer(a.props));
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
 
     a.mpris = kk_mpris_new();
@@ -1519,8 +1528,10 @@ int main(int argc, char **argv)
     }
     kk_timers_configure(a.timers, &a.cfg, now_seconds());
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
-                          .overlay = a.overlay, .mpris = a.mpris, .points = a.points};
+                          .overlay = a.overlay, .mpris = a.mpris, .points = a.points,
+                          .props = a.props, .now = now_seconds()};
     a.actions = &actions;
+    kk_props_set_catch(a.props, kk_actions_catch, &actions);
     a.sink = (chat_sink){
         .stage = &stage,
         .actions = &actions,
@@ -1553,10 +1564,14 @@ int main(int argc, char **argv)
     for (int i = 0; i < a.n_sources; i++)
         source_free(&a.sources[i]);
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
+    kk_stage_remove_layer(&stage, kk_props_layer(a.props));
     kk_stage_remove_layer(&stage, kk_overlay_layer(a.overlay));
     kk_emotewall_free(a.wall);
+    kk_props_free(a.props);
     kk_overlay_free(a.overlay);
     kk_mpris_free(a.mpris);
+    /* A roulette round still open: the bets go back. */
+    kk_actions_refund(&actions);
     kk_points_free(a.points);
     kk_timers_free(a.timers);
     kk_emotes_free(a.emotes);

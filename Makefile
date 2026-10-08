@@ -37,7 +37,9 @@ LIB_SRC = src/log.c \
       src/emotewall.c \
       src/mpris.c \
       src/points.c \
-      src/timers.c
+      src/timers.c \
+      src/props.c \
+      src/games.c
 VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c vendor/images.c
 LIBKK = $(BUILD)/libkk.a
 

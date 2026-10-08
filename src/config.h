@@ -44,7 +44,9 @@
  *              enabled = yes
  *   [points]   enabled, name = pontos, start = 0, message = 1,
  *              message_cooldown = 30, watch = 5, watch_minutes = 5,
- *              arrival = 10, paid = 100, member = 100
+ *              arrival = 10, paid = 100, member = 100, catch = 5,
+ *              min_bet = 5, max_bet = 5000 (0: no limit),
+ *              roulette_seconds = 20
  *   [emote_wall] enabled, duration = 5, size = 48,
  *              style = rise|bounce|fly,
  *              min_per_message = 3, combo_count = 3, combo_window = 10,
@@ -182,6 +184,9 @@ typedef struct {
     long points_arrival;
     long points_paid;
     long points_member;
+    long points_catch;       /* each collectible of !spawn */
+    long points_min_bet, points_max_bet; /* !slots and !bet */
+    double roulette_seconds; /* a !bet round takes bets this long */
 } kk_config;
 
 /* Called for each problem found; line is 0 when not from the file. */

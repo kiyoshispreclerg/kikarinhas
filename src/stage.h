@@ -87,6 +87,9 @@ void kk_stage_resize(kk_stage *s, int width, int height);
  * so their font only comes from kk_stage_init. */
 void kk_stage_set_bubble_font(kk_stage *s, const char *font, double size);
 
+/* Where the ground is and what is shown, as the avatars see it. */
+kk_view kk_stage_view(const kk_stage *s);
+
 /* Loads (once) the sheet of def at the stage scale; NULL if unusable. */
 const kk_sheet *kk_stage_sheet(kk_stage *s, const kk_sa_avatar *def);
 
@@ -118,6 +121,8 @@ void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,
 
 /* Avatar whose name tag matches name (case-insensitive, "@" ignored). */
 kk_avatar *kk_stage_find_by_name(kk_stage *s, const char *name);
+/* The avatar of key ("platform:id"), if on screen. */
+kk_avatar *kk_stage_find_user(kk_stage *s, const char *key);
 /* A random avatar other than not, or NULL. */
 kk_avatar *kk_stage_random_other(kk_stage *s, const kk_avatar *not);
 

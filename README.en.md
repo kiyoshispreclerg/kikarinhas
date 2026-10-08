@@ -301,6 +301,7 @@ turns each way of earning off):
 | Super Chat, Super Sticker, bits (`paid`) | 100 |
 | new member or subscriber, renewal, gift (`member`) | 100 |
 | someone never seen starts with (`start`) | 0 |
+| each star caught from `!spawn` (`catch`; a gem is worth three times as much) | 5 |
 
 Spends: each command can have a cost (`cost` in `[command.NAME]`) and so can
 each sound (`cost` in `[sound.NAME]`; without it, `!sound`'s cost applies),
@@ -455,6 +456,52 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!give @name N` | `!doar`, `!dar`, `!presentear` | passes N points to someone on screen | 30 s |
 | `!award @name N` | `!premiar`, `!bonus` | creates (or takes) someone's points; moderators only | — |
 | `!top` | `!ranking`, `!rank` | the five with the most points | 30 s (5 s for everyone) |
+| `!left [N]` / `!right [N]` | `!esquerda` / `!direita` | walks N% of the screen width (default 15) | 3 s |
+| `!move [N]` | `!mover`, `!andar` | walks to N% of the screen (0 is the left edge); without N, anywhere | 3 s |
+| `!stand` | `!levantar`, `!levanta` | stands up, if sitting | 3 s |
+| `!sling [angle] [power]` | `!estilingue`, `!lancar` | slingshots your own avatar: angle 1 to 179 (90 is straight up), power 1 to 100 | 30 s |
+| `!bomb [@name]` | `!bomba` | throws a bomb at someone (or anyone); costs 10 points | 30 s |
+| `!roll [N]` | `!dado`, `!rolar` | a number from 1 to 100, 1 to N, or dice (`!roll 2d6`) | 10 s |
+| `!bola8 [question]` | `!8ball`, `!bola` | the magic 8-ball answers | 10 s |
+| `!slots N` | `!cacaniquel`, `!slot` | slot machine: bets N points | 30 s |
+| `!bet N TYPE` | `!aposta`, `!roleta` | a roulette bet (see below) | 4 s |
+| `!freeze [@name]` | `!congelar` | freezes (or unfreezes) the avatar in place; moderators only | — |
+| `!scale [@name] [N]` | `!tamanho`, `!escala` | changes the size (`150`, `150%` or `1.5`; 25% to 400%; without N, back to normal); moderators only | — |
+| `!spawn [N]` | `!estrelas` | releases N stars to catch (default 5); moderators only | 10 s for everyone |
+
+#### Fun and games
+
+The numbers follow Stream Avatars'.
+
+- **Bomb** (`!bomb`): flies in an arc from the thrower's hand, the fuse
+  burns, and the blast throws everyone near it into the air, tumbling.
+- **Slingshot** (`!sling`): launches your own avatar, which bounces off the
+  walls and the ground until it settles. Flying avatars don't walk, sit or
+  hug.
+- **Stars** (`!spawn`): they float a little above the avatars' heads, where
+  only a jump reaches. Whoever touches one takes it and earns the `catch`
+  points of `[points]` (5 by default; a rare gem is worth three times as
+  much). Walking under them (`!left`, `!right`, `!move`) and jumping
+  (`!jump`) works, and so does being thrown by a bomb or the slingshot. They
+  fade away after 90 s. To release them on their own every so often, use a
+  timer (`[timer.stars]` with `command = !spawn` and `minutes = 15`).
+- **Slot machine** (`!slots N`): 46% of spins win. Three cherries give the
+  bet back, oranges half of it, sevens twice, coins 4x and bags 10x; on
+  average 95% of what is bet comes back.
+- **Roulette** (`!bet N TYPE`, or `TYPE N`): the first bet opens a 20 s
+  round (`roulette_seconds`); whoever bets meanwhile joins the same round,
+  and the ball lands on 0 to 36. A number or `verde` (green, 0) pays 36x;
+  `vermelho`/`preto` (red/black), `par`/`ímpar` (even/odd) and `baixo`
+  (1-18)/`alto` (19-36) pay 2x; `1a12`, `2a12` and `3a12` (dozens) pay 3x.
+  The English words (`red`, `black`, `odd`, `even`, `low`, `high`, `green`,
+  `1st12`...) work too. Zero loses every bet not on it. Each player sees
+  the result in a bubble.
+- **Limits**: bets go from `min_bet` to `max_bet` points (5 and 5000;
+  `max_bet = 0` removes the limit), and `tudo`/`all` bets as much as
+  possible. The bet leaves the balance at once; if the program closes with
+  a round open, it is given back.
+- `!freeze`, `!scale` and bomb effects last until the end of the session:
+  they are not saved for the next stream.
 
 `!song` shows the music playing on the streamer's computer, the same the
 Linux panels show (MPRIS over D-Bus: Spotify, VLC, Audacious, browsers...).

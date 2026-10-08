@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "actions.h"
 
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -358,6 +360,426 @@ static bool cmd_top(const kk_cmd_call *c)
     return true;
 }
 
+/* ---- moving around ------------------------------------------------------- */
+
+/* A short note over the avatar (it jumps, like any bubble of ours). */
+static void note(kk_actions *a, kk_avatar *who, const char *text, double seconds)
+{
+    int lines = 1;
+    for (const char *p = text; *p; p++)
+        lines += *p == '\n';
+    /* Room for long lines to wrap. */
+    kk_stage_help_bubble(a->stage, who, text, 0, lines + 4, seconds);
+}
+
+/* A whole number in [lo, hi] at the start of s; fallback if s is empty. */
+static bool number_arg(const char *s, long lo, long hi, long fallback, long *out)
+{
+    while (*s == ' ')
+        s++;
+    if (!*s) {
+        *out = fallback;
+        return true;
+    }
+    long v;
+    char *end;
+    v = strtol(s, &end, 10);
+    if (end == s || (*end && *end != ' ') || v < lo || v > hi)
+        return false;
+    *out = v;
+    return true;
+}
+
+/* !left / !right [N]: N percent of the window (default 15). */
+static bool step(const kk_cmd_call *c, int dir)
+{
+    kk_actions *a = ctx(c);
+    long pct;
+    if (!a->self || !number_arg(arg(c), 1, 100, 15, &pct))
+        return false;
+    double x = a->self->x + dir * a->stage->width * pct / 100.0;
+    if (!kk_avatar_walk_to(a->self, x, a->stage->width))
+        return false;
+    return true;
+}
+
+static bool cmd_left(const kk_cmd_call *c)
+{
+    return step(c, -1);
+}
+
+static bool cmd_right(const kk_cmd_call *c)
+{
+    return step(c, 1);
+}
+
+/* !move [N]: to N percent of the width (0 the left edge); somewhere at
+ * random without N. */
+static bool cmd_move(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    long pct;
+    if (!a->self || !number_arg(arg(c), 0, 100, -1, &pct))
+        return false;
+    double x = pct < 0 ? kk_rng_range(&a->stage->rng, 0.0, a->stage->width)
+                       : a->stage->width * pct / 100.0;
+    return kk_avatar_walk_to(a->self, x, a->stage->width);
+}
+
+static bool cmd_stand(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    return a->self && kk_avatar_stand(a->self);
+}
+
+/* "@nome rest": someone named first (on screen) and what follows; without a
+ * name, the sender. NULL if the name is nobody on screen. */
+static kk_avatar *target_and_rest(const kk_cmd_call *c, const char **rest, char *buf,
+                                  size_t size)
+{
+    kk_actions *a = ctx(c);
+    const char *s = arg(c);
+    *rest = s;
+    if (s[0] != '@')
+        return a->self;
+    snprintf(buf, size, "%s", s);
+    char *sp = strchr(buf, ' ');
+    if (sp) {
+        *sp = '\0';
+        *rest = s + (sp - buf) + 1;
+        while (**rest == ' ')
+            (*rest)++;
+    } else {
+        *rest = "";
+    }
+    return kk_stage_find_by_name(a->stage, buf);
+}
+
+/* !freeze [@nome]: stays put (or lets go) until asked again. */
+static bool cmd_freeze(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    char buf[128];
+    const char *rest;
+    kk_avatar *who = target_and_rest(c, &rest, buf, sizeof buf);
+    if (!who || rest[0])
+        return false;
+    who->frozen = !who->frozen;
+    note(a, who, who->frozen ? "❄️ congelado" : "☀️ descongelado", 3.0);
+    return true;
+}
+
+/* "150", "150%", "1.5", "1,5": a size; 0 if none. */
+static double parse_size(const char *s)
+{
+    char buf[32];
+    snprintf(buf, sizeof buf, "%s", s);
+    for (char *p = buf; *p; p++)
+        if (*p == ',')
+            *p = '.';
+    char *end;
+    double v = strtod(buf, &end);
+    if (end == buf)
+        return 0;
+    bool pct = *end == '%';
+    if (*end && !(pct && end[1] == '\0'))
+        return 0;
+    /* A plain number above 4 can only be a percentage. */
+    if (pct || v > KK_AVATAR_MAX_SIZE)
+        v /= 100.0;
+    return v >= KK_AVATAR_MIN_SIZE && v <= KK_AVATAR_MAX_SIZE ? v : 0;
+}
+
+/* !scale [@nome] [N]: bigger or smaller; without N, back to normal. */
+static bool cmd_scale(const kk_cmd_call *c)
+{
+    char buf[128];
+    const char *rest;
+    kk_avatar *who = target_and_rest(c, &rest, buf, sizeof buf);
+    double size = rest[0] ? parse_size(rest) : 1.0;
+    if (!who || size <= 0 || fabs(size - who->size) < 0.01)
+        return false;
+    kk_avatar_set_size(who, size);
+    return true;
+}
+
+/* !sling [angle] [power]: angle 1-179 (90 straight up, small to the right,
+ * big to the left), power 1-100 (100 reaches the top of the window). */
+static bool cmd_sling(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    kk_avatar *me = a->self;
+    if (!me || me->frozen || kk_avatar_flying(me))
+        return false;
+    kk_rng *rng = &a->stage->rng;
+    long angle = -1, power = -1;
+    const char *s = arg(c);
+    char *end;
+    if (*s) {
+        angle = strtol(s, &end, 10);
+        if (end == s || angle < 1 || angle > 179)
+            return false;
+        s = end;
+        while (*s == ' ')
+            s++;
+        if (*s) {
+            power = strtol(s, &end, 10);
+            if (end == s || *end || power < 1 || power > 100)
+                return false;
+        }
+    }
+    if (angle < 0)
+        angle = 30 + kk_rng_int(rng, 121);
+    if (power < 0)
+        power = 55 + kk_rng_int(rng, 46);
+    kk_view v = kk_stage_view(a->stage);
+    /* Height grows with the square of the speed: power is a share of it. */
+    double top = v.ground_y * 0.95 - kk_avatar_height(me);
+    double speed = sqrt(2.0 * 1400.0 * fmax(top, 50.0) * power / 100.0);
+    double rad = angle * M_PI / 180.0;
+    double spin = (angle < 90 ? 1 : -1) * kk_rng_range(rng, 4.0, 9.0);
+    kk_avatar_launch(me, cos(rad) * speed, sin(rad) * speed, spin);
+    return true;
+}
+
+/* ---- stage props --------------------------------------------------------- */
+
+/* !bomb [@nome]: thrown at someone (by name, else at random), or anywhere
+ * when nobody else is around. */
+static bool cmd_bomb(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!a->props || !a->self)
+        return false;
+    kk_avatar *at = arg(c)[0] ? kk_stage_find_by_name(a->stage, arg(c))
+                              : kk_stage_random_other(a->stage, a->self);
+    if (arg(c)[0] && !at)
+        return false;
+    double x = at ? at->x : kk_rng_range(&a->stage->rng, 0.0, a->stage->width);
+    return kk_props_bomb(a->props, a->self, x);
+}
+
+/* !spawn [N]: N collectibles (default 5, at most 20). */
+static bool cmd_spawn(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    long n;
+    if (!a->props || !number_arg(arg(c), 1, 20, 5, &n))
+        return false;
+    return kk_props_spawn(a->props, (int)n, a->catch_points > 0 ? a->catch_points : 0) > 0;
+}
+
+long kk_actions_catch(void *ud, kk_avatar *who, long points)
+{
+    kk_actions *a = ud;
+    if (points <= 0 || !who->user_id)
+        return 0;
+    /* The fake chat is not remembered: its catches show but pay nothing. */
+    if (kk_points_enabled(a->points) && strncmp(who->user_id, "demo:", 5) != 0)
+        kk_points_add(a->points, who->user_id, points);
+    return points;
+}
+
+/* ---- chance -------------------------------------------------------------- */
+
+/* !roll [N | XdY] */
+static bool cmd_roll(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    char result[300], text[400];
+    if (!a->self || !kk_roll(&a->stage->rng, arg(c), result, sizeof result))
+        return false;
+    snprintf(text, sizeof text, "🎲 %s: %s", c->msg->name, result);
+    note(a, a->self, text, text_seconds(c, text));
+    return true;
+}
+
+/* !bola8 [pergunta] */
+static bool cmd_eightball(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!a->self)
+        return false;
+    char text[300];
+    snprintf(text, sizeof text, "🎱 %s", kk_eightball(&a->stage->rng));
+    note(a, a->self, text, text_seconds(c, text));
+    return true;
+}
+
+/* A bet: "50", "tudo"/"all" (as much as allowed). False if not a number in
+ * [min_bet, max_bet] the sender has. */
+static bool bet_amount(kk_actions *a, const char *key, const char *word, long *out)
+{
+    long have = kk_points_get(a->points, key);
+    long max = a->max_bet > 0 ? a->max_bet : have;
+    long v;
+    if (strcasecmp(word, "tudo") == 0 || strcasecmp(word, "all") == 0) {
+        v = have < max ? have : max;
+    } else {
+        char *end;
+        v = strtol(word, &end, 10);
+        if (end == word || *end)
+            return false;
+    }
+    if (v < (a->min_bet > 0 ? a->min_bet : 1) || v > max || v > have)
+        return false;
+    *out = v;
+    return true;
+}
+
+static void bets_hint(kk_actions *a, const char *key)
+{
+    char text[200];
+    snprintf(text, sizeof text, "Apostas de %ld a %ld %s (você tem %ld).",
+             a->min_bet > 0 ? a->min_bet : 1, a->max_bet, a->points_name,
+             kk_points_get(a->points, key));
+    note(a, a->self, text, 5.0);
+}
+
+/* !slots N */
+static bool cmd_slots(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    char word[32];
+    long bet;
+    if (!points_on(a))
+        return false;
+    snprintf(word, sizeof word, "%s", arg(c));
+    if (!word[0] || !bet_amount(a, c->user_key, word, &bet)) {
+        bets_hint(a, c->user_key);
+        return false;
+    }
+    kk_points_spend(a->points, c->user_key, bet);
+    kk_slots_spin s = kk_slots(&a->stage->rng);
+    long back = (long)floor(bet * s.mult + 0.5);
+    if (back > 0)
+        kk_points_add(a->points, c->user_key, back);
+    char text[300];
+    int n = snprintf(text, sizeof text, "🎰 %s %s %s\n", kk_slot_symbols[s.reels[0]],
+                     kk_slot_symbols[s.reels[1]], kk_slot_symbols[s.reels[2]]);
+    long net = back - bet;
+    if (back == 0)
+        snprintf(text + n, sizeof text - (size_t)n, "Perdeu %ld %s.", bet, a->points_name);
+    else if (net > 0)
+        snprintf(text + n, sizeof text - (size_t)n, "Ganhou %ld %s!", net, a->points_name);
+    else if (net == 0)
+        snprintf(text + n, sizeof text - (size_t)n, "Empatou.");
+    else
+        snprintf(text + n, sizeof text - (size_t)n, "Voltaram %ld de %ld.", back, bet);
+    note(a, a->self, text, 6.0);
+    return true;
+}
+
+/* !bet N TIPO (or TIPO N): opens a round, or joins the open one. */
+static bool cmd_bet(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!points_on(a))
+        return false;
+    char buf[128], *w1 = buf, *w2;
+    snprintf(buf, sizeof buf, "%s", arg(c));
+    w2 = strchr(buf, ' ');
+    kk_bet b;
+    long amount;
+    bool ok = false;
+    if (w2) {
+        *w2++ = '\0';
+        while (*w2 == ' ')
+            w2++;
+        /* Either order: "50 vermelho" or "vermelho 50". */
+        ok = (kk_bet_parse(w2, &b) && bet_amount(a, c->user_key, w1, &amount)) ||
+             (kk_bet_parse(w1, &b) && bet_amount(a, c->user_key, w2, &amount));
+    }
+    kk_roulette_round *r = &a->roulette;
+    if (!ok || r->n == KK_MAX_BETS) {
+        char text[300];
+        snprintf(text, sizeof text,
+                 "!%s N TIPO: vermelho, preto, par, ímpar, baixo (1-18), alto (19-36), "
+                 "1a12, 2a12, 3a12, verde ou um número de 0 a 36. De %ld a %ld %s.",
+                 c->name, a->min_bet > 0 ? a->min_bet : 1, a->max_bet, a->points_name);
+        note(a, a->self, text, 8.0);
+        return false;
+    }
+    kk_points_spend(a->points, c->user_key, amount);
+    bool opening = r->ends_at <= 0;
+    if (opening) {
+        r->n = 0;
+        r->ends_at = a->now + (a->roulette_seconds > 0 ? a->roulette_seconds : 20);
+    }
+    kk_placed_bet *p = &r->bets[r->n++];
+    snprintf(p->key, sizeof p->key, "%s", c->user_key);
+    snprintf(p->name, sizeof p->name, "%s", c->msg->name);
+    p->amount = amount;
+    p->bet = b;
+    char what[32], text[300];
+    kk_bet_name(&b, what, sizeof what);
+    if (opening)
+        snprintf(text, sizeof text, "Roleta aberta: %.0f s para apostar\n!%s N TIPO\n%ld em %s",
+                 r->ends_at - a->now, c->name, amount, what);
+    else
+        snprintf(text, sizeof text, "Roleta: %ld em %s", amount, what);
+    if (a->self)
+        note(a, a->self, text, opening ? 6.0 : 3.0);
+    return true;
+}
+
+static void spin_roulette(kk_actions *a)
+{
+    kk_roulette_round *r = &a->roulette;
+    int n = kk_rng_int(&a->stage->rng, 37);
+    const char *color = n == 0 ? "verde" : kk_roulette_red(n) ? "vermelho" : "preto";
+    /* One bubble per person, with everything they bet. */
+    for (int i = 0; i < r->n; i++) {
+        if (!r->bets[i].key[0])
+            continue;
+        long staked = 0, won = 0;
+        for (int k = i; k < r->n; k++) {
+            kk_placed_bet *p = &r->bets[k];
+            if (strcmp(p->key, r->bets[i].key) != 0)
+                continue;
+            staked += p->amount;
+            won += p->amount * kk_bet_payout(&p->bet, n);
+            if (k > i)
+                p->key[0] = '\0';
+        }
+        if (won > 0)
+            kk_points_add(a->points, r->bets[i].key, won);
+        kk_avatar *who = kk_stage_find_user(a->stage, r->bets[i].key);
+        if (!who)
+            continue;
+        char text[300];
+        long net = won - staked;
+        if (won == 0)
+            snprintf(text, sizeof text, "Roleta: deu %d (%s)\nPerdeu %ld %s.", n, color, staked,
+                     a->points_name);
+        else if (net > 0)
+            snprintf(text, sizeof text, "Roleta: deu %d (%s)\nGanhou %ld %s!", n, color, net,
+                     a->points_name);
+        else
+            snprintf(text, sizeof text, "Roleta: deu %d (%s)\nVoltaram %ld de %ld.", n, color,
+                     won, staked);
+        note(a, who, text, 7.0);
+    }
+    r->n = 0;
+    r->ends_at = 0;
+}
+
+void kk_actions_tick(kk_actions *a, double now)
+{
+    a->now = now;
+    if (a->roulette.ends_at > 0 && now >= a->roulette.ends_at)
+        spin_roulette(a);
+}
+
+void kk_actions_refund(kk_actions *a)
+{
+    kk_roulette_round *r = &a->roulette;
+    for (int i = 0; a->points && i < r->n; i++)
+        kk_points_add(a->points, r->bets[i].key, r->bets[i].amount);
+    r->n = 0;
+    r->ends_at = 0;
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -387,6 +809,11 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"image", cmd_image},   {"nowplaying", cmd_nowplaying},
         {"points", cmd_points}, {"give", cmd_give},   {"award", cmd_award},
         {"top", cmd_top},
+        {"left", cmd_left},     {"right", cmd_right}, {"move", cmd_move},
+        {"stand", cmd_stand},   {"freeze", cmd_freeze}, {"scale", cmd_scale},
+        {"sling", cmd_sling},   {"bomb", cmd_bomb},   {"spawn", cmd_spawn},
+        {"roll", cmd_roll},     {"8ball", cmd_eightball}, {"slots", cmd_slots},
+        {"bet", cmd_bet},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
@@ -415,6 +842,11 @@ static void set_help(kk_commands *c, const kk_config_command *k)
         {"emote", "[NOME]"}, {"hug", "[@nome]"},   {"attack", "[@nome]"},
         {"sound", "NOME"},
         {"give", "@nome N"}, {"award", "@nome N"},
+        {"left", "[N]"},      {"right", "[N]"},   {"move", "[N]"},
+        {"freeze", "[@nome]"}, {"scale", "[@nome] [N]"},
+        {"sling", "[ângulo] [força]"}, {"bomb", "[@nome]"}, {"spawn", "[N]"},
+        {"roll", "[N]"},      {"8ball", "[pergunta]"}, {"slots", "N"},
+        {"bet", "N TIPO"},
     };
     char base[160], line[200];
     const char *hint = "";
@@ -463,6 +895,10 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
         self->help_seconds = cfg->help_seconds;
         snprintf(self->points_name, sizeof self->points_name, "%s",
                  cfg->points_name ? cfg->points_name : "pontos");
+        self->catch_points = cfg->points_catch;
+        self->min_bet = cfg->points_min_bet;
+        self->max_bet = cfg->points_max_bet;
+        self->roulette_seconds = cfg->roulette_seconds;
         if (self->points) {
             kk_points_config pc = kk_actions_points_config(cfg);
             kk_points_configure(self->points, &pc);

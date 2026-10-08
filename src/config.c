@@ -20,17 +20,20 @@
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
     "emote", "hug", "attack", "sound", "help", "text", "image", "nowplaying",
-    "points", "give", "award", "top", NULL,
+    "points", "give", "award", "top", "left", "right", "move", "stand",
+    "freeze", "scale", "sling", "bomb", "spawn", "roll", "8ball", "slots",
+    "bet", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. CMD_AS is a
  * command named differently from its action. */
-#define CMD_FULL(n, act, who, ucd, gcd, ...)                                   \
+#define CMD_PRICED(n, act, who, ucd, gcd, price, ...)                          \
     {.name = (char *)n, .action = (char *)act, .aliases = {__VA_ARGS__},     \
      .n_aliases = (int)(sizeof((const char *[]){__VA_ARGS__}) /              \
                         sizeof(const char *)),                               \
      .user_cd = ucd, .global_cd = gcd, .role = who, .enabled = true,         \
-     .params = KK_CMD_PARAMS_INIT}
+     .params = KK_CMD_PARAMS_INIT, .cost = price}
+#define CMD_FULL(n, act, who, ucd, gcd, ...) CMD_PRICED(n, act, who, ucd, gcd, 0, __VA_ARGS__)
 #define CMD_AS(n, act, ucd, gcd, ...) CMD_FULL(n, act, KK_ROLE_ANYONE, ucd, gcd, __VA_ARGS__)
 #define CMD(n, ucd, gcd, ...) CMD_AS(n, n, ucd, gcd, __VA_ARGS__)
 
@@ -51,10 +54,24 @@ static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("give", 30, 0, "doar", "dar", "presentear"),
     CMD_FULL("award", "award", KK_ROLE_MOD, 0, 0, "premiar", "bonus"),
     CMD("top", 30, 5, "ranking", "rank"),
+    CMD("left", 3, 0, "esquerda"),
+    CMD("right", 3, 0, "direita"),
+    CMD("move", 3, 0, "mover", "andar"),
+    CMD("stand", 3, 0, "levantar", "levanta"),
+    CMD_FULL("freeze", "freeze", KK_ROLE_MOD, 0, 0, "congelar"),
+    CMD_FULL("scale", "scale", KK_ROLE_MOD, 0, 0, "tamanho", "escala"),
+    CMD("sling", 30, 0, "estilingue", "lancar", "lançar"),
+    CMD_PRICED("bomb", "bomb", KK_ROLE_ANYONE, 30, 0, 10, "bomba"),
+    CMD_FULL("spawn", "spawn", KK_ROLE_MOD, 0, 10, "estrelas", "coletaveis", "coletáveis"),
+    CMD("roll", 10, 0, "dado", "rolar"),
+    CMD_AS("bola8", "8ball", 10, 0, "8ball", "bola"),
+    CMD("slots", 30, 0, "cacaniquel", "caçaniquel", "slot"),
+    CMD("bet", 4, 0, "aposta", "apostar", "roleta"),
 };
 #undef CMD
 #undef CMD_AS
 #undef CMD_FULL
+#undef CMD_PRICED
 
 const kk_config_command *kk_config_default_commands(int *n)
 {
@@ -316,6 +333,10 @@ void kk_config_defaults(kk_config *c)
         .points_arrival = 10,
         .points_paid = 100,
         .points_member = 100,
+        .points_catch = 5,
+        .points_min_bet = 5,
+        .points_max_bet = 5000,
+        .roulette_seconds = 20,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -940,6 +961,14 @@ static void apply_points(kk_config *c, const warner *w)
         get_points(w, &c->points_paid);
     else if (key_is(w, "member"))
         get_points(w, &c->points_member);
+    else if (key_is(w, "catch"))
+        get_points(w, &c->points_catch);
+    else if (key_is(w, "min_bet"))
+        get_points(w, &c->points_min_bet);
+    else if (key_is(w, "max_bet"))
+        get_points(w, &c->points_max_bet);
+    else if (key_is(w, "roulette_seconds"))
+        get_double(w, &c->roulette_seconds, 5, 600);
     else
         unknown_key(w);
 }
