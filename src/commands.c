@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #define MAX_ALIASES 8
 #define MAX_WORD 64
@@ -20,6 +21,12 @@ typedef struct {
     char *group; /* cooldowns are kept under this name; NULL = own name */
     char *help;  /* usage line for the help command, or NULL */
     kk_cmd_params params;
+    long cost;
+    struct arg_cost {
+        char *arg;
+        long cost;
+    } *arg_costs; /* by argument: one sound of !sound */
+    int n_arg_costs;
 } command;
 
 /* When someone may use a command again, keyed by hash(command, person). */
@@ -34,10 +41,15 @@ struct kk_commands {
     int count, cap;
     kk_cmd_fn fallback;
     double fallback_cd;
+    long fallback_cost;
     cooldown *cds;
     int n_cds, cap_cds;
     kk_trust_fn trust;
     void *trust_ud;
+    kk_balance_fn balance;
+    kk_charge_fn charge;
+    void *wallet_ud;
+    long last_cost;
 };
 
 kk_commands *kk_commands_new(void *ud)
@@ -63,6 +75,9 @@ void kk_commands_free(kk_commands *c)
         free(c->cmds[i].data);
         free(c->cmds[i].group);
         free(c->cmds[i].help);
+        for (int k = 0; k < c->cmds[i].n_arg_costs; k++)
+            free(c->cmds[i].arg_costs[k].arg);
+        free(c->cmds[i].arg_costs);
     }
     free(c->cmds);
     free(c->cds);
@@ -104,6 +119,7 @@ int kk_commands_add(kk_commands *c, const char *name, kk_cmd_fn fn,
     free(cmd->data);
     cmd->data = data ? strdup(data) : NULL;
     cmd->params = KK_CMD_PARAMS_DEFAULT;
+    cmd->cost = 0;
     cmd->fn = fn;
     cmd->user_cd = user_cooldown;
     cmd->global_cd = global_cooldown;
@@ -177,6 +193,11 @@ void kk_commands_set_fallback(kk_commands *c, kk_cmd_fn fn,
     c->fallback_cd = user_cooldown;
 }
 
+void kk_commands_set_fallback_cost(kk_commands *c, long cost)
+{
+    c->fallback_cost = cost;
+}
+
 kk_role kk_role_of(unsigned badges)
 {
     if (badges & KK_BADGE_OWNER)
@@ -186,6 +207,68 @@ kk_role kk_role_of(unsigned badges)
     if (badges & KK_BADGE_MEMBER)
         return KK_ROLE_MEMBER;
     return KK_ROLE_ANYONE;
+}
+
+void kk_commands_set_wallet(kk_commands *c, kk_balance_fn balance, kk_charge_fn charge,
+                            void *ud)
+{
+    c->balance = balance;
+    c->charge = charge;
+    c->wallet_ud = ud;
+}
+
+int kk_commands_set_cost(kk_commands *c, const char *name, const char *arg, long cost)
+{
+    command *cmd = find(c, name);
+    if (!cmd)
+        return -1;
+    if (!arg) {
+        cmd->cost = cost;
+        return 0;
+    }
+    for (int i = 0; i < cmd->n_arg_costs; i++)
+        if (strcasecmp(cmd->arg_costs[i].arg, arg) == 0) {
+            cmd->arg_costs[i].cost = cost;
+            return 0;
+        }
+    struct arg_cost *na =
+        realloc(cmd->arg_costs, (size_t)(cmd->n_arg_costs + 1) * sizeof *na);
+    if (!na)
+        return -1;
+    cmd->arg_costs = na;
+    if (!(na[cmd->n_arg_costs].arg = strdup(arg)))
+        return -1;
+    na[cmd->n_arg_costs++].cost = cost;
+    return 0;
+}
+
+long kk_commands_last_cost(const kk_commands *c)
+{
+    return c->last_cost;
+}
+
+long kk_commands_cost(const kk_commands *c, const char *name)
+{
+    for (int i = 0; i < c->count; i++)
+        if (strcmp(c->cmds[i].names[0], name) == 0)
+            return c->cmds[i].cost;
+    return 0;
+}
+
+/* The cost of running cmd with this argument: the argument's own, else the
+ * command's. */
+static long cost_of(const command *cmd, const char *arg)
+{
+    char word[MAX_WORD];
+    size_t n = strcspn(arg, " \t");
+    if (n < sizeof word) {
+        memcpy(word, arg, n);
+        word[n] = '\0';
+        for (int i = 0; i < cmd->n_arg_costs; i++)
+            if (strcasecmp(cmd->arg_costs[i].arg, word) == 0)
+                return cmd->arg_costs[i].cost;
+    }
+    return cmd->cost;
 }
 
 void kk_commands_set_trust(kk_commands *c, kk_trust_fn fn, void *ud)
@@ -320,8 +403,15 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
         call.name = cmd->names[0];
         call.data = cmd->data;
         call.params = &cmd->params;
+        long cost = cost_of(cmd, cmd->data ? cmd->data : args);
+        c->last_cost = cost;
+        bool pays = cost > 0 && role != KK_ROLE_OWNER && c->balance;
+        if (pays && c->balance(c->wallet_ud, user_key) < cost)
+            return KK_CMD_POOR;
         if (!cmd->fn(&call))
             return KK_CMD_FAILED;
+        if (pays && c->charge)
+            c->charge(c->wallet_ud, user_key, cost);
         if (cmd->global_cd > 0)
             set_user_until(c, hg, now + cmd->global_cd, now);
         set_user_until(c, h, now + cmd->user_cd, now);
@@ -341,8 +431,14 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
      * through as a normal message rather than swallow it. */
     if (role != KK_ROLE_OWNER && now < user_until(c, h))
         return KK_CMD_NONE;
+    bool pays = c->fallback_cost > 0 && role != KK_ROLE_OWNER && c->balance;
+    c->last_cost = c->fallback_cost;
+    if (pays && c->balance(c->wallet_ud, user_key) < c->fallback_cost)
+        return KK_CMD_NONE;
     if (!c->fallback(&call))
         return KK_CMD_NONE; /* "!xyz" that means nothing: a normal message */
+    if (pays && c->charge)
+        c->charge(c->wallet_ud, user_key, c->fallback_cost);
     set_user_until(c, h, now + c->fallback_cd, now);
     return KK_CMD_RAN;
 }

@@ -20,6 +20,7 @@ typedef struct audience_tab audience_tab;
 typedef struct wall_tab wall_tab;
 typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
+typedef struct points_tab points_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -49,6 +50,7 @@ typedef struct {
     wall_tab *wall;
     sources_tab *sources;
     avatars_tab *avatars;
+    points_tab *points;
 } editor;
 
 /* Labels of the levels (kk_role), to translate with _() where shown. */
@@ -91,6 +93,8 @@ void put_auto(editor *e, const char *section, const char *key, GtkWidget *check_
 
 /* The "Comandos" tab (commands.c). */
 GtkWidget *commands_page(editor *e, const kk_config *cfg);
+/* The commands with their cost in points, editable (for the Points tab). */
+GtkWidget *commands_cost_view(editor *e);
 void commands_collect(editor *e);
 void commands_free(editor *e);
 
@@ -111,6 +115,8 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg);
 void sounds_collect(editor *e);
 /* The sounds as the tab has them now; column 0 is the name. */
 GtkTreeModel *sounds_model(editor *e);
+/* The sounds with their cost in points, editable (for the Points tab). */
+GtkWidget *sounds_cost_view(editor *e);
 void sounds_free(editor *e);
 
 /* The "Emote wall" tab (wall.c). */
@@ -128,6 +134,12 @@ void editor_library_forget(editor *e);
 /* The "Avatares instalados" tab: every avatar of every folder. */
 GtkWidget *avatars_page(editor *e);
 void avatars_free(editor *e);
+
+/* The "Pontos" tab (points.c): [points] and the costs of commands and
+ * sounds (it must come after the Commands and Sounds tabs). */
+GtkWidget *points_page(editor *e, const kk_config *cfg);
+void points_collect(editor *e);
+void points_free(editor *e);
 
 /* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */
 GtkWidget *sources_widget(editor *e, const kk_config *cfg);

@@ -11,7 +11,7 @@
  *
  *   youtube:UCxxxx<TAB>avatar=pikachu<TAB>palette=blue<TAB>gear=pokegears/ash_hat
  *   <TAB>name=Fulana<TAB>first=1700000000<TAB>last=1730000000<TAB>role=member
- *   <TAB>trusted=yes
+ *   <TAB>trusted=yes<TAB>points=120
  *
  * gear lists "set/piece" separated by commas; first/last are Unix times;
  * role is the level the chat badges gave on the latest message (absent for
@@ -29,6 +29,7 @@ typedef enum {
     KK_USER_LAST,  /* Unix time of the latest message */
     KK_USER_ROLE,  /* "member", "mod", "owner" from the latest badges */
     KK_USER_TRUSTED, /* "yes" when marked by hand */
+    KK_USER_POINTS,  /* balance (points.c) */
     KK_USER_N_FIELDS,
 } kk_user_field;
 

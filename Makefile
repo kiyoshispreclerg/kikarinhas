@@ -31,7 +31,8 @@ LIB_SRC = src/log.c \
       src/emoji.c \
       src/emotes.c \
       src/emotewall.c \
-      src/mpris.c
+      src/mpris.c \
+      src/points.c
 VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c vendor/images.c
 LIBKK = $(BUILD)/libkk.a
 
@@ -74,7 +75,7 @@ pot update-po:
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c config/sources.c config/avatars.c config/commands.c
+CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c config/sources.c config/avatars.c config/commands.c config/points.c
 CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c

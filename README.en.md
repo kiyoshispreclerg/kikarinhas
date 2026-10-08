@@ -279,6 +279,46 @@ dates in the file: with kikarinhas **closed**, run
 (`displayName`, `firstTimeSpawned` and `lastTimeUsed` from there) without
 changing any choice.
 
+### Points
+
+Each viewer has a balance of points, kept in the people file. The **Points**
+tab of `kikarinhas-config` lists everything that gives and takes points (0
+turns each way of earning off):
+
+| Earns | Default |
+|---|---|
+| each message, at most once every 30 s (`message`, `message_cooldown`) | 1 |
+| every 5 minutes with their avatar on screen (`watch`, `watch_minutes`) | 5 |
+| the first message of each session (`arrival`) | 10 |
+| Super Chat, Super Sticker, bits (`paid`) | 100 |
+| new member or subscriber, renewal, gift (`member`) | 100 |
+| someone never seen starts with (`start`) | 0 |
+
+Spends: each command can have a cost (`cost` in `[command.NAME]`) and so can
+each sound (`cost` in `[sound.NAME]`; without it, `!sound`'s cost applies),
+plus the `!name` shortcut (`shortcut_cost` in `[commands]`). The cost is
+only taken when the command does something, and the channel owner never
+pays. Someone without the points sees "Custa N pontos; você tem M" in a
+bubble. Commands: `!points` (`!pontos`) shows the balance, `!give @name N`
+(`!doar`) passes points to someone on screen, `!award @name N` (`!premiar`,
+moderators only; negative takes) creates points and `!top` (`!ranking`)
+shows the five with the most. In the Viewers tab, the **Points** column
+changes a balance by hand.
+
+```ini
+[points]
+name = coins
+watch = 10
+watch_minutes = 10
+
+[command.jump]
+cost = 5
+
+[sound.buzina]
+file = ~/sounds/horn.ogg
+cost = 50
+```
+
 ### Emote wall
 
 Chat emoji fly across the screen, over the avatars: common emoji (drawn
@@ -337,8 +377,8 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop to st
 ```
 
 Other requests: `save` writes the people file now, and
-`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}`
-changes someone's avatar and/or marks them as trusted (each field is
+`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,"points":100}`
+changes someone's avatar, marks them as trusted and/or sets their points (each field is
 optional; it is what the Viewers tab uses; `set_avatar` is the old name).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
@@ -374,6 +414,10 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!sound NAME` | `!som`, `!play`, `!sfx`, or just `!NAME` | plays a sound from the sound board | 30 s (3 s for everyone) |
 | `!help` | `!ajuda`, `!comandos`, `!commands` | a bubble with a few random commands | 10 s (2 s for everyone) |
 | `!song` | `!musica`, `!música`, `!np`, `!tocando` | a bubble with the music playing on the computer | 10 s (3 s for everyone) |
+| `!points` | `!pontos`, `!saldo`, `!carteira` | a bubble with the points balance | 10 s |
+| `!give @name N` | `!doar`, `!dar`, `!presentear` | passes N points to someone on screen | 30 s |
+| `!award @name N` | `!premiar`, `!bonus` | creates (or takes) someone's points; moderators only | — |
+| `!top` | `!ranking`, `!rank` | the five with the most points | 30 s (5 s for everyone) |
 
 `!song` shows the music playing on the streamer's computer, the same the
 Linux panels show (MPRIS over D-Bus: Spotify, VLC, Audacious, browsers...).

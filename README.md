@@ -273,6 +273,45 @@ arquivo: com o kikarinhas **fechado**, rode uma vez
 `kikarinhas --import-sa-users`. Ele completa nome e datas (o `displayName`,
 `firstTimeSpawned` e `lastTimeUsed` de lá) sem mudar nenhuma escolha.
 
+### Pontos
+
+Cada espectador tem um saldo de pontos, guardado no arquivo de pessoas. A aba
+**Pontos** do `kikarinhas-config` lista tudo o que dá e tira pontos (0
+desliga cada forma de ganhar):
+
+| Ganha | Padrão |
+|---|---|
+| cada mensagem, no máximo uma vez a cada 30 s (`message`, `message_cooldown`) | 1 |
+| a cada 5 minutos com o avatar na tela (`watch`, `watch_minutes`) | 5 |
+| a primeira mensagem de cada sessão (`arrival`) | 10 |
+| Super Chat, Super Sticker, bits (`paid`) | 100 |
+| membro ou inscrito novo, renovação, presente (`member`) | 100 |
+| quem nunca apareceu começa com (`start`) | 0 |
+
+Gasta: cada comando pode ter um custo (`cost` em `[command.NOME]`) e cada som
+também (`cost` em `[sound.NOME]`; sem ele, vale o custo do `!som`), além do
+atalho `!nome` (`shortcut_cost` em `[commands]`). O custo só é cobrado quando
+o comando faz alguma coisa, e o dono do canal nunca paga. Quem não tem pontos
+vê "Custa N pontos; você tem M" no balão. Comandos: `!pontos` mostra o
+saldo, `!doar @nome N` passa pontos para alguém que está na tela,
+`!premiar @nome N` (só moderadores; negativo tira) cria pontos e `!ranking`
+mostra os cinco com mais. Na aba Espectadores, a coluna **Pontos** muda um
+saldo à mão.
+
+```ini
+[points]
+name = moedas
+watch = 10
+watch_minutes = 10
+
+[command.jump]
+cost = 5
+
+[sound.buzina]
+file = ~/sons/buzina.ogg
+cost = 50
+```
+
 ### Emote wall
 
 Os emojis do chat voam pela tela, por cima dos avatares: emojis comuns
@@ -331,8 +370,8 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop para 
 ```
 
 Outros pedidos: `save` grava o arquivo de pessoas agora, e
-`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}`
-troca o avatar de alguém e/ou marca como confiável (cada campo é opcional; é
+`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,"points":100}`
+troca o avatar de alguém, marca como confiável e/ou muda o saldo de pontos (cada campo é opcional; é
 o que a aba Espectadores usa; `set_avatar` é o nome antigo).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
@@ -368,6 +407,10 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!sound NOME` | `!som`, `!play`, `!sfx`, ou só `!NOME` | toca um som da mesa de som | 30 s (3 s para todos) |
 | `!help` | `!ajuda`, `!comandos`, `!commands` | balão com alguns comandos sorteados | 10 s (2 s para todos) |
 | `!song` | `!musica`, `!música`, `!np`, `!tocando` | balão com a música tocando no computador | 10 s (3 s para todos) |
+| `!points` | `!pontos`, `!saldo`, `!carteira` | balão com o saldo de pontos | 10 s |
+| `!give @nome N` | `!doar`, `!dar`, `!presentear` | passa N pontos para alguém na tela | 30 s |
+| `!award @nome N` | `!premiar`, `!bonus` | cria (ou tira) pontos de alguém; só moderadores | — |
+| `!top` | `!ranking`, `!rank` | os cinco com mais pontos | 30 s (5 s para todos) |
 
 `!song` mostra a música que está tocando no computador de quem transmite,
 a mesma que os painéis do Linux mostram (MPRIS pelo D-Bus: Spotify, VLC,

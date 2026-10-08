@@ -5,3 +5,4 @@ config/audience.c
 config/sources.c
 config/avatars.c
 config/commands.c
+config/points.c

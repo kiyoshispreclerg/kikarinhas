@@ -10,8 +10,8 @@
 #include "log.h"
 #include "util.h"
 
-static const char *const field_names[] = {"avatar", "palette", "gear", "name",
-                                          "first",  "last",    "role", "trusted"};
+static const char *const field_names[] = {"avatar", "palette", "gear",    "name",  "first",
+                                          "last",   "role",    "trusted", "points"};
 #define N_FIELDS KK_USER_N_FIELDS
 _Static_assert(sizeof field_names / sizeof field_names[0] == N_FIELDS,
                "one name per kk_user_field");
@@ -197,7 +197,7 @@ int kk_users_save(kk_users *u)
         return -1;
     }
     fputs("# Kikarinhas: quem já passou pelo chat (avatar, paleta, acessórios, "
-          "nome, primeira e última vez, nível)\n", f);
+          "nome, primeira e última vez, nível, pontos)\n", f);
     for (int i = 0; i < u->count; i++) {
         const record *r = &u->recs[i];
         bool any = r->extra != NULL;

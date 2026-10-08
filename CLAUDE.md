@@ -66,7 +66,8 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/twitch.c` | chat da Twitch (IRC anônimo sobre TLS), emotes do BTTV/FFZ/7TV |
 | `src/commands.c` | registro genérico de comandos: aliases, papéis, esperas |
 | `src/actions.c` | comandos padrão (avatar, color, gear, dance, hug, sound...) |
-| `src/users.c` | `users.tsv`: escolhas de cada pessoa, gravação atômica |
+| `src/users.c` | `users.tsv`: escolhas de cada pessoa, nível, pontos, gravação atômica |
+| `src/points.c` | pontos: ganhos (mensagem, presença, chegada, pagos, membros), saldo, ranking |
 | `src/demochat.c` | chat de mentira para testes |
 | `src/ini.c` | .ini lido e editado no lugar (mantém comentários) |
 | `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
@@ -85,6 +86,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
+| `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
 | `config/commands.c` | aba Comandos: lista e diálogo de edição por ação (texto, imagem com prévia, som...) |
 | `config/sources.c`, `config/avatars.c` | lista de lives da aba Chat; pastas de avatares e biblioteca carregada uma vez |
 

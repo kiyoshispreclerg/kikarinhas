@@ -33,6 +33,7 @@ enum {
     A_LEVEL,   /* int kk_role from the badges */
     A_LEVEL_TEXT,
     A_TRUSTED, /* bool, set by hand */
+    A_POINTS,  /* long; -1 = none yet */
     N_ACOLS,
 };
 
@@ -130,6 +131,7 @@ static void refresh(editor *e)
         kk_role role = KK_ROLE_ANYONE;
         if (role_s)
             kk_parse_role(role_s, &role);
+        const char *pts = kk_users_get(u, key, KK_USER_POINTS);
         GtkTreeIter it;
         gtk_list_store_append(t->store, &it);
         gtk_list_store_set(t->store, &it, A_KEY, key, A_NAME,
@@ -138,7 +140,8 @@ static void refresh(editor *e)
                            (gint64)first, A_FIRST_TEXT, first_s, A_LAST, (gint64)last,
                            A_LAST_TEXT, last_s, A_AVATAR, avatar ? avatar : "", A_LEVEL,
                            (int)role, A_LEVEL_TEXT, _(LEVEL_LABELS[role]), A_TRUSTED,
-                           kk_users_trusted(u, key), -1);
+                           kk_users_trusted(u, key), A_POINTS,
+                           (glong)(pts ? strtol(pts, NULL, 10) : -1), -1);
     }
     kk_users_free(u);
     update_count(e);
@@ -221,8 +224,9 @@ static void on_map(GtkWidget *w, gpointer ud)
 }
 
 /* Writes the file directly: only when no kikarinhas is running. avatar
- * NULL keeps it; trusted < 0 keeps it. */
-static bool write_directly(editor *e, const char *key, const char *avatar, int trusted)
+ * NULL keeps it; trusted and points < 0 keep theirs. */
+static bool write_directly(editor *e, const char *key, const char *avatar, int trusted,
+                           long points)
 {
     char path[KK_PATH_MAX];
     users_path(e, path, sizeof path);
@@ -235,6 +239,11 @@ static bool write_directly(editor *e, const char *key, const char *avatar, int t
     }
     if (trusted >= 0)
         kk_users_set(u, key, KK_USER_TRUSTED, trusted ? "yes" : NULL);
+    if (points >= 0) {
+        char s[32];
+        snprintf(s, sizeof s, "%ld", points);
+        kk_users_set(u, key, KK_USER_POINTS, s);
+    }
     bool ok = kk_users_save(u) == 0;
     kk_users_free(u);
     return ok;
@@ -292,7 +301,7 @@ static void on_trusted_toggled(GtkCellRendererToggle *r, gchar *path, gpointer u
     cJSON_AddStringToObject(req, "user", key);
     cJSON_AddBoolToObject(req, "trusted", on);
     send_result sr = send_user(e, req);
-    if (sr == SENT_OK || (sr == NOT_RUNNING && write_directly(e, key, NULL, on))) {
+    if (sr == SENT_OK || (sr == NOT_RUNNING && write_directly(e, key, NULL, on, -1))) {
         gtk_list_store_set(t->store, &it, A_TRUSTED, on, -1);
         status(e, on ? _("%s is now trusted.") : _("%s is no longer trusted."), name);
     } else if (sr == NOT_RUNNING) {
@@ -318,6 +327,48 @@ static gchar *known_avatar(audience_tab *t, const char *name)
         g_free(k);
     } while (gtk_tree_model_iter_next(m, &it));
     return NULL;
+}
+
+static void points_text(GtkTreeViewColumn *c, GtkCellRenderer *r, GtkTreeModel *m,
+                        GtkTreeIter *it, gpointer ud)
+{
+    (void)c;
+    (void)ud;
+    glong v;
+    gtk_tree_model_get(m, it, A_POINTS, &v, -1);
+    char s[32];
+    snprintf(s, sizeof s, v >= 0 ? "%ld" : "—", (long)v);
+    g_object_set(r, "text", s, NULL);
+}
+
+static void on_points_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
+{
+    (void)r;
+    editor *e = ud;
+    audience_tab *t = e->audience;
+    GtkTreeIter it;
+    long v;
+    g_strstrip(text);
+    if (!store_iter(t, path, &it))
+        return;
+    if (!kk_parse_long(text, 0, 1000000000L, &v)) {
+        status(e, _("Invalid points: \"%s\" (0 to 1000000000)."), text);
+        return;
+    }
+    gchar *key, *name;
+    gtk_tree_model_get(GTK_TREE_MODEL(t->store), &it, A_KEY, &key, A_NAME, &name, -1);
+    cJSON *req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "user", key);
+    cJSON_AddNumberToObject(req, "points", (double)v);
+    send_result sr = send_user(e, req);
+    if (sr == SENT_OK || (sr == NOT_RUNNING && write_directly(e, key, NULL, -1, v))) {
+        gtk_list_store_set(t->store, &it, A_POINTS, (glong)v, -1);
+        status(e, _("%s now has %ld points."), name, v);
+    } else if (sr == NOT_RUNNING) {
+        status(e, _("Could not write the people file."));
+    }
+    g_free(key);
+    g_free(name);
 }
 
 static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
@@ -350,7 +401,7 @@ static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
         status(e, _("%s is now %s (already in effect in the running kikarinhas)."), name, text);
     } else if (sr == SENT_REFUSED) {
         /* the status line says why */
-    } else if (write_directly(e, key, text, -1)) {
+    } else if (write_directly(e, key, text, -1, -1)) {
         gtk_list_store_set(t->store, &it, A_AVATAR, text, -1);
         status(e, _("%s is now %s (saved to the file; takes effect next time)."), name, text);
     } else {
@@ -388,7 +439,7 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     t->store = gtk_list_store_new(N_ACOLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
                                   G_TYPE_INT64, G_TYPE_STRING, G_TYPE_INT64,
                                   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING,
-                                  G_TYPE_BOOLEAN);
+                                  G_TYPE_BOOLEAN, G_TYPE_LONG);
     t->filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(t->store), NULL);
     gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(t->filter), visible, e,
                                            NULL);
@@ -430,6 +481,14 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_tree_view_column_set_sort_column_id(tc, A_TRUSTED);
     gtk_tree_view_append_column(GTK_TREE_VIEW(t->tree), tc);
 
+    GtkCellRenderer *pr = gtk_cell_renderer_text_new();
+    g_object_set(pr, "editable", TRUE, "xalign", 1.0, NULL);
+    g_signal_connect(pr, "edited", G_CALLBACK(on_points_edited), e);
+    GtkTreeViewColumn *pc = gtk_tree_view_column_new_with_attributes(_("Points"), pr, NULL, NULL);
+    gtk_tree_view_column_set_cell_data_func(pc, pr, points_text, NULL, NULL);
+    gtk_tree_view_column_set_sort_column_id(pc, A_POINTS);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(t->tree), pc);
+
     GtkCellRenderer *combo = gtk_cell_renderer_combo_new();
     g_object_set(combo, "model", t->avatars, "text-column", 0, "has-entry", TRUE,
                  "editable", TRUE, NULL);
@@ -453,7 +512,7 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
                                     "once. Empty avatar: a random one, always the same. Level: "
                                     "what the chat badges said on the latest message. Trusted: "
                                     "ticked by hand, for commands limited to trusted people and "
-                                    "up. People from Stream Avatars without a name or dates: run "
+                                    "up. Points: double-click to change the balance. People from Stream Avatars without a name or dates: run "
                                     "kikarinhas --import-sa-users once.")),
                        FALSE, FALSE, 0);
 

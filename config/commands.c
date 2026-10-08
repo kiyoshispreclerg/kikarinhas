@@ -30,6 +30,7 @@ enum {
     COL_X,
     COL_Y,
     COL_SCALE,
+    COL_COST, /* long, points */
     COL_CUSTOM, /* not a built-in: name and action can change */
     N_COLS,
 };
@@ -115,7 +116,7 @@ static void set_row(editor *e, GtkTreeIter *it, const kk_config_command *k, bool
                        k->user_cd, COL_GCD, k->global_cd, COL_ROLE, (int)k->role,
                        COL_ROLE_LABEL, _(ROLE_LABELS[k->role]), COL_SECONDS,
                        k->params.seconds, COL_X, k->params.x, COL_Y, k->params.y, COL_SCALE,
-                       k->params.scale, COL_CUSTOM, custom, -1);
+                       k->params.scale, COL_COST, k->cost, COL_CUSTOM, custom, -1);
 }
 
 /* The row back as a command; free with free_row. */
@@ -129,7 +130,8 @@ static void get_row(editor *e, GtkTreeIter *it, kk_config_command *k, gboolean *
                        &k->name, COL_ACTION, &k->action, COL_DATA, &k->data, COL_ALIASES,
                        aliases, COL_CD, &k->user_cd, COL_GCD, &k->global_cd, COL_ROLE, &role,
                        COL_SECONDS, &k->params.seconds, COL_X, &k->params.x, COL_Y,
-                       &k->params.y, COL_SCALE, &k->params.scale, COL_CUSTOM, custom, -1);
+                       &k->params.y, COL_SCALE, &k->params.scale, COL_COST, &k->cost,
+                       COL_CUSTOM, custom, -1);
     k->enabled = enabled;
     k->role = (kk_role)role;
 }
@@ -172,7 +174,7 @@ typedef struct {
     editor *e;
     bool custom;
     GtkWidget *dlg, *table, *problem;
-    GtkWidget *name, *action, *enabled, *aliases, *cd, *gcd, *role;
+    GtkWidget *name, *action, *enabled, *aliases, *cd, *gcd, *role, *cost;
     GtkWidget *data, *sound, *avatar, *text, *file, *x, *y, *scale, *sec_auto, *sec,
         *preview, *player;
     /* Rows shown or hidden with the action: label and widget. */
@@ -451,6 +453,10 @@ static void build_dialog(dialog *d, const kk_config_command *k, const char *titl
     gtk_combo_box_set_active(GTK_COMBO_BOX(d->role), (int)k->role);
     add_row(d, _("Who can"), d->role,
             _("The lowest level allowed; trusted people are marked in the Viewers tab."));
+    d->cost = spin_at(0, 1000000000, 1, 0, (double)k->cost);
+    add_row(d, _("Cost"), hbox_of(d->cost, _("points"), NULL, NULL),
+            _("Taken only when the command does something; the channel owner never pays. "
+              "See the Points tab."));
 
     /* What depends on the action. */
     const char *data = k->data ? k->data : "";
@@ -628,6 +634,7 @@ static bool apply_dialog(dialog *d, GtkTreeIter *it, bool is_new)
         .user_cd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(d->cd)),
         .global_cd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(d->gcd)),
         .role = (kk_role)gtk_combo_box_get_active(GTK_COMBO_BOX(d->role)),
+        .cost = (long)gtk_spin_button_get_value(GTK_SPIN_BUTTON(d->cost)),
         .params = {
             .seconds = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->sec_auto))
                            ? -1
@@ -781,6 +788,19 @@ static void seconds_text(GtkTreeViewColumn *c, GtkCellRenderer *r, GtkTreeModel 
     g_object_set(r, "text", s, NULL);
 }
 
+/* "—" for free commands, so the paid ones stand out. */
+static void cost_text(GtkTreeViewColumn *c, GtkCellRenderer *r, GtkTreeModel *m,
+                      GtkTreeIter *it, gpointer ud)
+{
+    (void)c;
+    (void)ud;
+    glong v;
+    gtk_tree_model_get(m, it, COL_COST, &v, -1);
+    char s[32];
+    snprintf(s, sizeof s, v > 0 ? "%ld" : "—", (long)v);
+    g_object_set(r, "text", s, NULL);
+}
+
 static void text_column(editor *e, const char *title, int col, bool expand)
 {
     GtkCellRenderer *r = gtk_cell_renderer_text_new();
@@ -788,6 +808,8 @@ static void text_column(editor *e, const char *title, int col, bool expand)
     if (col == COL_CD || col == COL_GCD) {
         gtk_tree_view_column_set_cell_data_func(c, r, seconds_text, GINT_TO_POINTER(col),
                                                 NULL);
+    } else if (col == COL_COST) {
+        gtk_tree_view_column_set_cell_data_func(c, r, cost_text, NULL, NULL);
     } else {
         gtk_tree_view_column_add_attribute(c, r, "text", col);
     }
@@ -851,7 +873,8 @@ GtkWidget *commands_page(editor *e, const kk_config *cfg)
                                      G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
                                      G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE, G_TYPE_INT,
                                      G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE,
-                                     G_TYPE_DOUBLE, G_TYPE_DOUBLE, G_TYPE_BOOLEAN);
+                                     G_TYPE_DOUBLE, G_TYPE_DOUBLE, G_TYPE_LONG,
+                                     G_TYPE_BOOLEAN);
     for (int i = 0; i < cfg->n_commands; i++) {
         kk_config_command k = cfg->commands[i];
         bool custom = builtin(k.name) == NULL;
@@ -883,6 +906,7 @@ GtkWidget *commands_page(editor *e, const kk_config *cfg)
     text_column(e, _("Cooldown"), COL_CD, false);
     text_column(e, _("Global"), COL_GCD, false);
     text_column(e, _("Who can"), COL_ROLE_LABEL, false);
+    text_column(e, _("Cost"), COL_COST, false);
 
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC,
@@ -914,6 +938,45 @@ GtkWidget *commands_page(editor *e, const kk_config *cfg)
     gtk_container_add(GTK_CONTAINER(buttons), restore);
     gtk_box_pack_start(GTK_BOX(box), buttons, FALSE, FALSE, 0);
     return box;
+}
+
+/* ---- costs, for the Points tab ------------------------------------------- */
+
+static void on_cost_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
+{
+    (void)r;
+    editor *e = ud;
+    GtkTreeIter it;
+    long v = 0;
+    g_strstrip(text);
+    if (text[0] && !kk_parse_long(text, 0, 1000000000L, &v)) {
+        status(e, _("Invalid cost: \"%s\" (a number of points)."), text);
+        return;
+    }
+    if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(e->commands), &it, path))
+        gtk_list_store_set(e->commands, &it, COL_COST, (glong)v, -1);
+}
+
+GtkWidget *commands_cost_view(editor *e)
+{
+    GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(e->commands));
+    gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(tree), TRUE);
+    GtkCellRenderer *r = gtk_cell_renderer_text_new();
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), gtk_tree_view_column_new_with_attributes(
+                                                         _("Command"), r, "text", COL_NAME, NULL));
+    r = gtk_cell_renderer_text_new();
+    g_object_set(r, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
+    GtkTreeViewColumn *c =
+        gtk_tree_view_column_new_with_attributes(_("Action"), r, "text", COL_ACTION_LABEL, NULL);
+    gtk_tree_view_column_set_expand(c, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), c);
+    r = gtk_cell_renderer_text_new();
+    g_object_set(r, "editable", TRUE, "xalign", 1.0, NULL);
+    g_signal_connect(r, "edited", G_CALLBACK(on_cost_edited), e);
+    c = gtk_tree_view_column_new_with_attributes(_("Cost"), r, NULL, NULL);
+    gtk_tree_view_column_set_cell_data_func(c, r, cost_text, NULL, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), c);
+    return tree;
 }
 
 /* ---- saving -------------------------------------------------------------- */
@@ -950,7 +1013,7 @@ static void save_command(editor *e, GtkTreeIter *it)
     }
     put(e, section, "cooldown", cd, d ? d_cd : "0");
     put(e, section, "global_cooldown", gcd, d ? d_gcd : "0");
-    put(e, section, "role", kk_role_name(k.role), "anyone");
+    put(e, section, "role", kk_role_name(k.role), kk_role_name(d ? d->role : KK_ROLE_ANYONE));
     put(e, section, "enabled", k.enabled ? "yes" : "no", "yes");
     char secs[32];
     if (k.params.seconds > 0)
@@ -961,6 +1024,9 @@ static void save_command(editor *e, GtkTreeIter *it)
     put_num(e, section, "x", k.params.x, 50);
     put_num(e, section, "y", k.params.y, 50);
     put_num(e, section, "scale", k.params.scale, 100);
+    char cost[32];
+    snprintf(cost, sizeof cost, "%ld", k.cost);
+    put(e, section, "cost", cost, "0");
     free_row(&k, aliases);
 }
 

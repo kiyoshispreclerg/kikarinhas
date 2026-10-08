@@ -18,17 +18,19 @@
 
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
-    "emote", "hug", "attack", "sound", "help", "text", "image", "nowplaying", NULL,
+    "emote", "hug", "attack", "sound", "help", "text", "image", "nowplaying",
+    "points", "give", "award", "top", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. CMD_AS is a
  * command named differently from its action. */
-#define CMD_AS(n, act, ucd, gcd, ...)                                          \
+#define CMD_FULL(n, act, who, ucd, gcd, ...)                                   \
     {.name = (char *)n, .action = (char *)act, .aliases = {__VA_ARGS__},     \
      .n_aliases = (int)(sizeof((const char *[]){__VA_ARGS__}) /              \
                         sizeof(const char *)),                               \
-     .user_cd = ucd, .global_cd = gcd, .role = KK_ROLE_ANYONE, .enabled = true, \
+     .user_cd = ucd, .global_cd = gcd, .role = who, .enabled = true,         \
      .params = KK_CMD_PARAMS_INIT}
+#define CMD_AS(n, act, ucd, gcd, ...) CMD_FULL(n, act, KK_ROLE_ANYONE, ucd, gcd, __VA_ARGS__)
 #define CMD(n, ucd, gcd, ...) CMD_AS(n, n, ucd, gcd, __VA_ARGS__)
 
 static const kk_config_command DEFAULT_COMMANDS[] = {
@@ -44,9 +46,14 @@ static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD("sound", 30, 3, "som", "play", "sfx", "mesa"),
     CMD("help", 10, 2, "ajuda", "comandos", "commands", "ajudar"),
     CMD_AS("song", "nowplaying", 10, 3, "musica", "música", "np", "tocando"),
+    CMD("points", 10, 0, "pontos", "saldo", "carteira"),
+    CMD("give", 30, 0, "doar", "dar", "presentear"),
+    CMD_FULL("award", "award", KK_ROLE_MOD, 0, 0, "premiar", "bonus"),
+    CMD("top", 30, 5, "ranking", "rank"),
 };
 #undef CMD
 #undef CMD_AS
+#undef CMD_FULL
 
 const kk_config_command *kk_config_default_commands(int *n)
 {
@@ -160,6 +167,7 @@ static bool command_copy(kk_config_command *dst, const kk_config_command *src)
         .role = src->role,
         .enabled = src->enabled,
         .params = src->params,
+        .cost = src->cost,
     };
     bool ok = kk_config_set_str(&dst->name, src->name) &&
               kk_config_set_str(&dst->action, src->action) &&
@@ -186,12 +194,14 @@ static kk_config_sound *add_sound(kk_config *c)
     kk_config_sound *s = &ns[c->n_sounds++];
     memset(s, 0, sizeof *s);
     s->volume = 100;
+    s->cost = -1;
     return s;
 }
 
 static bool sound_copy(kk_config_sound *dst, const kk_config_sound *src)
 {
-    *dst = (kk_config_sound){.n_aliases = src->n_aliases, .volume = src->volume};
+    *dst = (kk_config_sound){.n_aliases = src->n_aliases, .volume = src->volume,
+                             .cost = src->cost};
     bool ok = kk_config_set_str(&dst->name, src->name) &&
               kk_config_set_str(&dst->file, src->file);
     for (int i = 0; i < src->n_aliases; i++)
@@ -232,6 +242,7 @@ void kk_config_free(kk_config *c)
         sound_free(&c->sounds[i]);
     free(c->sounds);
     free(c->wall_blacklist);
+    free(c->points_name);
     memset(c, 0, sizeof *c);
 }
 
@@ -271,6 +282,14 @@ void kk_config_defaults(kk_config *c)
         .wall_max_screen = 150,
         .wall_reactions = true,
         .wall_reactions_per_icon = 1,
+        .points_enabled = true,
+        .points_message = 1,
+        .points_message_cd = 30,
+        .points_watch = 5,
+        .points_watch_minutes = 5,
+        .points_arrival = 10,
+        .points_paid = 100,
+        .points_member = 100,
     };
     int n;
     const kk_config_command *d = kk_config_default_commands(&n);
@@ -294,6 +313,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->sounds = NULL;
     dst->n_sounds = 0;
     dst->wall_blacklist = NULL;
+    dst->points_name = NULL;
     bool ok = true;
     memset(dst->show, 0, sizeof dst->show);
     for (int i = 0; i < src->n_show; i++)
@@ -308,6 +328,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->users, src->users) && ok;
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
     ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
+    ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
     for (int i = 0; i < src->n_commands && ok; i++) {
         kk_config_command *k = add_command(dst);
         ok = k && command_copy(k, &src->commands[i]);
@@ -607,6 +628,16 @@ static void get_auto_seconds(const warner *w, double *dst)
         bad_value(w, "\"auto\" ou segundos (de 0,5 a 600)");
 }
 
+/* A number of points: 0 to a billion. */
+static void get_points(const warner *w, long *dst)
+{
+    long v;
+    if (kk_parse_long(w->value, 0, 1000000000L, &v))
+        *dst = v;
+    else
+        bad_value(w, "um número de pontos, de 0 a 1000000000");
+}
+
 static void get_bool(const warner *w, bool *dst)
 {
     if (!kk_parse_bool(w->value, dst))
@@ -738,6 +769,8 @@ static void apply_commands(kk_config *c, const warner *w)
         get_bool(w, &c->shortcuts);
     else if (key_is(w, "shortcut_cooldown"))
         get_double(w, &c->shortcut_cd, 0, 86400);
+    else if (key_is(w, "shortcut_cost"))
+        get_points(w, &c->shortcut_cost);
     else if (key_is(w, "help_bubbles"))
         get_bool(w, &c->help_bubbles);
     else if (key_is(w, "help_count"))
@@ -813,6 +846,34 @@ static void apply_sound(kk_config *c, const warner *w, const char *name)
             bad_value(w, "até 8 palavras separadas por vírgula");
     } else if (key_is(w, "volume"))
         get_int(w, &s->volume, 0, 400, false);
+    else if (key_is(w, "cost"))
+        get_points(w, &s->cost);
+    else
+        unknown_key(w);
+}
+
+static void apply_points(kk_config *c, const warner *w)
+{
+    if (key_is(w, "enabled"))
+        get_bool(w, &c->points_enabled);
+    else if (key_is(w, "name"))
+        get_str(w, &c->points_name);
+    else if (key_is(w, "start"))
+        get_points(w, &c->points_start);
+    else if (key_is(w, "message"))
+        get_points(w, &c->points_message);
+    else if (key_is(w, "message_cooldown"))
+        get_double(w, &c->points_message_cd, 0, 86400);
+    else if (key_is(w, "watch"))
+        get_points(w, &c->points_watch);
+    else if (key_is(w, "watch_minutes"))
+        get_double(w, &c->points_watch_minutes, 0.5, 1440);
+    else if (key_is(w, "arrival"))
+        get_points(w, &c->points_arrival);
+    else if (key_is(w, "paid"))
+        get_points(w, &c->points_paid);
+    else if (key_is(w, "member"))
+        get_points(w, &c->points_member);
     else
         unknown_key(w);
 }
@@ -868,6 +929,8 @@ static void apply_command(kk_config *c, const warner *w, const char *name)
         get_double(w, &k->params.y, -100, 200);
     } else if (key_is(w, "scale")) {
         get_double(w, &k->params.scale, 1, 10000);
+    } else if (key_is(w, "cost")) {
+        get_points(w, &k->cost);
     } else {
         unknown_key(w);
     }
@@ -894,6 +957,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_soundboard(c, &w);
         } else if (strcasecmp(s, "emote_wall") == 0) {
             apply_wall(c, &w);
+        } else if (strcasecmp(s, "points") == 0) {
+            apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {
             char name[MAX_NAME];
             if (normalize_word(name, sizeof name, s + strlen(SOUND_PREFIX)))

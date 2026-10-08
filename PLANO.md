@@ -517,6 +517,21 @@ data/         avatar padrão original, exemplo de .ini
      (relativo ou `~/`). Lição: eventos de teclado sintéticos (xdotool sem
      XTEST) não trocam o foco com Tab neste X; o teste da interface foi
      pelo diálogo de comando novo e pelo salvar sem mudar nada.
+   - **Pontos** (`src/points.c`, aba Pontos em `config/points.c`): saldo
+     no arquivo de pessoas (`points=`). Ganha por mensagem (com espera),
+     por presença (a cada `watch_minutes` com o avatar na tela; o laço
+     chama `kk_points_watch` uma vez por segundo com as chaves dos avatares
+     do chat, e uma parada conta no máximo 5 s), chegada (uma vez por
+     execução), Super Chat/bits e membro novo; `start` para quem nunca
+     apareceu. Gasta pelo `cost` de cada comando e de cada som (o do som
+     vale também para `!som NOME`, pelo custo por argumento do registro de
+     comandos) e `shortcut_cost`. `kk_commands_set_wallet`: o saldo é
+     conferido antes (sem pontos, `KK_CMD_POOR` e o balão "Custa N...") e
+     cobrado só se o comando fez algo; o dono não paga. Atalho sem pontos
+     vira mensagem comum (não dá para saber antes se era atalho). Comandos
+     `points`, `give`, `award` (mod) e `top`; a ajuda mostra o preço. O
+     configurador mostra os custos sobre os mesmos dados das abas Comandos e
+     Sons, e a aba Espectadores edita o saldo (`set_user` com `points`).
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

@@ -6,6 +6,7 @@
 #include "config.h"
 #include "mpris.h"
 #include "overlay.h"
+#include "points.h"
 #include "stage.h"
 
 /* The built-in chat commands and what they do to the avatars. */
@@ -21,10 +22,15 @@ typedef struct {
     kk_avatar *self; /* the sender's avatar, set before each dispatch */
     kk_overlay *overlay; /* where action = image shows pictures; may be NULL */
     kk_mpris *mpris;     /* the desktop's players; NULL without a session bus */
+    kk_points *points;   /* balances; NULL without a people file */
+    char points_name[32]; /* set by kk_actions_register: "pontos" */
     bool help_bubbles; /* set by kk_actions_register from the config */
     int help_count;
     double help_seconds; /* -1: by the number of lines */
 } kk_actions;
+
+/* The [points] part of cfg, for kk_points_configure. */
+kk_points_config kk_actions_points_config(const kk_config *cfg);
 
 /* Handler for an "action =" name of the config, or NULL. */
 kk_cmd_fn kk_actions_find(const char *action);
@@ -33,7 +39,8 @@ kk_cmd_fn kk_actions_find(const char *action);
  * roles), one command per sound (sharing !sound's cooldowns) when
  * [soundboard] commands is on, and the "!name" shortcut into c, which must have been created with
  * a kk_actions as its ud. Clashing names and aliases are reported to warn
- * and skipped; returns how many. */
+ * and skipped; returns how many. Also configures the ud's points (if any)
+ * and gives c the wallet when points are on. */
 int kk_actions_register(kk_commands *c, const kk_config *cfg,
                         kk_config_warn_fn warn, void *ud);
 

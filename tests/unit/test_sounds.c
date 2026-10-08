@@ -340,8 +340,9 @@ TEST(help_lists_what_a_person_may_use)
     CHECK(!strstr(help_lines, "!hug"));    /* disabled */
     CHECK(!strstr(help_lines, "!attack")); /* needs mod */
     int anyone = help_n;
-    CHECK_INT_EQ(help_for(cmds, KK_ROLE_MOD), anyone + 1);
+    CHECK_INT_EQ(help_for(cmds, KK_ROLE_MOD), anyone + 2); /* attack and award */
     CHECK_STR_HAS(help_lines, "[!attack [@nome]]");
+    CHECK_STR_HAS(help_lines, "[!award @nome N]");
     kk_commands_free(cmds);
     kk_config_free(&c);
 

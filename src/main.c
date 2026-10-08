@@ -26,6 +26,7 @@
 #include "log.h"
 #include "mpris.h"
 #include "overlay.h"
+#include "points.h"
 #include "sa.h"
 #include "soundboard.h"
 #include "stage.h"
@@ -505,6 +506,17 @@ typedef struct {
     bool verbose;
 } chat_sink;
 
+/* Asked for a command without the points for it: say so over their avatar. */
+static void say_poor(chat_sink *sink, kk_avatar *a, const char *key)
+{
+    kk_actions *ac = sink->actions;
+    char text[200];
+    snprintf(text, sizeof text, "Custa %ld %s; você tem %ld.",
+             kk_commands_last_cost(sink->commands), ac->points_name,
+             kk_points_get(ac->points, key));
+    kk_stage_help_bubble(sink->stage, a, text, 0, 3, 5.0);
+}
+
 static void on_chat(void *ud, const kk_chat_msg *m)
 {
     chat_sink *sink = ud;
@@ -521,15 +533,21 @@ static void on_chat(void *ud, const kk_chat_msg *m)
         if (users && strcmp(m->platform, "demo") != 0)
             kk_users_set(users, key, KK_USER_ROLE,
                          role == KK_ROLE_ANYONE ? NULL : kk_role_name(role));
+        bool demo = strcmp(m->platform, "demo") == 0;
+        if (!demo)
+            kk_points_message(sink->actions->points, key, m, now_seconds());
         sink->actions->self = a;
         r = kk_commands_handle(sink->commands, m, key, now_seconds());
         if (r == KK_CMD_NONE)
             kk_stage_say(sink->stage, a, m);
+        else if (r == KK_CMD_POOR)
+            say_poor(sink, a, key);
     }
     if (sink->verbose) {
         static const char *const kinds[] = {"", " [pago]", " [membro]"};
         static const char *const results[] = {"", "  [comando]", "  [em espera]",
-                                              "  [sem permissão]", "  [nada feito]"};
+                                              "  [sem permissão]", "  [sem pontos]",
+                                              "  [nada feito]"};
         fprintf(stderr, "[%s%s%s] %s%s%s%s: %s%s\n", m->platform,
                 m->source ? " " : "", m->source ? m->source : "", m->name,
                 kinds[m->kind], m->amount ? " " : "", m->amount ? m->amount : "",
@@ -636,6 +654,7 @@ typedef struct {
     kk_emotewall *wall;
     kk_overlay *overlay;  /* pictures shown by commands */
     kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
+    kk_points *points;    /* NULL without a people file */
     source sources[KK_MAX_SOURCES]; /* the lives being read */
     int n_sources;
     kk_demochat demo;
@@ -882,14 +901,15 @@ static void refuse(cJSON *reply, const char *error)
     cJSON_AddStringToObject(reply, "error", error);
 }
 
-/* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}
- * (each field optional; "set_avatar" is the same): from kikarinhas-config,
+/* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,
+ *  "points":100} (each field optional; "set_avatar" is the same): from kikarinhas-config,
  * which must not write the people file under our feet. */
 static void set_user(app *a, const cJSON *req, cJSON *reply)
 {
     const char *key = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "user"));
     const cJSON *avatar = cJSON_GetObjectItemCaseSensitive(req, "avatar");
     const cJSON *trusted = cJSON_GetObjectItemCaseSensitive(req, "trusted");
+    const cJSON *points = cJSON_GetObjectItemCaseSensitive(req, "points");
     const char *name = cJSON_GetStringValue(avatar);
     const kk_sa_avatar *def = name ? kk_sa_find(a->lib, name) : NULL;
     const char *error = NULL;
@@ -899,6 +919,9 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
         error = "avatar desconhecido";
     else if (trusted && !cJSON_IsBool(trusted))
         error = "\"trusted\" deve ser true ou false";
+    else if (points && (!cJSON_IsNumber(points) || points->valuedouble < 0 ||
+                        points->valuedouble > 1e9))
+        error = "\"points\" deve ser um número de 0 a 1000000000";
     else if (!a->users)
         error = "sem arquivo de pessoas";
     if (error) {
@@ -908,6 +931,8 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
 
     if (trusted)
         kk_users_set(a->users, key, KK_USER_TRUSTED, cJSON_IsTrue(trusted) ? "yes" : NULL);
+    if (points && a->points)
+        kk_points_set(a->points, key, (long)points->valuedouble);
     if (!def)
         return;
     for (int i = 0; i < a->stage->count; i++) {
@@ -1039,6 +1064,7 @@ static void run(app *a)
     bool full = true;
     double last = now_seconds();
     double next_save = last + 30.0;
+    double next_watch = last + 1.0;
 
     while (!a->quit) {
         kk_window_events ev = {0};
@@ -1106,6 +1132,18 @@ static void run(app *a)
         }
         if (a->demo_on)
             kk_demochat_tick(&a->demo, t);
+        if (a->points && t >= next_watch) {
+            /* Everyone whose avatar is up is watching. */
+            const char *keys[256];
+            int n = 0;
+            for (int i = 0; i < a->stage->count && n < 256; i++) {
+                const char *k = a->stage->avatars[i].user_id;
+                if (k && strncmp(k, "demo:", 5) != 0)
+                    keys[n++] = k;
+            }
+            kk_points_watch(a->points, keys, n, t);
+            next_watch = t + 1.0;
+        }
         if (a->users && t >= next_save) {
             kk_users_save(a->users);
             next_save = t + 30.0;
@@ -1333,8 +1371,9 @@ int main(int argc, char **argv)
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
 
     a.mpris = kk_mpris_new();
+    a.points = a.users ? kk_points_new(a.users) : NULL;
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
-                          .overlay = a.overlay, .mpris = a.mpris};
+                          .overlay = a.overlay, .mpris = a.mpris, .points = a.points};
     a.actions = &actions;
     a.sink = (chat_sink){
         .stage = &stage,
@@ -1371,6 +1410,7 @@ int main(int argc, char **argv)
     kk_emotewall_free(a.wall);
     kk_overlay_free(a.overlay);
     kk_mpris_free(a.mpris);
+    kk_points_free(a.points);
     kk_emotes_free(a.emotes);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);

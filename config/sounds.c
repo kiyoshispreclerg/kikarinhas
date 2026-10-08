@@ -21,6 +21,7 @@ enum {
     S_ALIASES,
     S_VOLUME, /* int, percent */
     S_LENGTH, /* "1,5 s", "?" or the error */
+    S_COST,   /* long points; < 0: the sound command's (edited in the Points tab) */
     N_SCOLS,
 };
 
@@ -336,12 +337,12 @@ static bool sound_taken(editor *e, const char *name, GtkTreeIter *except)
 }
 
 static void add_row(editor *e, const char *name, const char *file,
-                    const char *aliases, int volume)
+                    const char *aliases, int volume, long cost)
 {
     GtkTreeIter it;
     gtk_list_store_append(e->sounds->store, &it);
     gtk_list_store_set(e->sounds->store, &it, S_NAME, name, S_FILE, file, S_ALIASES,
-                       aliases, S_VOLUME, volume, S_LENGTH, "", -1);
+                       aliases, S_VOLUME, volume, S_LENGTH, "", S_COST, (glong)cost, -1);
 }
 
 /* A free name from base: "buzina", "buzina2"... */
@@ -452,7 +453,7 @@ static void on_add(GtkButton *b, gpointer ud)
             if (!kk_config_sound_name(base, sizeof base, l->data))
                 continue;
             unique_name(e, base, name, sizeof name);
-            add_row(e, name, l->data, "", 100);
+            add_row(e, name, l->data, "", 100, -1);
             n++;
         }
         gchar *folder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(d));
@@ -510,7 +511,7 @@ static void on_sa_sound(void *ud, const kk_sa_sound *s)
         ic->known++;
         return;
     }
-    add_row(ic->e, name, s->file, "", s->volume);
+    add_row(ic->e, name, s->file, "", s->volume, -1);
     ic->added++;
 }
 
@@ -594,12 +595,12 @@ GtkWidget *sounds_page(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(box), mid, FALSE, FALSE, 0);
 
     t->store = gtk_list_store_new(N_SCOLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                                  G_TYPE_INT, G_TYPE_STRING);
+                                  G_TYPE_INT, G_TYPE_STRING, G_TYPE_LONG);
     for (int i = 0; i < cfg->n_sounds; i++) {
         const kk_config_sound *s = &cfg->sounds[i];
         char aliases[512];
         join(aliases, sizeof aliases, s->aliases, s->n_aliases);
-        add_row(e, s->name, s->file, aliases, s->volume);
+        add_row(e, s->name, s->file, aliases, s->volume, s->cost);
     }
     remember_loaded(e);
     t->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(t->store));
@@ -706,13 +707,18 @@ void sounds_collect(editor *e)
          more = gtk_tree_model_iter_next(m, &it)) {
         gchar *name, *file, *aliases;
         int volume;
+        glong cost;
         gtk_tree_model_get(m, &it, S_NAME, &name, S_FILE, &file, S_ALIASES, &aliases,
-                           S_VOLUME, &volume, -1);
+                           S_VOLUME, &volume, S_COST, &cost, -1);
         char section[128];
         snprintf(section, sizeof section, "sound.%s", name);
         put(e, section, "file", file, NULL);
         put(e, section, "aliases", aliases, NULL);
         put_int(e, section, "volume", volume, 100);
+        char c[32] = "";
+        if (cost >= 0)
+            snprintf(c, sizeof c, "%ld", (long)cost);
+        put(e, section, "cost", c, NULL);
         g_free(name);
         g_free(file);
         g_free(aliases);
@@ -723,6 +729,54 @@ void sounds_collect(editor *e)
 GtkTreeModel *sounds_model(editor *e)
 {
     return GTK_TREE_MODEL(e->sounds->store);
+}
+
+static void sound_cost_text(GtkTreeViewColumn *c, GtkCellRenderer *r, GtkTreeModel *m,
+                            GtkTreeIter *it, gpointer ud)
+{
+    (void)c;
+    (void)ud;
+    glong v;
+    gtk_tree_model_get(m, it, S_COST, &v, -1);
+    char s[64];
+    if (v < 0)
+        snprintf(s, sizeof s, "%s", _("(as !sound)"));
+    else
+        snprintf(s, sizeof s, "%ld", (long)v);
+    g_object_set(r, "text", s, NULL);
+}
+
+static void on_cost_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
+{
+    (void)r;
+    editor *e = ud;
+    GtkTreeIter it;
+    long v = -1;
+    g_strstrip(text);
+    if (text[0] && !kk_parse_long(text, 0, 1000000000L, &v)) {
+        status(e, _("Invalid cost: \"%s\" (a number of points)."), text);
+        return;
+    }
+    if (iter_at(e, path, &it))
+        gtk_list_store_set(e->sounds->store, &it, S_COST, (glong)v, -1);
+}
+
+GtkWidget *sounds_cost_view(editor *e)
+{
+    GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(e->sounds->store));
+    gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(tree), TRUE);
+    GtkCellRenderer *r = gtk_cell_renderer_text_new();
+    GtkTreeViewColumn *c =
+        gtk_tree_view_column_new_with_attributes(_("Sound"), r, "text", S_NAME, NULL);
+    gtk_tree_view_column_set_expand(c, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), c);
+    r = gtk_cell_renderer_text_new();
+    g_object_set(r, "editable", TRUE, "xalign", 1.0, NULL);
+    g_signal_connect(r, "edited", G_CALLBACK(on_cost_edited), e);
+    c = gtk_tree_view_column_new_with_attributes(_("Cost"), r, NULL, NULL);
+    gtk_tree_view_column_set_cell_data_func(c, r, sound_cost_text, NULL, NULL);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), c);
+    return tree;
 }
 
 void sounds_free(editor *e)

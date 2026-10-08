@@ -61,6 +61,7 @@ typedef enum {
     KK_CMD_RAN,
     KK_CMD_COOLDOWN, /* swallowed: still cooling down */
     KK_CMD_DENIED,   /* role too low */
+    KK_CMD_POOR,     /* not enough points (kk_commands_last_cost says how many) */
     KK_CMD_FAILED,   /* handler did nothing (bad argument, ...) */
 } kk_cmd_result;
 
@@ -90,6 +91,25 @@ void kk_commands_each_help(const kk_commands *c, kk_role role,
                            void (*fn)(const char *text, void *ud), void *ud);
 void kk_commands_set_fallback(kk_commands *c, kk_cmd_fn fn,
                               double user_cooldown);
+/* What the fallback costs. Someone without the points gets their "!xyz"
+ * shown as a message: it may not have been a shortcut at all. */
+void kk_commands_set_fallback_cost(kk_commands *c, long cost);
+
+/* Points: a command can cost some, checked before it runs and taken only
+ * when it did something; the channel owner never pays. Without a wallet,
+ * costs are ignored. arg names a cost for one argument (e.g. one sound of
+ * "!sound NAME", by the first word of data or of what was typed); NULL sets
+ * the command's own. */
+typedef long (*kk_balance_fn)(void *ud, const char *user_key);
+typedef void (*kk_charge_fn)(void *ud, const char *user_key, long cost);
+void kk_commands_set_wallet(kk_commands *c, kk_balance_fn balance, kk_charge_fn charge,
+                            void *ud);
+int kk_commands_set_cost(kk_commands *c, const char *name, const char *arg, long cost);
+/* The cost of the last command handled (after KK_CMD_POOR: what it lacked
+ * the points for). */
+long kk_commands_last_cost(const kk_commands *c);
+/* What name costs (its own cost), for the help list; 0 if free. */
+long kk_commands_cost(const kk_commands *c, const char *name);
 
 /* Tells whether user_key was marked as trusted; without it nobody is. */
 typedef bool (*kk_trust_fn)(void *ud, const char *user_key);

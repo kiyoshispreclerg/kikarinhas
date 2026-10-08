@@ -242,6 +242,122 @@ static bool cmd_nowplaying(const kk_cmd_call *c)
     return true;
 }
 
+/* ---- points -------------------------------------------------------------- */
+
+static bool points_on(const kk_actions *a)
+{
+    return a->self && kk_points_enabled(a->points);
+}
+
+/* "!pontos": the sender's balance. */
+static bool cmd_points(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!points_on(a))
+        return false;
+    char text[200];
+    snprintf(text, sizeof text, "%s: %ld %s", c->msg->name,
+             kk_points_get(a->points, c->user_key), a->points_name);
+    kk_stage_help_bubble(a->stage, a->self, text, 0, 3, text_seconds(c, text));
+    return true;
+}
+
+static bool whole_number(const char *s, long *out)
+{
+    char *end;
+    long v = strtol(s, &end, 10);
+    if (end == s || *end)
+        return false;
+    *out = v;
+    return true;
+}
+
+/* "@Fulana Silva 10" or "10 @Fulana": an amount and someone on screen
+ * (other than the sender). */
+static kk_avatar *amount_and_who(const kk_cmd_call *c, long *amount, bool negative_ok)
+{
+    kk_actions *a = ctx(c);
+    char buf[256];
+    snprintf(buf, sizeof buf, "%s", c->args);
+    char *name = NULL;
+    char *last = strrchr(buf, ' '), *first = strchr(buf, ' ');
+    if (last && whole_number(last + 1, amount)) {
+        *last = '\0';
+        name = buf;
+    } else if (first) {
+        *first = '\0';
+        if (whole_number(buf, amount))
+            name = first + 1;
+    }
+    if (!name || *amount == 0 || (*amount < 0 && !negative_ok))
+        return NULL;
+    while (*name == ' ')
+        name++;
+    kk_avatar *b = name[0] ? kk_stage_find_by_name(a->stage, name) : NULL;
+    return b && b != a->self && b->user_id ? b : NULL;
+}
+
+/* "!doar @nome 10": moves points from the sender to someone on screen. */
+static bool cmd_give(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    long amount;
+    kk_avatar *b = points_on(a) ? amount_and_who(c, &amount, false) : NULL;
+    if (!b || !kk_points_spend(a->points, c->user_key, amount))
+        return false;
+    kk_points_add(a->points, b->user_id, amount);
+    char text[300];
+    snprintf(text, sizeof text, "%s → %s: %ld %s", c->msg->name, b->label, amount,
+             a->points_name);
+    kk_stage_help_bubble(a->stage, a->self, text, 0, 3, text_seconds(c, text));
+    return true;
+}
+
+/* "!premiar @nome 50" (mods): makes points for someone; negative takes. */
+static bool cmd_award(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    long amount;
+    kk_avatar *b = points_on(a) ? amount_and_who(c, &amount, true) : NULL;
+    if (!b)
+        return false;
+    long now = kk_points_add(a->points, b->user_id, amount);
+    char text[300];
+    snprintf(text, sizeof text, "%s: %+ld %s (%ld)", b->label, amount, a->points_name, now);
+    kk_stage_help_bubble(a->stage, b, text, 0, 3, text_seconds(c, text));
+    return true;
+}
+
+/* "!ranking": the five with the most points. */
+static bool cmd_top(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!points_on(a))
+        return false;
+    const char *keys[5];
+    long values[5];
+    int n = kk_points_top(a->points, keys, values, 5);
+    if (n == 0)
+        return false;
+    char text[600];
+    int len = snprintf(text, sizeof text, "Ranking");
+    int title = len;
+    for (int i = 0; i < n && len < (int)sizeof text; i++) {
+        const char *name = a->stage->cfg.users
+                               ? kk_users_get(a->stage->cfg.users, keys[i], KK_USER_NAME)
+                               : NULL;
+        if (!name) {
+            const char *colon = strchr(keys[i], ':');
+            name = colon ? colon + 1 : keys[i];
+        }
+        len += snprintf(text + len, sizeof text - (size_t)len, "\n%d. %s — %ld", i + 1, name,
+                        values[i]);
+    }
+    kk_stage_help_bubble(a->stage, a->self, text, title, n + 1,
+                         c->params->seconds > 0 ? c->params->seconds : 4.0 + 1.5 * n);
+    return true;
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -269,6 +385,8 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
         {"sound", cmd_sound},   {"help", cmd_help},   {"text", cmd_text},
         {"image", cmd_image},   {"nowplaying", cmd_nowplaying},
+        {"points", cmd_points}, {"give", cmd_give},   {"award", cmd_award},
+        {"top", cmd_top},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
@@ -278,6 +396,16 @@ kk_cmd_fn kk_actions_find(const char *action)
 
 /* The line !help shows: "!hug [@nome]". A command with fixed data takes no
  * argument; a command with an unknown action is just "!name". */
+/* "!jump (10 pontos)": the help line, with the price when there is one. */
+static void help_line(char *out, size_t size, const char *base, long cost,
+                      const kk_actions *a)
+{
+    if (cost > 0 && a && kk_points_enabled(a->points))
+        snprintf(out, size, "%s (%ld %s)", base, cost, a->points_name);
+    else
+        snprintf(out, size, "%s", base);
+}
+
 static void set_help(kk_commands *c, const kk_config_command *k)
 {
     static const struct {
@@ -286,14 +414,41 @@ static void set_help(kk_commands *c, const kk_config_command *k)
         {"avatar", "NOME"}, {"color", "COR"},      {"gear", "PEÇA"},
         {"emote", "[NOME]"}, {"hug", "[@nome]"},   {"attack", "[@nome]"},
         {"sound", "NOME"},
+        {"give", "@nome N"}, {"award", "@nome N"},
     };
-    char line[160];
+    char base[160], line[200];
     const char *hint = "";
     for (size_t i = 0; !k->data && i < sizeof hints / sizeof hints[0]; i++)
         if (strcmp(k->action, hints[i].action) == 0)
             hint = hints[i].hint;
-    snprintf(line, sizeof line, "!%s%s%s", k->name, hint[0] ? " " : "", hint);
+    snprintf(base, sizeof base, "!%s%s%s", k->name, hint[0] ? " " : "", hint);
+    help_line(line, sizeof line, base, k->cost, kk_commands_ud(c));
     kk_commands_set_help(c, k->name, line);
+}
+
+static long wallet_balance(void *ud, const char *user_key)
+{
+    return kk_points_get(ud, user_key);
+}
+
+static void wallet_charge(void *ud, const char *user_key, long cost)
+{
+    kk_points_spend(ud, user_key, cost);
+}
+
+kk_points_config kk_actions_points_config(const kk_config *cfg)
+{
+    return (kk_points_config){
+        .enabled = cfg->points_enabled,
+        .start = cfg->points_start,
+        .message = cfg->points_message,
+        .message_cooldown = cfg->points_message_cd,
+        .watch = cfg->points_watch,
+        .watch_minutes = cfg->points_watch_minutes,
+        .arrival = cfg->points_arrival,
+        .paid = cfg->points_paid,
+        .member = cfg->points_member,
+    };
 }
 
 int kk_actions_register(kk_commands *c, const kk_config *cfg,
@@ -306,6 +461,15 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
         self->help_bubbles = cfg->help_bubbles;
         self->help_count = cfg->help_count;
         self->help_seconds = cfg->help_seconds;
+        snprintf(self->points_name, sizeof self->points_name, "%s",
+                 cfg->points_name ? cfg->points_name : "pontos");
+        if (self->points) {
+            kk_points_config pc = kk_actions_points_config(cfg);
+            kk_points_configure(self->points, &pc);
+            /* Points off: costs are ignored. */
+            if (pc.enabled)
+                kk_commands_set_wallet(c, wallet_balance, wallet_charge, self->points);
+        }
     }
     /* With a command per sound, those are listed instead of "!sound". */
     bool sounds_listed = cfg->sound_enabled && cfg->sound_commands && cfg->n_sounds > 0;
@@ -323,6 +487,7 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
             continue;
         }
         kk_commands_set_params(c, k->name, &k->params);
+        kk_commands_set_cost(c, k->name, NULL, k->cost);
         bool is_help = strcmp(k->action, "help") == 0;
         bool is_sound = strcmp(k->action, "sound") == 0 && !k->data;
         if (!is_help && !(is_sound && (sounds_listed || !cfg->sound_enabled ||
@@ -350,9 +515,16 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
     for (int i = 0; i < cfg->n_commands; i++)
         if (strcmp(cfg->commands[i].name, "sound") == 0 && cfg->commands[i].enabled)
             base = &cfg->commands[i];
+    /* A sound's own cost holds for "!sound NAME" as well as for "!NAME". */
+    for (int i = 0; base && i < cfg->n_sounds; i++) {
+        const kk_config_sound *s = &cfg->sounds[i];
+        for (int w = -1; s->cost >= 0 && w < s->n_aliases; w++)
+            kk_commands_set_cost(c, base->name, w < 0 ? s->name : s->aliases[w], s->cost);
+    }
     for (int i = 0; base && cfg->sound_enabled && cfg->sound_commands &&
                     i < cfg->n_sounds; i++) {
         const kk_config_sound *s = &cfg->sounds[i];
+        long cost = s->cost >= 0 ? s->cost : base->cost;
         for (int w = -1; w < s->n_aliases; w++) {
             const char *word = w < 0 ? s->name : s->aliases[w];
             if (kk_commands_has(c, word)) {
@@ -367,15 +539,19 @@ int kk_actions_register(kk_commands *c, const kk_config *cfg,
             kk_commands_add(c, word, cmd_sound, s->name, base->user_cd,
                             base->global_cd, base->role);
             kk_commands_set_group(c, word, "sound");
+            kk_commands_set_cost(c, word, NULL, cost);
             if (w < 0) {
-                char line[160];
-                snprintf(line, sizeof line, "!%s", word);
+                char name[80], line[200];
+                snprintf(name, sizeof name, "!%s", word);
+                help_line(line, sizeof line, name, cost, self);
                 kk_commands_set_help(c, word, line);
             }
         }
     }
 
-    if (cfg->shortcuts)
+    if (cfg->shortcuts) {
         kk_commands_set_fallback(c, fallback, cfg->shortcut_cd);
+        kk_commands_set_fallback_cost(c, cfg->shortcut_cost);
+    }
     return problems;
 }

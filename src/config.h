@@ -27,16 +27,21 @@
  *   [chat]     youtube = a, b, twitch = a, b, third_party_emotes = yes|no,
  *              demo, max, despawn, verbose, users
  *   [control]  socket = PATH|off
- *   [commands] shortcuts = yes|no, shortcut_cooldown = 5,
+ *   [commands] shortcuts = yes|no, shortcut_cooldown = 5, shortcut_cost = 0,
  *              help_bubbles = yes|no, help_count = 3,
  *              help_seconds = auto|N
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
  *              role = anyone|member|trusted|mod|owner, enabled = yes|no,
- *              seconds = auto|N, x = 50, y = 50, scale = 100 (image)
+ *              seconds = auto|N, x = 50, y = 50, scale = 100 (image),
+ *              cost = 0 (points)
  *   [soundboard] enabled, volume = 100 (%), device = default,
  *              voices = 8, commands = yes
- *   [sound.NAME] file, aliases = a, b, volume = 100 (%)
+ *   [sound.NAME] file, aliases = a, b, volume = 100 (%),
+ *              cost = N (points; unset: the sound command's)
+ *   [points]   enabled, name = pontos, start = 0, message = 1,
+ *              message_cooldown = 30, watch = 5, watch_minutes = 5,
+ *              arrival = 10, paid = 100, member = 100
  *   [emote_wall] enabled, duration = 5, size = 48,
  *              style = rise|bounce|fly,
  *              min_per_message = 3, combo_count = 3, combo_window = 10,
@@ -63,6 +68,7 @@ typedef struct {
     kk_role role;
     bool enabled;
     kk_cmd_params params; /* seconds, and the place of an image */
+    long cost;            /* points */
 } kk_config_command;
 
 /* A sound-board clip, played by "!sound NAME" (or one of its aliases) and,
@@ -73,6 +79,7 @@ typedef struct {
     char *aliases[KK_CONFIG_MAX_ALIASES];
     int n_aliases;
     int volume; /* percent, 0..400 */
+    long cost;  /* points; < 0: the sound command's */
 } kk_config_sound;
 
 typedef enum {
@@ -120,6 +127,7 @@ typedef struct {
     double help_seconds; /* how long it stays; -1 = by the number listed */
     bool shortcuts;
     double shortcut_cd;
+    long shortcut_cost;
     kk_config_command *commands;
     int n_commands;
     /* [soundboard] */
@@ -143,6 +151,17 @@ typedef struct {
     bool wall_reactions;
     int wall_reactions_per_icon;
     char *wall_blacklist;    /* comma-separated; NULL = none */
+    /* [points] (see points.h) */
+    bool points_enabled;
+    char *points_name;       /* what they are called in bubbles; NULL = "pontos" */
+    long points_start;
+    long points_message;
+    double points_message_cd;
+    long points_watch;
+    double points_watch_minutes;
+    long points_arrival;
+    long points_paid;
+    long points_member;
 } kk_config;
 
 /* Called for each problem found; line is 0 when not from the file. */
