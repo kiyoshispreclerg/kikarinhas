@@ -80,6 +80,7 @@ typedef struct {
     char *key;  /* key in avatarData, lowercase */
     char *name; /* display name ("name" field) */
     char *image; /* full path of the spritesheet PNG; NULL if not found */
+    char *dir;   /* data folder it was read from */
     int frame_w, frame_h;
     double ppu;  /* pixelsPerUnit: on-screen size = frame / ppu * scale */
     bool smooth; /* bilinearFilter; otherwise pixel art (nearest) */
@@ -112,6 +113,14 @@ bool kk_sa_find_data_dir(char *out, size_t size);
 
 /* Loads every avatar and gear set from <data_dir>/streamavatars_json.txt. */
 int kk_sa_load(kk_sa_library *lib, const char *data_dir);
+/* Loads a folder in any layout kikarinhas reads: a data folder
+ * (streamavatars_json.txt), a pack (data.txt), or a folder whose
+ * subfolders are those. Returns -1 if it holds none of them. */
+int kk_sa_load_dir(kk_sa_library *lib, const char *dir);
+/* Moves everything from src into dst (src ends up empty). Avatars whose key
+ * dst already has are dropped: what was loaded first wins. Returns how many
+ * avatars were added. */
+int kk_sa_merge(kk_sa_library *dst, kk_sa_library *src);
 /* Same from an already parsed document (data_dir locates the images). */
 int kk_sa_parse(kk_sa_library *lib, const cJSON *root, const char *data_dir);
 void kk_sa_free(kk_sa_library *lib);

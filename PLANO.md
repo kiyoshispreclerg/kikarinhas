@@ -459,6 +459,17 @@ data/         avatar padrão original, exemplo de .ini
      `@handle`) e confere o alvo com os mesmos `kk_yt_parse_target`/
      `kk_tw_parse_target` do programa, porque um alvo inválido faz o
      `reload` recusar tudo.
+   - **Várias pastas de avatares** (`src/library.c`): a própria
+     (`$XDG_DATA_HOME/kikarinhas/avatars`, se existir), as de `[avatars]
+     paths` e o SA (`sa_dir = off` desliga), nessa ordem; chave repetida
+     fica com a primeira. `kk_sa_load_dir` aceita pasta de dados
+     (`streamavatars_json.txt`), pacote (`data.txt`) ou uma pasta delas
+     (um nível, em ordem de nome). `kk_sa_merge` junta bibliotecas
+     deslocando os índices de conjunto (`gear_sets`, `pivots[].set`) e os
+     ids de peça; cada avatar guarda a pasta de onde veio (`dir`). Sem SA o
+     programa roda com o resto; sem avatar nenhum, sai com a dica das
+     pastas. O configurador carrega a biblioteca uma vez para as abas que
+     listam avatares (`editor_library`). As páginas de formulário rolam.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

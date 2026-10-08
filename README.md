@@ -58,9 +58,20 @@ sessão.
 
 ## Usar
 
-Os avatares vêm da sua instalação do Stream Avatars (a pasta `data` dentro do
-prefixo do Proton). Ela é procurada nas bibliotecas do Steam; se não for
-achada, indique com `--sa-dir`. Nada é copiado nem alterado lá.
+Os avatares vêm de várias pastas, lidas nesta ordem (com nome repetido, vale
+a primeira, então um avatar seu pode substituir um do Stream Avatars):
+
+1. a sua, `~/.local/share/kikarinhas/avatars` (o botão **Abrir a minha pasta
+   de avatares** do `kikarinhas-config` cria e abre);
+2. as de `paths` no `.ini` (`--avatar-dir`, ou **Outras pastas de avatares**
+   na aba Avatares), na ordem dada;
+3. a instalação do Stream Avatars (a pasta `data` dentro do prefixo do
+   Proton), procurada nas bibliotecas do Steam; se não for achada, indique
+   com `--sa-dir`, e `sa_dir = off` desliga. Nada é copiado nem alterado lá.
+
+Cada pasta pode ter uma pasta de dados (`streamavatars_json.txt`), um pacote
+(`data.txt`, o formato dos `.zip` do SA, já descompactado) ou subpastas com
+eles. Sem o Stream Avatars, o kikarinhas roda com o que houver nas outras.
 
 Quer **criar os seus próprios avatares, acessórios e paletas**? O formato é o
 do Stream Avatars e está explicado em [docs/avatares](docs/avatares/README.md)
@@ -94,7 +105,8 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `-v, --verbose` | mostra as mensagens no terminal |
 | `--users ARQ` | onde guardar as escolhas de cada pessoa |
 | `--import-sa-users` | importa as escolhas do Stream Avatars de novo |
-| `--sa-dir PASTA` | pasta `data` do Stream Avatars |
+| `--sa-dir PASTA\|off` | pasta `data` do Stream Avatars; `off` não usa o SA |
+| `--avatar-dir PASTA` | outra pasta de avatares (pode repetir) |
 | `-n, --count N` | avatares sorteados fora do chat (padrão 6, ou 0 com chat ou `-a`) |
 | `-a, --avatar NOME` | mostra este avatar; pode repetir |
 | `--scale X` | escala dos avatares (padrão 2) |
@@ -151,7 +163,7 @@ Para aplicar sem fechar o programa: **Salvar e aplicar**, `kikarinhas
 --reload` ou `kill -HUP`. Comandos, avatar padrão, limite de avatares,
 tempo de sumiço, fps, chat de mentira, `verbose`, os alvos do YouTube e da
 Twitch, nomes/posição, balões e a fonte dos balões mudam na hora. Tamanho, modo,
-escala, chão, avatares fixos, fonte dos nomes, pasta do Stream Avatars,
+escala, chão, avatares fixos, fonte dos nomes, pastas de avatares,
 arquivo de pessoas e socket só mudam reiniciando, e o log avisa.
 Comentários ficam em linhas próprias (`#` ou `;`), nunca depois de um valor.
 

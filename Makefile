@@ -8,6 +8,7 @@ LIB_SRC = src/log.c \
       src/util.c \
       src/window.c \
       src/sa.c \
+      src/library.c \
       src/sprite.c \
       src/avatar.c \
       src/stage.c \
@@ -70,7 +71,7 @@ pot update-po:
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c config/sources.c
+CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/audience.c config/sources.c config/avatars.c
 CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c

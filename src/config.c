@@ -211,6 +211,7 @@ void kk_config_free(kk_config *c)
         free(c->show[i]);
     free(c->default_avatar);
     free(c->sa_dir);
+    free(c->avatar_paths);
     free(c->name_font);
     free(c->bubble_font);
     free(c->youtube);
@@ -277,6 +278,7 @@ void kk_config_defaults(kk_config *c)
 bool kk_config_copy(kk_config *dst, const kk_config *src)
 {
     *dst = *src;
+    dst->avatar_paths = NULL;
     dst->default_avatar = dst->sa_dir = dst->youtube = dst->twitch = dst->users =
         dst->socket = NULL;
     dst->name_font = dst->bubble_font = NULL;
@@ -292,6 +294,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
         ok = kk_config_set_str(&dst->show[i], src->show[i]) && ok;
     ok = kk_config_set_str(&dst->default_avatar, src->default_avatar) && ok;
     ok = kk_config_set_str(&dst->sa_dir, src->sa_dir) && ok;
+    ok = kk_config_set_str(&dst->avatar_paths, src->avatar_paths) && ok;
     ok = kk_config_set_str(&dst->name_font, src->name_font) && ok;
     ok = kk_config_set_str(&dst->bubble_font, src->bubble_font) && ok;
     ok = kk_config_set_str(&dst->youtube, src->youtube) && ok;
@@ -656,8 +659,13 @@ static void apply_avatars(kk_config *c, const warner *w)
             bad_value(w, "nomes separados por vírgula");
     } else if (key_is(w, "default"))
         get_str(w, &c->default_avatar);
-    else if (key_is(w, "sa_dir"))
-        get_path(w, &c->sa_dir);
+    else if (key_is(w, "sa_dir")) {
+        if (strcasecmp(w->value, "off") == 0 || strcasecmp(w->value, "no") == 0)
+            kk_config_set_str(&c->sa_dir, "");
+        else
+            get_path(w, &c->sa_dir);
+    } else if (key_is(w, "paths"))
+        get_str(w, &c->avatar_paths);
     else if (key_is(w, "show_names"))
         get_bool(w, &c->show_names);
     else if (key_is(w, "name_position")) {

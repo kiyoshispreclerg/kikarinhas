@@ -8,8 +8,8 @@
  * While kikarinhas runs it owns that file (it rewrites it every 30 s), so
  * this tab asks it to save before reading and sends avatar changes through
  * the control socket; only when nobody answers does it write the file
- * itself. The avatar list comes from the Stream Avatars data, loaded the
- * first time the tab is shown (it takes a moment). */
+ * itself. The avatar list comes from every avatar folder (editor_library),
+ * read the first time the tab is shown. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -199,28 +199,14 @@ static void load_avatars(editor *e)
     if (t->avatars_loaded)
         return;
     t->avatars_loaded = true;
-    char sa[KK_PATH_MAX];
-    if (!editor_sa_dir(e, sa, sizeof sa)) {
-        status(e, _("Could not find Stream Avatars: no avatar list to choose from."));
-        return;
+    const kk_sa_library *lib = editor_library(e);
+    for (int i = 0; lib && i < lib->count; i++) {
+        if (!lib->avatars[i].image)
+            continue;
+        GtkTreeIter it;
+        gtk_list_store_append(t->avatars, &it);
+        gtk_list_store_set(t->avatars, &it, 0, lib->avatars[i].key, -1);
     }
-    GdkCursor *busy = gdk_cursor_new(GDK_WATCH);
-    gdk_window_set_cursor(gtk_widget_get_window(e->window), busy);
-    while (gtk_events_pending())
-        gtk_main_iteration();
-    kk_sa_library lib;
-    if (kk_sa_load(&lib, sa) == 0) {
-        for (int i = 0; i < lib.count; i++) {
-            if (!lib.avatars[i].image)
-                continue;
-            GtkTreeIter it;
-            gtk_list_store_append(t->avatars, &it);
-            gtk_list_store_set(t->avatars, &it, 0, lib.avatars[i].key, -1);
-        }
-        kk_sa_free(&lib);
-    }
-    gdk_window_set_cursor(gtk_widget_get_window(e->window), NULL);
-    gdk_cursor_unref(busy);
 }
 
 /* First time the tab is shown: read the list and the avatars. */
@@ -317,7 +303,7 @@ static void on_trusted_toggled(GtkCellRendererToggle *r, gchar *path, gpointer u
 }
 
 /* The list's spelling of name (any case), or NULL. Without a list (no
- * Stream Avatars found), any name is taken: kikarinhas checks it. */
+ * avatars found), any name is taken: kikarinhas checks it. */
 static gchar *known_avatar(audience_tab *t, const char *name)
 {
     GtkTreeModel *m = GTK_TREE_MODEL(t->avatars);
@@ -348,7 +334,7 @@ static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
     /* Typed names must be one of the list (as written there). */
     gchar *known = known_avatar(t, g_strstrip(text));
     if (!known) {
-        status(e, _("There is no avatar \"%s\" in Stream Avatars."), text);
+        status(e, _("There is no avatar \"%s\" in the avatar folders."), text);
         goto out;
     }
     text = known;

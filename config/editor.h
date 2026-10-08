@@ -12,12 +12,14 @@
 
 #include "config.h"
 #include "ini.h"
+#include "sa.h"
 #include "util.h"
 
 typedef struct sounds_tab sounds_tab;
 typedef struct audience_tab audience_tab;
 typedef struct wall_tab wall_tab;
 typedef struct sources_tab sources_tab;
+typedef struct avatars_tab avatars_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -46,6 +48,7 @@ typedef struct {
     audience_tab *audience;
     wall_tab *wall;
     sources_tab *sources;
+    avatars_tab *avatars;
 } editor;
 
 /* Labels of the levels (kk_role), to translate with _() where shown. */
@@ -101,6 +104,15 @@ void sounds_free(editor *e);
 GtkWidget *wall_page(editor *e, const kk_config *cfg);
 void wall_collect(editor *e);
 void wall_free(editor *e);
+
+/* Avatar folders (avatars.c): the list in the Avatares tab, and every
+ * avatar of every folder as the widgets say, loaded once on demand (NULL if
+ * none). editor_library_forget drops it, to read again. */
+GtkWidget *avatar_dirs_widget(editor *e, const kk_config *cfg);
+void avatar_dirs_collect(editor *e);
+const kk_sa_library *editor_library(editor *e);
+void editor_library_forget(editor *e);
+void avatars_free(editor *e);
 
 /* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */
 GtkWidget *sources_widget(editor *e, const kk_config *cfg);

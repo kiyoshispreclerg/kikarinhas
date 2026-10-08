@@ -3,3 +3,4 @@ config/sounds.c
 config/wall.c
 config/audience.c
 config/sources.c
+config/avatars.c

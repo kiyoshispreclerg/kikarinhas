@@ -60,7 +60,8 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/stage.c` | avatares na tela, caches de folhas (paleta, gear), dano, nomes, balões, interações |
 | `src/avatar.c` | máquina de estados, animação, geometria (sprite, gear, nome, balão) |
 | `src/sprite.c` | folhas: recorte, recolor, escala (pixel art fica 1x e amplia com nearest) |
-| `src/sa.c` | leitura do Stream Avatars: avatares, gear, pivôs, paletas, userData |
+| `src/sa.c` | leitura do Stream Avatars: avatares, gear, pivôs, paletas, userData; pacotes e junção de bibliotecas |
+| `src/library.c` | de onde vêm os avatares: pasta própria, `[avatars] paths` e o SA, nessa ordem |
 | `src/youtube.c`, `src/http.c` | chat do YouTube (InnerTube) sobre libcurl multi |
 | `src/twitch.c` | chat da Twitch (IRC anônimo sobre TLS), emotes do BTTV/FFZ/7TV |
 | `src/commands.c` | registro genérico de comandos: aliases, papéis, esperas |
@@ -82,6 +83,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
+| `config/sources.c`, `config/avatars.c` | lista de lives da aba Chat; pastas de avatares e biblioteca carregada uma vez |
 
 ## Convenções
 

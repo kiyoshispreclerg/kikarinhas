@@ -47,6 +47,7 @@ int kk_rng_int(kk_rng *r, int n);
 char *kk_read_file(const char *path, size_t *len);
 
 bool kk_file_exists(const char *path);
+bool kk_dir_exists(const char *path);
 
 /* "2024-05-01T12:34:56.123-03:00" (offset or "Z" optional, fraction
  * ignored) to Unix time. */

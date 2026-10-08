@@ -20,6 +20,7 @@
     "steamapps/compatdata/" SA_APP_ID "/pfx/drive_c/users/steamuser/"          \
     "AppData/LocalLow/ClonzeWork/Streaming Avatars/data"
 #define SA_JSON "streamavatars_json.txt"
+#define PACK_JSON "data.txt" /* inside a pack (.zip of premade/workshop) */
 
 /* ---- locating the data folder ------------------------------------------- */
 
@@ -380,6 +381,7 @@ static void free_avatar(kk_sa_avatar *a)
     free(a->key);
     free(a->name);
     free(a->image);
+    free(a->dir);
     for (int i = 0; i < KK_ANIM_MAX; i++)
         free(a->anims[i].custom_name);
     free(a->gear_sets);
@@ -456,12 +458,13 @@ static int compare_key(const void *x, const void *y)
     return strcmp(a->key, b->key);
 }
 
-/* Reads and parses streamavatars_json.txt (UTF-8 with BOM). */
-static cJSON *read_json(const char *data_dir)
+/* Reads and parses streamavatars_json.txt (UTF-8 with BOM), or another
+ * file of the folder. */
+static cJSON *read_json_file(const char *data_dir, const char *name)
 {
     char path[KK_PATH_MAX];
     size_t len;
-    char *text = kk_pathf(path, sizeof path, "%s/" SA_JSON, data_dir)
+    char *text = kk_pathf(path, sizeof path, "%s/%s", data_dir, name)
                      ? kk_read_file(path, &len)
                      : NULL;
     if (!text) {
@@ -476,6 +479,11 @@ static cJSON *read_json(const char *data_dir)
     if (!root)
         kk_log_error("%s: JSON inválido", path);
     return root;
+}
+
+static cJSON *read_json(const char *data_dir)
+{
+    return read_json_file(data_dir, SA_JSON);
 }
 
 int kk_sa_parse(kk_sa_library *lib, const cJSON *root, const char *data_dir)
@@ -501,7 +509,8 @@ int kk_sa_parse(kk_sa_library *lib, const cJSON *root, const char *data_dir)
     cJSON_ArrayForEach(it, avatars)
     {
         kk_sa_avatar *a = &lib->avatars[lib->count];
-        if (!cJSON_IsObject(it) || !parse_avatar(a, it, img_dir, &pngs, lib)) {
+        if (!cJSON_IsObject(it) || !parse_avatar(a, it, img_dir, &pngs, lib) ||
+            !(a->dir = strdup(data_dir))) {
             free_avatar(a);
             continue;
         }
@@ -525,6 +534,123 @@ int kk_sa_load(kk_sa_library *lib, const char *data_dir)
      * gone; give that heap back instead of keeping it for the session. */
     malloc_trim(0);
     return rc;
+}
+
+/* A data folder or a pack: 0 loaded, 1 neither is here, -1 broken. */
+static int load_one(kk_sa_library *lib, const char *dir)
+{
+    char path[KK_PATH_MAX];
+    if (kk_pathf(path, sizeof path, "%s/" SA_JSON, dir) && kk_file_exists(path))
+        return kk_sa_load(lib, dir);
+    if (!kk_pathf(path, sizeof path, "%s/" PACK_JSON, dir) || !kk_file_exists(path))
+        return 1;
+    memset(lib, 0, sizeof *lib);
+    cJSON *root = read_json_file(dir, PACK_JSON);
+    if (!root)
+        return -1;
+    int rc = kk_sa_parse(lib, root, dir);
+    cJSON_Delete(root);
+    return rc;
+}
+
+static int compare_str(const void *x, const void *y)
+{
+    return strcmp(*(char *const *)x, *(char *const *)y);
+}
+
+int kk_sa_load_dir(kk_sa_library *lib, const char *dir)
+{
+    memset(lib, 0, sizeof *lib);
+    int rc = load_one(lib, dir);
+    if (rc <= 0)
+        return rc;
+
+    /* A folder of packs: one level down, in name order so the same key
+     * always comes from the same pack. */
+    DIR *d = opendir(dir);
+    if (!d)
+        return -1;
+    char **names = NULL;
+    int n = 0, cap = 0;
+    for (struct dirent *de; (de = readdir(d));) {
+        if (de->d_name[0] == '.')
+            continue;
+        if (n == cap) {
+            cap = cap ? cap * 2 : 16;
+            char **nn = realloc(names, (size_t)cap * sizeof *nn);
+            if (!nn)
+                break;
+            names = nn;
+        }
+        if ((names[n] = strdup(de->d_name)))
+            n++;
+    }
+    closedir(d);
+    if (n)
+        qsort(names, (size_t)n, sizeof *names, compare_str);
+    bool found = false;
+    for (int i = 0; i < n; i++) {
+        char sub[KK_PATH_MAX];
+        kk_sa_library one;
+        if (kk_pathf(sub, sizeof sub, "%s/%s", dir, names[i]) && load_one(&one, sub) == 0) {
+            kk_sa_merge(lib, &one);
+            found = true;
+        }
+        free(names[i]);
+    }
+    free(names);
+    return found ? 0 : -1;
+}
+
+int kk_sa_merge(kk_sa_library *dst, kk_sa_library *src)
+{
+    int added = 0;
+    int set_off = dst->n_sets, piece_off = dst->n_pieces;
+    bool ok = true;
+    if (src->n_sets) {
+        kk_sa_gear_set *ns =
+            realloc(dst->sets, (size_t)(dst->n_sets + src->n_sets) * sizeof *ns);
+        if (ns)
+            dst->sets = ns;
+        ok = ns != NULL;
+    }
+    kk_sa_avatar *na = realloc(dst->avatars, (size_t)(dst->count + src->count + 1) * sizeof *na);
+    if (na)
+        dst->avatars = na;
+    if (!ok || !na) {
+        kk_sa_free(src);
+        return 0;
+    }
+    for (int i = 0; i < src->n_sets; i++) {
+        kk_sa_gear_set *set = &src->sets[i];
+        for (int k = 0; k < set->n_pieces; k++)
+            set->pieces[k].id += piece_off;
+        dst->sets[dst->n_sets++] = *set;
+    }
+    dst->n_pieces += src->n_pieces;
+
+    int before = dst->count;
+    for (int i = 0; i < src->count; i++) {
+        kk_sa_avatar *a = &src->avatars[i];
+        bool dup = false;
+        for (int k = 0; k < before && !dup; k++)
+            dup = strcmp(dst->avatars[k].key, a->key) == 0;
+        if (dup) {
+            free_avatar(a);
+            continue;
+        }
+        for (int k = 0; k < a->n_gear_sets; k++)
+            a->gear_sets[k] = (int16_t)(a->gear_sets[k] + set_off);
+        for (int k = 0; k < a->n_pivots; k++)
+            a->pivots[k].set = (int16_t)(a->pivots[k].set + set_off);
+        dst->avatars[dst->count++] = *a;
+        added++;
+    }
+    qsort(dst->avatars, (size_t)dst->count, sizeof *dst->avatars, compare_key);
+    free(src->avatars);
+    free(src->sets);
+    memset(src, 0, sizeof *src);
+    return added;
 }
 
 void kk_sa_free(kk_sa_library *lib)

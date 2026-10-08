@@ -67,7 +67,14 @@ GtkWidget *page(GtkWidget *notebook, const char *title)
     gtk_container_set_border_width(GTK_CONTAINER(table), 12);
     GtkWidget *align = gtk_alignment_new(0, 0, 1, 0);
     gtk_container_add(GTK_CONTAINER(align), table);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), align, gtk_label_new(title));
+    /* Long pages scroll instead of making the window taller than the screen. */
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER,
+                                   GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroll), align);
+    gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(scroll))),
+                                 GTK_SHADOW_NONE);
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scroll, gtk_label_new(title));
     return table;
 }
 
@@ -688,6 +695,7 @@ static void collect(editor *e)
     put(e, "avatars", "show", text_of(e->show), NULL);
     put(e, "avatars", "default", text_of(e->default_avatar), NULL);
     put(e, "avatars", "sa_dir", text_of(e->sa_dir), NULL);
+    avatar_dirs_collect(e);
     put_bool(e, "avatars", "show_names", e->show_names, d.show_names);
     put(e, "avatars", "name_position",
         gtk_combo_box_get_active(GTK_COMBO_BOX(e->name_position)) == 1 ? "above" : "below",
@@ -837,6 +845,8 @@ void editor_refresh_kikarinhas_version(editor *e)
 const char *editor_sa_dir(editor *e, char *buf, size_t size)
 {
     const char *s = text_of(e->sa_dir);
+    if (g_ascii_strcasecmp(s, "off") == 0) /* off for avatars; sounds may still come */
+        s = "";
     if (s[0] == '~' && kk_pathf(buf, size, "%s%s", g_get_home_dir(), s + 1))
         return buf;
     if (s[0] && kk_pathf(buf, size, "%s", s))
@@ -928,7 +938,13 @@ static void build(editor *e, const kk_config *cfg)
                             _("Empty: a random one per person, always the same."));
     e->sa_dir = row(t, _("Stream Avatars folder"),
                     entry(raw_or(e, "avatars", "sa_dir", cfg->sa_dir)),
-                    _("The \"data\" folder; empty: searches the Steam libraries."));
+                    _("The \"data\" folder; empty: searches the Steam libraries; off: "
+                      "don't use Stream Avatars."));
+    row(t, _("More avatar folders"), avatar_dirs_widget(e, cfg),
+        _("Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) or "
+          "folders of those. Your own folder is read first, then these, then Stream "
+          "Avatars; on a repeated name the first one wins. Only changes when kikarinhas "
+          "restarts."));
 
     e->name_position = gtk_combo_box_text_new();
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(e->name_position), _("below"));
@@ -1096,6 +1112,7 @@ int main(int argc, char **argv)
     gtk_main();
     sounds_free(&e);
     sources_free(&e);
+    avatars_free(&e);
     audience_free(&e);
     wall_free(&e);
     kk_ini_free(e.ini);

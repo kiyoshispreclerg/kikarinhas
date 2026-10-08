@@ -59,9 +59,23 @@ and back in.
 
 ## Usage
 
-The avatars come from your Stream Avatars installation (the `data` folder
-inside the Proton prefix). It is looked up in the Steam libraries; if it is
-not found, point to it with `--sa-dir`. Nothing there is copied or changed.
+The avatars come from several folders, read in this order (on a repeated
+name the first one wins, so an avatar of yours can replace a Stream Avatars
+one):
+
+1. your own, `~/.local/share/kikarinhas/avatars` (the **Open my avatars
+   folder** button of `kikarinhas-config` creates and opens it);
+2. the ones in `paths` in the `.ini` (`--avatar-dir`, or **More avatar
+   folders** in the Avatars tab), in the order given;
+3. the Stream Avatars installation (the `data` folder inside the Proton
+   prefix), looked up in the Steam libraries; if it is not found, point to
+   it with `--sa-dir`, and `sa_dir = off` turns it off. Nothing there is
+   copied or changed.
+
+Each folder may hold a data folder (`streamavatars_json.txt`), a pack
+(`data.txt`, the format of SA's `.zip` files, unzipped) or subfolders with
+those. Without Stream Avatars, kikarinhas runs with whatever the other
+folders have.
 
 Want to **make your own avatars, gear and palettes**? The format is the Stream
 Avatars one and is explained in [docs/avatares](docs/avatares/README.md) (in
@@ -95,7 +109,8 @@ build/kikarinhas --check                # checks every spritesheet
 | `-v, --verbose` | prints the messages in the terminal |
 | `--users FILE` | where to store each person's choices |
 | `--import-sa-users` | imports the Stream Avatars choices again |
-| `--sa-dir FOLDER` | Stream Avatars `data` folder |
+| `--sa-dir FOLDER\|off` | Stream Avatars `data` folder; `off` doesn't use SA |
+| `--avatar-dir FOLDER` | another avatar folder (may repeat) |
 | `-n, --count N` | random avatars outside the chat (default 6, or 0 with chat or `-a`) |
 | `-a, --avatar NAME` | shows this avatar; may be repeated |
 | `--scale X` | avatar scale (default 2) |
@@ -154,7 +169,7 @@ To apply changes without closing the program: **Save and apply**,
 despawn time, fps, fake chat, `verbose`, the YouTube and Twitch
 targets, name
 visibility/position, bubbles and the bubble font change on the spot. Size,
-mode, scale, ground, fixed avatars, the name font, the Stream Avatars folder,
+mode, scale, ground, fixed avatars, the name font, the avatar folders,
 the people file and the socket only change on restart, and the log warns
 about it. Comments go on their own lines (`#` or `;`), never after a value.
 

@@ -22,6 +22,7 @@
 #include "emotes.h"
 #include "emotewall.h"
 #include "http.h"
+#include "library.h"
 #include "log.h"
 #include "sa.h"
 #include "soundboard.h"
@@ -72,8 +73,12 @@ static void usage(FILE *out)
             "                      sozinho na primeira vez)\n"
             "\n"
             "Avatares:\n"
-            "      --sa-dir PASTA  pasta \"data\" do Stream Avatars (padrão: procura\n"
-            "                      nas bibliotecas do Steam)\n"
+            "      --sa-dir PASTA|off\n"
+            "                      pasta \"data\" do Stream Avatars (padrão: procura\n"
+            "                      nas bibliotecas do Steam); off: não usa o SA\n"
+            "      --avatar-dir PASTA\n"
+            "                      outra pasta de avatares (pode repetir); a\n"
+            "                      ~/.local/share/kikarinhas/avatars é lida sempre\n"
             "  -n, --count N       avatares aleatórios fora do chat (padrão 6, ou 0\n"
             "                      com chat ou --avatar)\n"
             "  -a, --avatar NOME   mostra este avatar (pode repetir)\n"
@@ -114,6 +119,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         OPT_IMPORT_SA,
         OPT_SOCKET,
         OPT_RELOAD,
+        OPT_AVATAR_DIR,
     };
     static const struct option longopts[] = {
         {"mode", required_argument, NULL, 'm'},
@@ -122,6 +128,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         {"count", required_argument, NULL, 'n'},
         {"avatar", required_argument, NULL, 'a'},
         {"sa-dir", required_argument, NULL, OPT_SA_DIR},
+        {"avatar-dir", required_argument, NULL, OPT_AVATAR_DIR},
         {"scale", required_argument, NULL, OPT_SCALE},
         {"ground", required_argument, NULL, OPT_GROUND},
         {"seed", required_argument, NULL, OPT_SEED},
@@ -146,6 +153,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
 
     bool shown = false; /* the first -a replaces the file's list */
     bool yt_given = false, tw_given = false; /* same for -y and -t */
+    bool dirs_given = false;                 /* and --avatar-dir */
     int c;
     long v;
     double d;
@@ -197,7 +205,13 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
             cfg->n_show++;
             break;
         case OPT_SA_DIR:
-            kk_config_set_str(&cfg->sa_dir, optarg);
+            kk_config_set_str(&cfg->sa_dir, strcmp(optarg, "off") == 0 ? "" : optarg);
+            break;
+        case OPT_AVATAR_DIR:
+            if (!dirs_given)
+                kk_config_set_str(&cfg->avatar_paths, NULL);
+            dirs_given = true;
+            kk_config_append(&cfg->avatar_paths, optarg);
             break;
         case OPT_SCALE:
             if (!kk_parse_double(optarg, 0.1, 16.0, &d)) {
@@ -785,6 +799,7 @@ static bool reload(app *a, cJSON *warnings)
         {old->count != cfg.count, "count"},
         {old->n_show != cfg.n_show, "show"},
         {str_differs(old->sa_dir, cfg.sa_dir), "sa_dir"},
+        {str_differs(old->avatar_paths, cfg.avatar_paths), "paths"},
         {str_differs(old->users, cfg.users), "users"},
         {str_differs(old->socket, cfg.socket), "socket"},
         {str_differs(old->name_font, cfg.name_font) ||
@@ -815,6 +830,7 @@ static bool reload(app *a, cJSON *warnings)
     KEEP(ground);
     KEEP(count);
     KEEP(sa_dir);
+    KEEP(avatar_paths);
     KEEP(users);
     KEEP(socket);
     KEEP(name_font);
@@ -1139,7 +1155,7 @@ static kk_users *open_users(const kk_config *cfg, const cli *x, const char *sa_d
         return NULL;
     bool first = !kk_file_exists(path);
     kk_users *users = kk_users_open(path);
-    if (users && (x->import_sa || first)) {
+    if (users && sa_dir[0] && (x->import_sa || first)) {
         import_ctx ic = {.users = users};
         if (kk_sa_read_users(sa_dir, on_sa_user, &ic) >= 0) {
             kk_log_info("%d pessoas importadas do Stream Avatars para %s",
@@ -1183,24 +1199,23 @@ int main(int argc, char **argv)
         return rc;
     }
 
-    char found[KK_PATH_MAX];
-    const char *sa_dir = a.cfg.sa_dir;
-    if (!sa_dir) {
-        if (!kk_sa_find_data_dir(found, sizeof found)) {
-            kk_log_error("não achei o Stream Avatars nas bibliotecas do Steam; "
-                         "indique a pasta com --sa-dir ou sa_dir no %s",
-                         config_path);
-            kk_config_free(&a.cfg);
-            return 1;
-        }
-        sa_dir = found;
-    }
-
+    char sa_dir[KK_PATH_MAX];
     kk_sa_library lib;
-    if (kk_sa_load(&lib, sa_dir) < 0) {
+    if (kk_library_load(&lib, a.cfg.sa_dir, a.cfg.avatar_paths, sa_dir, sizeof sa_dir,
+                        !x.list && !x.check) < 0) {
+        char own[KK_PATH_MAX] = "";
+        kk_library_own_dir(own, sizeof own);
+        kk_log_error("nenhum avatar encontrado: ponha avatares em %s, indique outras "
+                     "pastas com --avatar-dir (paths no %s) ou a do Stream Avatars com "
+                     "--sa-dir",
+                     own, config_path);
+        kk_sa_free(&lib);
         kk_config_free(&a.cfg);
         return 1;
     }
+    if (!sa_dir[0] && !(a.cfg.sa_dir && !a.cfg.sa_dir[0]))
+        kk_log_info("Stream Avatars não encontrado nas bibliotecas do Steam; seguem os "
+                    "outros avatares");
     a.lib = &lib;
     if (x.list || x.check) {
         int rc = 0;
@@ -1212,7 +1227,6 @@ int main(int argc, char **argv)
         kk_config_free(&a.cfg);
         return rc;
     }
-    kk_log_info("%d avatares do Stream Avatars em %s", lib.count, sa_dir);
 
     a.signal_fd = open_signal_fd();
     a.timer_fd = open_frame_timer(a.cfg.fps);

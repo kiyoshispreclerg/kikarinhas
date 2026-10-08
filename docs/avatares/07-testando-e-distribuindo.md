@@ -2,7 +2,8 @@
 
 ## Testar sem live
 
-Aponte o Kikarinhas para a pasta do kit com `--sa-dir`. Use um `.ini` e um
+Aponte o Kikarinhas para a pasta do kit com `--sa-dir` (no lugar do SA) ou
+`--sa-dir off --avatar-dir meu-kit` (só o kit, sem o SA). Use um `.ini` e um
 `users.tsv` descartáveis para não mexer nas suas configurações e nas
 escolhas dos espectadores:
 
@@ -71,12 +72,11 @@ meu-kit/
 └── gear/
 ```
 
-Quem receber o kit coloca a pasta onde quiser e usa `--sa-dir`, ou
-`sa_dir = ...` no `.ini`. Isso **substitui** a pasta do SA: o Kikarinhas
-carrega uma pasta de dados só. Para misturar um kit com os avatares do
-SA, junte os arquivos na mesma pasta (some as entradas de `avatarData` e
-de `gear` no JSON e copie as imagens). Atenção para não ter chave
-repetida.
+Quem receber o kit põe a pasta dentro de `~/.local/share/kikarinhas/avatars`
+(ou em outra pasta listada em `paths` no `.ini`), e os avatares aparecem
+junto com os do SA. Com o mesmo nome de avatar dos dois lados, vale o do
+kit. Os conjuntos de gear de cada kit ficam separados: um avatar só usa as
+peças do próprio kit.
 
 Para o **Stream Avatars**, pacotes `.zip` (com `data.txt`, ver
 [01](01-estrutura.md)) são a forma de distribuição dele (oficina do Steam

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 12:52-0300\n"
+"POT-Creation-Date: 2026-10-08 13:02-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -140,11 +140,12 @@ msgid ""
 msgstr ""
 
 #: config/main.c:550 config/sounds.c:431 config/sources.c:68
-#: config/sources.c:184
+#: config/sources.c:184 config/avatars.c:58
 msgid "_Add"
 msgstr ""
 
 #: config/main.c:551 config/sounds.c:665 config/sources.c:185
+#: config/avatars.c:125
 msgid "_Remove"
 msgstr ""
 
@@ -152,292 +153,306 @@ msgstr ""
 msgid "Restore _defaults"
 msgstr ""
 
-#: config/main.c:763
+#: config/main.c:764
 #, c-format
 msgid "line %d: "
 msgstr ""
 
-#: config/main.c:782
+#: config/main.c:783
 #, c-format
 msgid "Could not write %s: %s"
 msgstr ""
 
-#: config/main.c:787
+#: config/main.c:788
 #, c-format
 msgid "Saved to %s, but with a problem: %s"
 msgstr ""
 
-#: config/main.c:789
+#: config/main.c:790
 #, c-format
 msgid "Saved to %s."
 msgstr ""
 
-#: config/main.c:823
+#: config/main.c:824
 #, c-format
 msgid "kikarinhas: not running"
 msgstr ""
 
-#: config/main.c:829
+#: config/main.c:830
 #, c-format
 msgid "kikarinhas running: v%s"
 msgstr ""
 
-#: config/main.c:831
+#: config/main.c:832
 #, c-format
 msgid "kikarinhas running"
 msgstr ""
 
-#: config/main.c:855
+#: config/main.c:858
 msgid "Saved. The socket is off: restart kikarinhas to apply."
 msgstr ""
 
-#: config/main.c:859
+#: config/main.c:862
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 msgstr ""
 
-#: config/main.c:868
+#: config/main.c:871
 #, c-format
 msgid "Saved, but kikarinhas did not apply it: %s"
 msgstr ""
 
-#: config/main.c:871
+#: config/main.c:874
 #, c-format
 msgid "Applied, with %d warning(s): %s"
 msgstr ""
 
-#: config/main.c:874
+#: config/main.c:877
 msgid "Saved and applied."
 msgstr ""
 
-#: config/main.c:884
+#: config/main.c:887
 #, c-format
 msgid "Kikarinhas v%s — settings"
 msgstr ""
 
-#: config/main.c:895
+#: config/main.c:898
 msgid "Window"
 msgstr ""
 
-#: config/main.c:900
+#: config/main.c:903
 msgid "Mode"
 msgstr ""
 
-#: config/main.c:901
+#: config/main.c:904
 msgid ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 msgstr ""
 
-#: config/main.c:911 config/wall.c:71
+#: config/main.c:914 config/wall.c:71
 msgid "Size"
 msgstr ""
 
-#: config/main.c:911
+#: config/main.c:914
 msgid "Only in obs mode."
 msgstr ""
 
-#: config/main.c:912
+#: config/main.c:915
 msgid "Frames per second"
 msgstr ""
 
-#: config/main.c:915
+#: config/main.c:918
 msgid "Avatars"
 msgstr ""
 
-#: config/main.c:916
+#: config/main.c:919
 msgid "Scale"
 msgstr ""
 
-#: config/main.c:918
+#: config/main.c:921
 msgid "Ground"
 msgstr ""
 
-#: config/main.c:919
+#: config/main.c:922
 msgid ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
 msgstr ""
 
-#: config/main.c:920
+#: config/main.c:923
 msgid "Random"
 msgstr ""
 
-#: config/main.c:921
+#: config/main.c:924
 msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 msgstr ""
 
-#: config/main.c:922
+#: config/main.c:925
 msgid "Always on screen"
 msgstr ""
 
-#: config/main.c:923
+#: config/main.c:926
 msgid "Avatar names separated by commas."
 msgstr ""
 
-#: config/main.c:927
+#: config/main.c:930
 msgid "Everyone's avatar"
 msgstr ""
 
-#: config/main.c:928
+#: config/main.c:931
 msgid "Empty: a random one per person, always the same."
 msgstr ""
 
-#: config/main.c:929
+#: config/main.c:932
 msgid "Stream Avatars folder"
 msgstr ""
 
-#: config/main.c:931
-msgid "The \"data\" folder; empty: searches the Steam libraries."
-msgstr ""
-
 #: config/main.c:934
-msgid "below"
+msgid ""
+"The \"data\" folder; empty: searches the Steam libraries; off: don't use "
+"Stream Avatars."
 msgstr ""
 
-#: config/main.c:935
-msgid "above"
+#: config/main.c:936
+msgid "More avatar folders"
 msgstr ""
 
 #: config/main.c:937
-msgid "Avatar name"
-msgstr ""
-
-#: config/main.c:938
-msgid "Show names"
-msgstr ""
-
-#: config/main.c:939
-msgid "Above or below the avatar."
-msgstr ""
-
-#: config/main.c:940
-msgid "Messages"
-msgstr ""
-
-#: config/main.c:941
-msgid "Show a speech bubble with the message"
+msgid ""
+"Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) "
+"or folders of those. Your own folder is read first, then these, then Stream "
+"Avatars; on a repeated name the first one wins. Only changes when kikarinhas "
+"restarts."
 msgstr ""
 
 #: config/main.c:943
-msgid "Message bubble stays"
+msgid "below"
+msgstr ""
+
+#: config/main.c:944
+msgid "above"
 msgstr ""
 
 #: config/main.c:946
-msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
+msgid "Avatar name"
 msgstr ""
 
-#: config/main.c:951
-msgid "Name font"
+#: config/main.c:947
+msgid "Show names"
+msgstr ""
+
+#: config/main.c:948
+msgid "Above or below the avatar."
+msgstr ""
+
+#: config/main.c:949
+msgid "Messages"
+msgstr ""
+
+#: config/main.c:950
+msgid "Show a speech bubble with the message"
 msgstr ""
 
 #: config/main.c:952
+msgid "Message bubble stays"
+msgstr ""
+
+#: config/main.c:955
+msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
+msgstr ""
+
+#: config/main.c:960
+msgid "Name font"
+msgstr ""
+
+#: config/main.c:961
 msgid ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
 msgstr ""
 
-#: config/main.c:957
+#: config/main.c:966
 msgid "Bubble font"
 msgstr ""
 
-#: config/main.c:958
+#: config/main.c:967
 msgid "Empty: Sans. Applies to the next bubbles."
 msgstr ""
 
-#: config/main.c:960
+#: config/main.c:969
 msgid "Chat"
 msgstr ""
 
-#: config/main.c:961
+#: config/main.c:970
 msgid "Lives"
 msgstr ""
 
-#: config/main.c:962
+#: config/main.c:971
 msgid ""
 "Every live in the list is read at the same time, YouTube and Twitch "
 "together. Double-click a link to edit it."
 msgstr ""
 
-#: config/main.c:965
+#: config/main.c:974
 msgid "BTTV, FFZ and 7TV emotes on Twitch"
 msgstr ""
 
-#: config/main.c:966
+#: config/main.c:975
 msgid ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
 msgstr ""
 
-#: config/main.c:968
+#: config/main.c:977
 msgid "Fake chat (to test without a stream)"
 msgstr ""
 
-#: config/main.c:969
+#: config/main.c:978
 msgid "Avatars at the same time"
 msgstr ""
 
-#: config/main.c:971
+#: config/main.c:980
 msgid "Leaves after"
 msgstr ""
 
-#: config/main.c:972
+#: config/main.c:981
 msgid "Seconds of silence until the avatar leaves."
 msgstr ""
 
-#: config/main.c:974
+#: config/main.c:983
 msgid "Print the messages in the terminal"
 msgstr ""
 
-#: config/main.c:975
+#: config/main.c:984
 msgid "People file"
 msgstr ""
 
-#: config/main.c:976
+#: config/main.c:985
 msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 msgstr ""
 
-#: config/main.c:978
+#: config/main.c:987
 msgid "Control socket"
 msgstr ""
 
-#: config/main.c:980
+#: config/main.c:989
 msgid "For bridges and the Apply button; empty: the default; off: disabled."
 msgstr ""
 
-#: config/main.c:983
+#: config/main.c:992
 msgid "Commands"
 msgstr ""
 
-#: config/main.c:985
+#: config/main.c:994
 msgid "Sounds"
 msgstr ""
 
-#: config/main.c:987
+#: config/main.c:996
 msgid "Emote wall"
 msgstr ""
 
-#: config/main.c:989
+#: config/main.c:998
 msgid "Viewers"
 msgstr ""
 
-#: config/main.c:1008
+#: config/main.c:1017
 msgid "_Close"
 msgstr ""
 
-#: config/main.c:1009
+#: config/main.c:1018
 msgid "_Save"
 msgstr ""
 
-#: config/main.c:1010
+#: config/main.c:1019
 msgid "Save and _apply"
 msgstr ""
 
-#: config/main.c:1054
+#: config/main.c:1063
 #, c-format
 msgid ""
 "Usage: kikarinhas-config [FILE]\n"
@@ -445,23 +460,23 @@ msgid ""
 "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
 msgstr ""
 
-#: config/main.c:1062
+#: config/main.c:1071
 #, c-format
 msgid "kikarinhas-config: no $HOME\n"
 msgstr ""
 
-#: config/main.c:1069
+#: config/main.c:1078
 #, c-format
 msgid "kikarinhas-config: could not read %s: %s\n"
 msgstr ""
 
-#: config/main.c:1074
+#: config/main.c:1083
 msgid ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
 msgstr ""
 
-#: config/main.c:1083
+#: config/main.c:1092
 #, c-format
 msgid "kikarinhas-config: out of memory\n"
 msgstr ""
@@ -521,7 +536,7 @@ msgstr ""
 msgid "Add sounds"
 msgstr ""
 
-#: config/sounds.c:431 config/sources.c:67
+#: config/sounds.c:431 config/sources.c:67 config/avatars.c:58
 msgid "_Cancel"
 msgstr ""
 
@@ -777,81 +792,77 @@ msgstr ""
 msgid " (just read from the running kikarinhas)"
 msgstr ""
 
-#: config/audience.c:204
-msgid "Could not find Stream Avatars: no avatar list to choose from."
-msgstr ""
-
-#: config/audience.c:275
+#: config/audience.c:261
 #, c-format
 msgid "kikarinhas refused: %s"
 msgstr ""
 
-#: config/audience.c:311
+#: config/audience.c:297
 #, c-format
 msgid "%s is now trusted."
 msgstr ""
 
-#: config/audience.c:311
+#: config/audience.c:297
 #, c-format
 msgid "%s is no longer trusted."
 msgstr ""
 
-#: config/audience.c:313 config/audience.c:371
+#: config/audience.c:299 config/audience.c:357
 msgid "Could not write the people file."
 msgstr ""
 
-#: config/audience.c:351
+#: config/audience.c:337
 #, c-format
-msgid "There is no avatar \"%s\" in Stream Avatars."
+msgid "There is no avatar \"%s\" in the avatar folders."
 msgstr ""
 
-#: config/audience.c:364
+#: config/audience.c:350
 #, c-format
 msgid "%s is now %s (already in effect in the running kikarinhas)."
 msgstr ""
 
-#: config/audience.c:369
+#: config/audience.c:355
 #, c-format
 msgid "%s is now %s (saved to the file; takes effect next time)."
 msgstr ""
 
-#: config/audience.c:391
+#: config/audience.c:377
 msgid "Search"
 msgstr ""
 
-#: config/audience.c:397
+#: config/audience.c:383
 msgid "_Refresh"
 msgstr ""
 
-#: config/audience.c:422
+#: config/audience.c:408
 msgid "Name"
 msgstr ""
 
-#: config/audience.c:423 config/sources.c:87 config/sources.c:164
+#: config/audience.c:409 config/sources.c:87 config/sources.c:164
 msgid "Platform"
 msgstr ""
 
-#: config/audience.c:424
+#: config/audience.c:410
 msgid "First seen"
 msgstr ""
 
-#: config/audience.c:425
+#: config/audience.c:411
 msgid "Latest"
 msgstr ""
 
-#: config/audience.c:426
+#: config/audience.c:412
 msgid "Level"
 msgstr ""
 
-#: config/audience.c:443
+#: config/audience.c:429
 msgid "Trusted"
 msgstr ""
 
-#: config/audience.c:452
+#: config/audience.c:438
 msgid "Avatar"
 msgstr ""
 
-#: config/audience.c:465
+#: config/audience.c:451
 msgid ""
 "Double-click the avatar to change it (you can type the name). With "
 "kikarinhas running, the change takes effect at once. Empty avatar: a random "
@@ -902,4 +913,34 @@ msgstr ""
 #: config/sources.c:147
 #, c-format
 msgid "%s: could not understand \"%s\"."
+msgstr ""
+
+#: config/avatars.c:57
+msgid "Avatar folder"
+msgstr ""
+
+#: config/avatars.c:63
+#, c-format
+msgid "Folder names with a comma can't go in the list: %s"
+msgstr ""
+
+#: config/avatars.c:81
+msgid "Pick a folder in the list."
+msgstr ""
+
+#: config/avatars.c:96
+#, c-format
+msgid "Could not open %s: %s"
+msgstr ""
+
+#: config/avatars.c:124
+msgid "_Add folder"
+msgstr ""
+
+#: config/avatars.c:126
+msgid "Open my avatars folder"
+msgstr ""
+
+#: config/avatars.c:185
+msgid "No avatars found in any folder."
 msgstr ""

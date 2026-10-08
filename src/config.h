@@ -19,7 +19,8 @@
  *
  *   [window]   mode = obs|desktop, size = 1280x720, fps = 30
  *   [avatars]  scale, ground = auto|N, count = auto|N, show = a, b
- *              default, sa_dir, show_names = yes|no,
+ *              default, sa_dir = PATH|off, paths = a, b,
+ *              show_names = yes|no,
  *              name_position = below|above, show_bubbles = yes|no,
  *              bubble_seconds = auto|N,
  *              name_font, name_size, bubble_font, bubble_size
@@ -90,7 +91,8 @@ typedef struct {
     char *show[KK_CONFIG_MAX_SHOW];
     int n_show;
     char *default_avatar; /* NULL = one per person */
-    char *sa_dir;         /* NULL = search the Steam libraries */
+    char *sa_dir;         /* NULL = search the Steam libraries, "" = off */
+    char *avatar_paths;   /* more folders, comma separated (kk_library) */
     bool show_names;       /* name tag under (or over) each avatar */
     bool name_above;       /* false: below the feet; true: above the head */
     bool show_bubbles;     /* speech bubble with the chat message */

@@ -2,9 +2,22 @@
 
 ## A pasta de dados
 
-O Kikarinhas lê **uma pasta de dados** (a `data` do SA). Ele a encontra
-sozinho na instalação do SA via Steam/Proton; para usar outra, passe
-`--sa-dir PASTA` ou ponha `sa_dir = PASTA` no `.ini`.
+O Kikarinhas lê **pastas de dados** como a `data` do SA. A do SA ele encontra
+sozinho na instalação via Steam/Proton (ou `--sa-dir PASTA`, `sa_dir =
+PASTA` no `.ini`). Os seus avatares vão em `~/.local/share/kikarinhas/avatars`
+(lida sempre, antes do SA) ou em outra pasta listada em `paths` no `.ini`
+(`--avatar-dir PASTA`). Cada uma dessas pastas pode ser uma pasta de dados,
+um pacote descompactado (`data.txt`, abaixo) ou ter várias delas em
+subpastas, um kit por subpasta:
+
+```
+~/.local/share/kikarinhas/avatars/
+├── meu-kit/            ← pasta de dados (streamavatars_json.txt)
+└── pacote-baixado/     ← pacote descompactado (data.txt)
+```
+
+Com o mesmo nome de avatar em dois lugares, vale o que foi lido primeiro:
+a sua pasta, depois as de `paths`, depois o SA.
 
 ```
 data/
@@ -62,8 +75,8 @@ pacote.zip
 ```
 
 A diferença no JSON é só o nome da chave da raiz: **`avatar`** no pacote,
-**`avatarData`** no arquivo da instalação. O Kikarinhas entende os dois nomes,
-mas **ainda não abre `.zip` sozinho** (está no plano, ver
+**`avatarData`** no arquivo da instalação. O Kikarinhas entende os dois nomes
+e lê o pacote descompactado numa pasta, mas **ainda não abre `.zip` sozinho** (está no plano, ver
 [07](07-testando-e-distribuindo.md)).
 
 ## Como o Kikarinhas acha cada arquivo
