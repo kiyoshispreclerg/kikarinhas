@@ -442,6 +442,16 @@ data/         avatar padrão original, exemplo de .ini
      tocados um segundo depois do outro, misturadas com o resto. Medido
      com 150 emojis na tela, 30 avatares e balões o tempo todo, 1280x720 a
      30 fps: ~9% de CPU (sem o wall, ~4%).
+   - **Níveis**: `anyone` < `member` < `trusted` < `mod` < `owner`
+     (`kk_role`). Os selos de cada mensagem dão membro, mod e dono, e o
+     arquivo de pessoas grava o da mensagem mais recente (`role=`; comum
+     não grava nada). `trusted=yes` é marcado à mão (coluna Confiável da
+     aba Espectadores, pelo pedido `set_user` do socket, que também troca
+     avatar; `set_avatar` continua valendo). O confiável fica acima do
+     membro, como os "regulars" do Nightbot: quem paga não ganha o que o
+     streamer reservou para quem ele conhece. `kk_commands_set_trust` liga
+     o registro de comandos ao arquivo; a confiança nunca baixa o nível dos
+     selos. O chat de mentira não grava nível.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

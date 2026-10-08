@@ -15,11 +15,17 @@
  * When the word is not a command, an optional fallback handler gets the
  * whole text after the prefix: that is how "!pikachu" picks an avatar. */
 
+/* Levels, lowest first. Member, mod and owner come from the chat badges of
+ * each message; trusted is given by hand (kikarinhas-config, Viewers tab) to
+ * people the streamer vouches for, and ranks above paying members, as
+ * "regulars" do in other chat bots. */
 typedef enum {
     KK_ROLE_ANYONE,
     KK_ROLE_MEMBER,
+    KK_ROLE_TRUSTED,
     KK_ROLE_MOD,
     KK_ROLE_OWNER,
+    KK_ROLE_COUNT,
 } kk_role;
 
 typedef struct kk_commands kk_commands;
@@ -30,6 +36,7 @@ typedef struct {
     const char *name;     /* canonical command name ("" for the fallback) */
     const char *args;     /* trimmed text after the command word */
     const char *data;     /* the command's data, or NULL */
+    kk_role role;         /* the sender's level (badges and trust) */
     void *ud;             /* given to kk_commands_new */
     kk_commands *commands; /* the table the command was found in */
 } kk_cmd_call;
@@ -69,6 +76,13 @@ void kk_commands_each_help(const kk_commands *c, kk_role role,
                            void (*fn)(const char *text, void *ud), void *ud);
 void kk_commands_set_fallback(kk_commands *c, kk_cmd_fn fn,
                               double user_cooldown);
+
+/* Tells whether user_key was marked as trusted; without it nobody is. */
+typedef bool (*kk_trust_fn)(void *ud, const char *user_key);
+void kk_commands_set_trust(kk_commands *c, kk_trust_fn fn, void *ud);
+/* The level of a message's sender: badges, raised to trusted if marked. */
+kk_role kk_commands_role(const kk_commands *c, const kk_chat_msg *msg,
+                         const char *user_key);
 
 kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
                                  const char *user_key, double now);

@@ -10,9 +10,11 @@
 #include "log.h"
 #include "util.h"
 
-static const char *const field_names[] = {"avatar", "palette", "gear",
-                                         "name",   "first",   "last"};
-#define N_FIELDS 6
+static const char *const field_names[] = {"avatar", "palette", "gear", "name",
+                                          "first",  "last",    "role", "trusted"};
+#define N_FIELDS KK_USER_N_FIELDS
+_Static_assert(sizeof field_names / sizeof field_names[0] == N_FIELDS,
+               "one name per kk_user_field");
 
 typedef struct {
     char *key;
@@ -195,7 +197,7 @@ int kk_users_save(kk_users *u)
         return -1;
     }
     fputs("# Kikarinhas: quem já passou pelo chat (avatar, paleta, acessórios, "
-          "nome, primeira e última vez)\n", f);
+          "nome, primeira e última vez, nível)\n", f);
     for (int i = 0; i < u->count; i++) {
         const record *r = &u->recs[i];
         bool any = r->extra != NULL;
@@ -245,4 +247,10 @@ void kk_users_seen(kk_users *u, const char *key, const char *name, long long now
     if (!kk_users_get(u, key, KK_USER_FIRST))
         kk_users_set(u, key, KK_USER_FIRST, t);
     kk_users_set(u, key, KK_USER_LAST, t);
+}
+
+bool kk_users_trusted(const kk_users *u, const char *key)
+{
+    const char *v = kk_users_get(u, key, KK_USER_TRUSTED);
+    return v && strcmp(v, "yes") == 0;
 }

@@ -160,7 +160,7 @@ Chat commands are configured in `[command.NAME]` sections:
 
 ```ini
 # aliases replaces the default list; cooldown is the per-person wait, in
-# seconds; role is who may use it: anyone, member, mod or owner.
+# seconds; role is the minimum level: anyone, member, trusted, mod or owner.
 [command.dance]
 aliases = danca, dança, baila
 cooldown = 30
@@ -218,6 +218,15 @@ first seen, most recent visit and choices. The **Viewers** tab of
 `kikarinhas-config` lists everybody (with search and sorting) and changes
 someone's avatar: with kikarinhas running the change takes effect at once;
 when it is closed, it is saved for next time.
+
+**Levels.** Each message stores the level the chat badges give (owner,
+moderator, member/subscriber; no badge is a common viewer), shown in the
+**Level** column. The **Trusted** column marks trusted people by hand. A
+command can require a minimum level (`role` in `[command.NAME]`, or "Who
+can" in the Commands tab), from lowest to highest: `anyone`, `member`,
+`trusted`, `mod` and `owner`. Trusted ranks above member, like the
+"regulars" of other bots: a trusted-only command also works for moderators
+and the owner, but not for members who were not marked.
 
 People who came from Stream Avatars before this version have no name or
 dates in the file: with kikarinhas **closed**, run
@@ -283,8 +292,9 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop to st
 ```
 
 Other requests: `save` writes the people file now, and
-`{"type":"set_avatar","user":"youtube:UC...","avatar":"pikachu"}` changes
-someone's avatar (it is what the Viewers tab uses).
+`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}`
+changes someone's avatar and/or marks them as trusted (each field is
+optional; it is what the Viewers tab uses; `set_avatar` is the old name).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
 `text`, `kind` (`text`, `paid` or `member`), `amount` and `badges` (`owner`,

@@ -107,11 +107,12 @@ bool kk_parse_bool(const char *s, bool *out)
     return false;
 }
 
-static const char *const ROLES[] = {"anyone", "member", "mod", "owner"};
+static const char *const ROLES[KK_ROLE_COUNT] = {"anyone", "member", "trusted",
+                                                 "mod", "owner"};
 
 bool kk_parse_role(const char *s, kk_role *out)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < KK_ROLE_COUNT; i++)
         if (strcasecmp(s, ROLES[i]) == 0) {
             *out = (kk_role)i;
             return true;
@@ -121,7 +122,7 @@ bool kk_parse_role(const char *s, kk_role *out)
 
 const char *kk_role_name(kk_role r)
 {
-    return r >= KK_ROLE_ANYONE && r <= KK_ROLE_OWNER ? ROLES[r] : "anyone";
+    return r >= KK_ROLE_ANYONE && r < KK_ROLE_COUNT ? ROLES[r] : "anyone";
 }
 
 /* ---- life cycle ---------------------------------------------------------- */
@@ -836,7 +837,7 @@ static void apply_command(kk_config *c, const warner *w, const char *name)
         get_double(w, &k->global_cd, 0, 86400);
     } else if (key_is(w, "role")) {
         if (!kk_parse_role(w->value, &k->role))
-            bad_value(w, "anyone, member, mod ou owner");
+            bad_value(w, "anyone, member, trusted, mod ou owner");
     } else if (key_is(w, "enabled")) {
         get_bool(w, &k->enabled);
     } else {

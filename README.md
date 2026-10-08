@@ -157,7 +157,7 @@ Os comandos do chat são configurados em seções `[command.NOME]`:
 
 ```ini
 # aliases substitui a lista padrão; cooldown é a espera por pessoa, em
-# segundos; role é quem pode: anyone, member, mod ou owner.
+# segundos; role é o nível mínimo: anyone, member, trusted, mod ou owner.
 [command.dance]
 aliases = danca, dança, baila
 cooldown = 30
@@ -215,6 +215,16 @@ vez, a vez mais recente e as escolhas. A aba **Espectadores** do
 `kikarinhas-config` lista todo mundo (com busca e ordenação) e troca o
 avatar de alguém: com o kikarinhas aberto, a troca vale na hora; fechado,
 fica gravada para a próxima vez.
+
+**Níveis.** Cada mensagem grava o nível que os selos do chat dão (dono,
+moderador, membro/assinante; sem selo é comum), visto na coluna **Nível**.
+A coluna **Confiável** marca à mão quem é de confiança. Um comando pode
+exigir um nível mínimo (`role` em `[command.NOME]`, ou "Quem pode" na aba
+Comandos), do menor para o maior: `anyone` (todos), `member` (membros),
+`trusted` (confiáveis), `mod` (moderadores) e `owner` (dono). O confiável
+fica acima do membro, como os "regulars" de outros bots: um comando só para
+confiáveis também vale para moderadores e para o dono, mas não para membros
+que não foram marcados.
 
 Quem veio do Stream Avatars antes desta versão não tem nome nem datas no
 arquivo: com o kikarinhas **fechado**, rode uma vez
@@ -279,8 +289,9 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop para 
 ```
 
 Outros pedidos: `save` grava o arquivo de pessoas agora, e
-`{"type":"set_avatar","user":"youtube:UC...","avatar":"pikachu"}` troca o
-avatar de alguém (é o que a aba Espectadores usa).
+`{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}`
+troca o avatar de alguém e/ou marca como confiável (cada campo é opcional; é
+o que a aba Espectadores usa; `set_avatar` é o nome antigo).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
 `text`, `kind` (`text`, `paid` ou `member`), `amount` e `badges` (`owner`,

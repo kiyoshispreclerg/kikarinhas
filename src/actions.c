@@ -156,7 +156,7 @@ static bool cmd_help(const kk_cmd_call *c)
                    .want = a->help_count < 1 ? 1
                            : a->help_count > HELP_MAX ? HELP_MAX
                                                       : a->help_count};
-    kk_commands_each_help(c->commands, kk_role_of(c->msg->badges), help_each, &h);
+    kk_commands_each_help(c->commands, c->role, help_each, &h);
     if (h.have == 0)
         return false;
     char text[600];

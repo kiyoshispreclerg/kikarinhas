@@ -42,8 +42,8 @@ enum {
 };
 
 /* Translated where shown: see role_label() and role_of_label(). */
-static const char *const ROLE_LABELS[] = {
-    N_("anyone"), N_("members"), N_("moderators"), N_("owner"),
+const char *const ROLE_LABELS[KK_ROLE_COUNT] = {
+    N_("anyone"), N_("members"), N_("trusted"), N_("moderators"), N_("owner"),
 };
 
 
@@ -460,7 +460,7 @@ static void on_restore(GtkButton *b, gpointer ud)
     fmt_num(gcd, sizeof gcd, d->global_cd);
     gtk_list_store_set(e->commands, &it, COL_ENABLED, TRUE, COL_DATA, "",
                        COL_ALIASES, aliases, COL_CD, cd, COL_GCD, gcd, COL_ROLE,
-                       ROLE_LABELS[d->role], -1);
+                       _(ROLE_LABELS[d->role]), -1);
 }
 
 static GtkWidget *commands_page(editor *e, const kk_config *cfg)
@@ -520,10 +520,10 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
     text_column(e, _("Aliases"), COL_ALIASES, NULL, false);
     text_column(e, _("Cooldown (s)"), COL_CD, G_CALLBACK(on_cd_edited), false);
     text_column(e, _("Global (s)"), COL_GCD, G_CALLBACK(on_gcd_edited), false);
-    const char *roles[4];
-    for (int i = 0; i < 4; i++)
+    const char *roles[KK_ROLE_COUNT];
+    for (int i = 0; i < KK_ROLE_COUNT; i++)
         roles[i] = _(ROLE_LABELS[i]);
-    combo_column(e, _("Who can"), COL_ROLE, string_list(roles, 4), false);
+    combo_column(e, _("Who can"), COL_ROLE, string_list(roles, KK_ROLE_COUNT), false);
 
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
@@ -537,7 +537,9 @@ static GtkWidget *commands_page(editor *e, const kk_config *cfg)
                          _("<small>Double-click a cell to edit it. Aliases separated by "
                            "commas. \"Data\" is the command's fixed argument (the sound of "
                            "a !horn, the avatar of a !pika); empty, whatever the person typed "
-                           "is used. The channel owner never waits.</small>"));
+                           "is used. The channel owner never waits. \"Who can\" is the lowest level allowed: "
+                           "anyone, members, trusted (marked in the Viewers tab), moderators, "
+                           "owner.</small>"));
     gtk_label_set_line_wrap(GTK_LABEL(hint), TRUE);
     gtk_misc_set_alignment(GTK_MISC(hint), 0, 0);
     gtk_box_pack_start(GTK_BOX(box), hint, FALSE, FALSE, 0);
@@ -620,7 +622,7 @@ int spin_int(GtkWidget *w)
 
 static kk_role role_of_label(const char *label)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < KK_ROLE_COUNT; i++)
         if (strcmp(label, _(ROLE_LABELS[i])) == 0)
             return (kk_role)i;
     return KK_ROLE_ANYONE;

@@ -46,6 +46,9 @@ typedef struct {
     wall_tab *wall;
 } editor;
 
+/* Labels of the levels (kk_role), to translate with _() where shown. */
+extern const char *const ROLE_LABELS[KK_ROLE_COUNT];
+
 /* The line at the bottom of the window. */
 void status(editor *e, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
 

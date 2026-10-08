@@ -31,7 +31,7 @@
  *              help_seconds = auto|N
  *   [command.NAME]
  *              action, data, aliases = a, b, cooldown, global_cooldown,
- *              role = anyone|member|mod|owner, enabled = yes|no
+ *              role = anyone|member|trusted|mod|owner, enabled = yes|no
  *   [soundboard] enabled, volume = 100 (%), device = default,
  *              voices = 8, commands = yes
  *   [sound.NAME] file, aliases = a, b, volume = 100 (%)

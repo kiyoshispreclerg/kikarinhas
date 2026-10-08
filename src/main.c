@@ -498,6 +498,13 @@ static void on_chat(void *ud, const kk_chat_msg *m)
     if (a) {
         char key[256];
         snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
+        /* The level the badges give now; trust is kept apart, by hand. The
+         * fake chat is not remembered (see kk_stage_chatter). */
+        kk_users *users = sink->stage->cfg.users;
+        kk_role role = kk_role_of(m->badges);
+        if (users && strcmp(m->platform, "demo") != 0)
+            kk_users_set(users, key, KK_USER_ROLE,
+                         role == KK_ROLE_ANYONE ? NULL : kk_role_name(role));
         sink->actions->self = a;
         r = kk_commands_handle(sink->commands, m, key, now_seconds());
         if (r == KK_CMD_NONE)
@@ -639,11 +646,19 @@ static const kk_sa_avatar *find_default_avatar(const app *a, const kk_config *cf
     return def;
 }
 
+static bool is_trusted(void *ud, const char *user_key)
+{
+    return kk_users_trusted(ud, user_key);
+}
+
 static kk_commands *build_commands(app *a, const kk_config *cfg, warn_sink *warn)
 {
     kk_commands *c = kk_commands_new(a->actions);
-    if (c)
-        kk_actions_register(c, cfg, on_config_warning, warn);
+    if (!c)
+        return NULL;
+    kk_actions_register(c, cfg, on_config_warning, warn);
+    if (a->users)
+        kk_commands_set_trust(c, is_trusted, a->users);
     return c;
 }
 
@@ -840,25 +855,40 @@ static bool reload(app *a, cJSON *warnings)
     return true;
 }
 
-/* {"type":"set_avatar","user":"youtube:UC...","avatar":"pikachu"}: from
- * kikarinhas-config, which must not write the people file under our feet. */
-static void set_avatar(app *a, const cJSON *req, cJSON *reply)
+static void refuse(cJSON *reply, const char *error)
+{
+    cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
+    cJSON_AddStringToObject(reply, "error", error);
+}
+
+/* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true}
+ * (each field optional; "set_avatar" is the same): from kikarinhas-config,
+ * which must not write the people file under our feet. */
+static void set_user(app *a, const cJSON *req, cJSON *reply)
 {
     const char *key = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "user"));
-    const char *name = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "avatar"));
+    const cJSON *avatar = cJSON_GetObjectItemCaseSensitive(req, "avatar");
+    const cJSON *trusted = cJSON_GetObjectItemCaseSensitive(req, "trusted");
+    const char *name = cJSON_GetStringValue(avatar);
     const kk_sa_avatar *def = name ? kk_sa_find(a->lib, name) : NULL;
     const char *error = NULL;
     if (!key || !key[0])
         error = "faltou \"user\"";
-    else if (!def)
+    else if (avatar && !def)
         error = "avatar desconhecido";
+    else if (trusted && !cJSON_IsBool(trusted))
+        error = "\"trusted\" deve ser true ou false";
     else if (!a->users)
         error = "sem arquivo de pessoas";
     if (error) {
-        cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
-        cJSON_AddStringToObject(reply, "error", error);
+        refuse(reply, error);
         return;
     }
+
+    if (trusted)
+        kk_users_set(a->users, key, KK_USER_TRUSTED, cJSON_IsTrue(trusted) ? "yes" : NULL);
+    if (!def)
+        return;
     for (int i = 0; i < a->stage->count; i++) {
         kk_avatar *av = &a->stage->avatars[i];
         if (av->user_id && strcmp(av->user_id, key) == 0) {
@@ -894,8 +924,8 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
             cJSON_ReplaceItemInObjectCaseSensitive(reply, "ok", cJSON_CreateFalse());
             cJSON_AddStringToObject(reply, "error", "não consegui gravar o arquivo de pessoas");
         }
-    } else if (strcmp(type, "set_avatar") == 0) {
-        set_avatar(a, req, reply);
+    } else if (strcmp(type, "set_user") == 0 || strcmp(type, "set_avatar") == 0) {
+        set_user(a, req, reply);
     } else if (strcmp(type, "ping") == 0) {
         cJSON_AddStringToObject(reply, "version", KK_VERSION);
     } else if (strcmp(type, "quit") == 0) {

@@ -127,6 +127,34 @@ TEST(commands_roles)
     CHECK_INT_EQ(owner, KK_CMD_RAN);
 }
 
+static bool trust_b(void *ud, const char *key)
+{
+    (void)ud;
+    return strcmp(key, "b") == 0;
+}
+
+/* Trusted people (marked by hand) rank above members, below mods. */
+TEST(commands_trusted)
+{
+    kk_commands *c = kk_commands_new(NULL);
+    kk_commands_add(c, "link", record, NULL, 0, 0, KK_ROLE_TRUSTED);
+    kk_cmd_result before = send(c, "!link", 0, "b", 0);
+    kk_commands_set_trust(c, trust_b, NULL);
+    kk_cmd_result viewer = send(c, "!link", 0, "a", 0);
+    kk_cmd_result member = send(c, "!link", KK_BADGE_MEMBER, "a", 0);
+    kk_cmd_result trusted = send(c, "!link", 0, "b", 0);
+    kk_cmd_result mod = send(c, "!link", KK_BADGE_MOD, "a", 0);
+    kk_chat_msg m = {.platform = "t", .user_id = "b", .text = "", .badges = KK_BADGE_MOD};
+    kk_role mod_trusted = kk_commands_role(c, &m, "b");
+    kk_commands_free(c);
+    CHECK_INT_EQ(before, KK_CMD_DENIED);
+    CHECK_INT_EQ(viewer, KK_CMD_DENIED);
+    CHECK_INT_EQ(member, KK_CMD_DENIED);
+    CHECK_INT_EQ(trusted, KK_CMD_RAN);
+    CHECK_INT_EQ(mod, KK_CMD_RAN);
+    CHECK_INT_EQ(mod_trusted, KK_ROLE_MOD); /* trust never lowers */
+}
+
 TEST(commands_fallback)
 {
     kk_commands *c = kk_commands_new(NULL);
@@ -171,6 +199,8 @@ TEST(users_roundtrip)
     kk_users_set(u, "youtube:UC1", KK_USER_GEAR, "hats/cap,chairs/kart");
     kk_users_set(u, "twitch:9", KK_USER_PALETTE, NULL);
     kk_users_set(u, "demo:x", KK_USER_AVATAR, "tab\there");
+    kk_users_set(u, "demo:x", KK_USER_ROLE, "mod");
+    kk_users_set(u, "demo:x", KK_USER_TRUSTED, "yes");
     CHECK(kk_users_dirty(u));
     CHECK_INT_EQ(kk_users_save(u), 0);
     kk_users_free(u);
@@ -184,6 +214,9 @@ TEST(users_roundtrip)
     CHECK_STR_HAS(text, "future=keep me");
     CHECK(strstr(text, "twitch:9") == NULL);
     CHECK_STR_EQ(kk_users_get(u, "demo:x", KK_USER_AVATAR), "tab here");
+    CHECK_STR_EQ(kk_users_get(u, "demo:x", KK_USER_ROLE), "mod");
+    CHECK(kk_users_trusted(u, "demo:x"));
+    CHECK(!kk_users_trusted(u, "youtube:UC1"));
     free(text);
     kk_users_free(u);
 }
@@ -329,6 +362,7 @@ int main(void)
     RUN(commands_cooldowns);
     RUN(commands_failed_handler_starts_no_cooldown);
     RUN(commands_roles);
+    RUN(commands_trusted);
     RUN(commands_fallback);
     RUN(users_roundtrip);
     load_small();

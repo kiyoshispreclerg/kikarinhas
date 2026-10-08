@@ -35,6 +35,8 @@ struct kk_commands {
     double fallback_cd;
     cooldown *cds;
     int n_cds, cap_cds;
+    kk_trust_fn trust;
+    void *trust_ud;
 };
 
 kk_commands *kk_commands_new(void *ud)
@@ -175,6 +177,21 @@ kk_role kk_role_of(unsigned badges)
     return KK_ROLE_ANYONE;
 }
 
+void kk_commands_set_trust(kk_commands *c, kk_trust_fn fn, void *ud)
+{
+    c->trust = fn;
+    c->trust_ud = ud;
+}
+
+kk_role kk_commands_role(const kk_commands *c, const kk_chat_msg *msg,
+                         const char *user_key)
+{
+    kk_role r = kk_role_of(msg->badges);
+    if (r < KK_ROLE_TRUSTED && c->trust && user_key && c->trust(c->trust_ud, user_key))
+        r = KK_ROLE_TRUSTED;
+    return r;
+}
+
 /* ---- cooldowns ----------------------------------------------------------- */
 
 static uint64_t hash2(const char *a, const char *b)
@@ -271,10 +288,10 @@ kk_cmd_result kk_commands_handle(kk_commands *c, const kk_chat_msg *msg,
     lower_ascii(word);
 
     char args[MAX_ARGS];
-    kk_role role = kk_role_of(msg->badges);
+    kk_role role = kk_commands_role(c, msg, user_key);
     command *cmd = find(c, word);
     kk_cmd_call call = {.msg = msg, .user_key = user_key, .ud = c->ud,
-                        .commands = c, .args = args};
+                        .commands = c, .args = args, .role = role};
     uint64_t h;
 
     if (cmd) {

@@ -10,9 +10,12 @@
  * seen. Stored as one line per person in a small text file:
  *
  *   youtube:UCxxxx<TAB>avatar=pikachu<TAB>palette=blue<TAB>gear=pokegears/ash_hat
- *   <TAB>name=Fulana<TAB>first=1700000000<TAB>last=1730000000
+ *   <TAB>name=Fulana<TAB>first=1700000000<TAB>last=1730000000<TAB>role=member
+ *   <TAB>trusted=yes
  *
- * gear lists "set/piece" separated by commas; first/last are Unix times. Unknown fields are kept, so
+ * gear lists "set/piece" separated by commas; first/last are Unix times;
+ * role is the level the chat badges gave on the latest message (absent for
+ * common viewers) and trusted is set by hand. Unknown fields are kept, so
  * newer versions can add some without older ones dropping them. */
 
 typedef struct kk_users kk_users;
@@ -24,6 +27,9 @@ typedef enum {
     KK_USER_NAME,  /* display name, as last seen */
     KK_USER_FIRST, /* Unix time of the first message */
     KK_USER_LAST,  /* Unix time of the latest message */
+    KK_USER_ROLE,  /* "member", "mod", "owner" from the latest badges */
+    KK_USER_TRUSTED, /* "yes" when marked by hand */
+    KK_USER_N_FIELDS,
 } kk_user_field;
 
 /* Loads path if it exists (a missing file is an empty list). */
@@ -46,6 +52,9 @@ const char *kk_users_key(const kk_users *u, int i);
 
 /* Name and times of someone who just talked (now = Unix time). */
 void kk_users_seen(kk_users *u, const char *key, const char *name, long long now);
+
+/* True if key was marked as trusted. */
+bool kk_users_trusted(const kk_users *u, const char *key);
 
 /* Default location: $XDG_DATA_HOME/kikarinhas/users.tsv. */
 bool kk_users_default_path(char *out, size_t size);
