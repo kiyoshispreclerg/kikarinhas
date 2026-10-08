@@ -201,6 +201,18 @@ action = text
 data = Oi, {name}! Entre no Discord:\ndiscord.gg/exemplo
 aliases = dc
 seconds = 10
+
+# !logo mostra uma imagem (PNG, JPEG, GIF animado ou BMP; caminho relativo é a
+# partir da pasta do .ini) com o centro em x% e y% da janela, em scale% do
+# tamanho dela, por seconds segundos (padrão 5), aparecendo e sumindo aos
+# poucos. Pedir de novo enquanto ela está na tela recomeça o tempo.
+[command.logo]
+action = image
+data = ~/imagens/logo.png
+x = 80
+y = 20
+scale = 50
+seconds = 8
 ```
 
 ### Mesa de som
@@ -391,7 +403,8 @@ transparente também na tela.
 
 GPL-3.0-or-later. Veja [LICENSE](LICENSE). Inclui o
 [cJSON](vendor/cjson) (MIT), o [dr_wav e o dr_mp3](vendor/dr_libs) (domínio
-público ou MIT-0) e o [stb_vorbis](vendor/stb) (domínio público ou MIT).
+público ou MIT-0) e o [stb_vorbis e o stb_image](vendor/stb) (domínio público ou
+MIT).
 
 O chat do YouTube é lido pelos mesmos endereços que o chat em janela
 separada do navegador usa; não é uma API oficial e pode mudar. O da Twitch

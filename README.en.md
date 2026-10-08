@@ -207,6 +207,18 @@ action = text
 data = Hi, {name}! Join the Discord:\ndiscord.gg/example
 aliases = dc
 seconds = 10
+
+# !logo shows a picture (PNG, JPEG, animated GIF or BMP; a relative path is
+# from the .ini's folder) centred at x% and y% of the window, at scale% of
+# its size, for seconds seconds (default 5), fading in and out. Asking again
+# while it shows starts its time over.
+[command.logo]
+action = image
+data = ~/pictures/logo.png
+x = 80
+y = 20
+scale = 50
+seconds = 8
 ```
 
 ### Sound board
@@ -397,7 +409,8 @@ transparent on screen too.
 
 GPL-3.0-or-later. See [LICENSE](LICENSE). Includes
 [cJSON](vendor/cjson) (MIT), [dr_wav and dr_mp3](vendor/dr_libs) (public
-domain or MIT-0) and [stb_vorbis](vendor/stb) (public domain or MIT).
+domain or MIT-0) and [stb_vorbis and stb_image](vendor/stb) (public domain or
+MIT).
 
 YouTube chat is read from the same endpoints the browser's pop-out chat
 window uses; it is not an official API and may change. Twitch chat is read

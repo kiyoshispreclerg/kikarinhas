@@ -10,6 +10,8 @@ LIB_SRC = src/log.c \
       src/sa.c \
       src/library.c \
       src/sprite.c \
+      src/image.c \
+      src/overlay.c \
       src/avatar.c \
       src/stage.c \
       src/json.c \
@@ -29,7 +31,7 @@ LIB_SRC = src/log.c \
       src/emoji.c \
       src/emotes.c \
       src/emotewall.c
-VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c
+VENDOR_SRC = vendor/cjson/cJSON.c vendor/decoders.c vendor/images.c
 LIBKK = $(BUILD)/libkk.a
 
 UNIT_TESTS = $(patsubst tests/unit/%.c,$(BUILD)/tests/%,$(wildcard tests/unit/test_*.c))

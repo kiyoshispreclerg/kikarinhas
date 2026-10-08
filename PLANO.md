@@ -482,6 +482,18 @@ data/         avatar padrão original, exemplo de .ini
      quebra a linha e `{name}` vira o nome de quem pediu. Cada comando
      ganhou `kk_cmd_params` (`seconds`, e `x`/`y`/`scale` para imagens),
      no `.ini` e em `kk_cmd_call.params`.
+   - **Comando `image`**: `data` é um arquivo (PNG, JPEG, GIF animado ou
+     BMP, pelo `stb_image` embutido em `vendor/images.c`), mostrado com o
+     centro em `x`%/`y`% da janela, em `scale`% do tamanho, por `seconds`
+     (padrão 5), com 0,3 s de entrada e saída. `src/image.c` converte para
+     ARGB pré-multiplicado, um quadro por superfície (limite de 64 Mpx no
+     total); `src/overlay.c` é uma camada sob o emote wall, com um lugar
+     por comando (pedir de novo recomeça o tempo) e dano só quando muda
+     (entrada, saída, quadro do GIF). Arquivos lidos na primeira vez e
+     guardados (inclusive os que falharam, para o chat não forçar releitura);
+     o `reload` esquece tudo. Ampliação inteira de 2x ou mais usa nearest.
+     Lição: o cache guarda ponteiros, porque as imagens na tela apontam para
+     ele enquanto ele cresce (o ASan pegou o `realloc`).
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

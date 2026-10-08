@@ -4,6 +4,7 @@
 
 #include "commands.h"
 #include "config.h"
+#include "overlay.h"
 #include "stage.h"
 
 /* The built-in chat commands and what they do to the avatars. */
@@ -17,6 +18,7 @@ typedef struct {
     kk_sound_fn sound;
     void *sound_ud;
     kk_avatar *self; /* the sender's avatar, set before each dispatch */
+    kk_overlay *overlay; /* where action = image shows pictures; may be NULL */
     bool help_bubbles; /* set by kk_actions_register from the config */
     int help_count;
     double help_seconds; /* -1: by the number of lines */

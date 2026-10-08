@@ -24,6 +24,7 @@
 #include "http.h"
 #include "library.h"
 #include "log.h"
+#include "overlay.h"
 #include "sa.h"
 #include "soundboard.h"
 #include "stage.h"
@@ -632,6 +633,7 @@ typedef struct {
     kk_chat_sink chat;    /* what every connector feeds: on_chat, on_reaction */
     kk_emotes *emotes;
     kk_emotewall *wall;
+    kk_overlay *overlay;  /* pictures shown by commands */
     source sources[KK_MAX_SOURCES]; /* the lives being read */
     int n_sources;
     kk_demochat demo;
@@ -849,6 +851,7 @@ static bool reload(app *a, cJSON *warnings)
     }
     kk_commands_free(a->sink.commands);
     a->sink.commands = commands;
+    kk_overlay_clear(a->overlay); /* a changed picture is read again */
     a->sink.verbose = cfg.verbose;
     kk_soundboard_configure(a->sounds, &cfg);
     a->stage->cfg.max_avatars = cfg.max_avatars;
@@ -1029,6 +1032,7 @@ static void run(app *a)
         if (ev.resized) {
             kk_stage_resize(a->stage, a->win->width, a->win->height);
             kk_emotewall_resize(a->wall, a->win->width, a->win->height);
+            kk_overlay_resize(a->overlay, a->win->width, a->win->height);
         }
         if (ev.redraw)
             full = true;
@@ -1092,6 +1096,7 @@ static void run(app *a)
                 /* After a stall, don't teleport everyone forward. */
                 kk_stage_update(a->stage, dt > 0.1 ? 0.1 : dt);
                 kk_emotewall_update(a->wall, t);
+                kk_overlay_update(a->overlay, t);
                 tick = true;
             }
         }
@@ -1293,9 +1298,18 @@ int main(int argc, char **argv)
     kk_wall_config wc = wall_config(&a.cfg);
     kk_emotewall_configure(a.wall, &wc);
     kk_emotewall_resize(a.wall, win.width, win.height);
+    a.overlay = kk_overlay_new();
+    if (!a.overlay) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_overlay_resize(a.overlay, win.width, win.height);
+    /* Pictures under the emote wall: emotes fly over a logo. */
+    kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
 
-    kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds};
+    kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
+                          .overlay = a.overlay};
     a.actions = &actions;
     a.sink = (chat_sink){
         .stage = &stage,
@@ -1328,7 +1342,9 @@ int main(int argc, char **argv)
     for (int i = 0; i < a.n_sources; i++)
         source_free(&a.sources[i]);
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
+    kk_stage_remove_layer(&stage, kk_overlay_layer(a.overlay));
     kk_emotewall_free(a.wall);
+    kk_overlay_free(a.overlay);
     kk_emotes_free(a.emotes);
     kk_http_free(a.http);
     kk_commands_free(a.sink.commands);

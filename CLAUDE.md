@@ -72,6 +72,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/config.c` | configuração em camadas, comandos padrão, `[command.NOME]` |
 | `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `play`, `set_avatar`... |
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
+| `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP) e a camada do `action = image` |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
 | `src/chat.h` | eventos neutros de todas as plataformas: mensagem, emote, reação, `kk_chat_sink` |

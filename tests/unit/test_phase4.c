@@ -377,11 +377,23 @@ TEST(config_load_file)
     CHECK(!found);
 
     FILE *f = fopen(path, "w");
-    fputs("[window]\nfps = 15\n", f);
+    fputs("[window]\nfps = 15\n"
+          "[command.logo]\naction = image\ndata = img/logo.png\n"
+          "[command.home]\ndata = ~/x.gif\naction = image\n"
+          "[command.abs]\naction = image\ndata = /a/b.png\n"
+          "[command.txt]\naction = text\ndata = img/nao.png\n", f);
     fclose(f);
     CHECK_INT_EQ(kk_config_load(&c, path, &found, NULL, NULL), 0);
     CHECK(found);
     CHECK_INT_EQ(c.fps, 15);
+    /* Pictures: relative to the file's folder, "~/" is home. */
+    char want[KK_PATH_MAX];
+    snprintf(want, sizeof want, "%s/img/logo.png", dir);
+    CHECK_STR_EQ(kk_config_find_command(&c, "logo")->data, want);
+    snprintf(want, sizeof want, "%s/x.gif", getenv("HOME"));
+    CHECK_STR_EQ(kk_config_find_command(&c, "home")->data, want);
+    CHECK_STR_EQ(kk_config_find_command(&c, "abs")->data, "/a/b.png");
+    CHECK_STR_EQ(kk_config_find_command(&c, "txt")->data, "img/nao.png");
     kk_config_free(&c);
     remove(path);
     rmdir(dir);

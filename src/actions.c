@@ -215,6 +215,15 @@ static bool cmd_text(const kk_cmd_call *c)
     return true;
 }
 
+/* !logo: data is a picture file, shown at the command's place and scale for
+ * its seconds. */
+static bool cmd_image(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    return c->data && c->data[0] && a->overlay &&
+           kk_overlay_show(a->overlay, c->name, c->data, c->params);
+}
+
 /* "!pikachu", "!ash_hat", "!blue": an avatar, a piece or a palette name. */
 static bool fallback(const kk_cmd_call *c)
 {
@@ -241,6 +250,7 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"jump", cmd_jump},     {"sit", cmd_sit},     {"dance", cmd_dance},
         {"emote", cmd_emote},   {"hug", cmd_hug},     {"attack", cmd_attack},
         {"sound", cmd_sound},   {"help", cmd_help},   {"text", cmd_text},
+        {"image", cmd_image},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)

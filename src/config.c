@@ -18,7 +18,7 @@
 
 static const char *const ACTIONS[] = {
     "avatar", "color", "gear", "jump", "sit", "dance",
-    "emote", "hug", "attack", "sound", "help", "text", NULL,
+    "emote", "hug", "attack", "sound", "help", "text", "image", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. */
@@ -968,6 +968,20 @@ int kk_config_load(kk_config *c, const char *path, bool *found,
             kk_pathf(full, sizeof full, "%.*s/%s", (int)(slash - path), path,
                      c->sounds[i].file))
             kk_config_set_str(&c->sounds[i].file, full);
+    }
+    /* Pictures too, and "~/" is home, as in path keys. */
+    const char *home = getenv("HOME");
+    for (int i = 0; i < c->n_commands; i++) {
+        kk_config_command *k = &c->commands[i];
+        char full[KK_PATH_MAX];
+        if (!k->action || strcmp(k->action, "image") != 0 || !k->data || k->data[0] == '/')
+            continue;
+        if (strncmp(k->data, "~/", 2) == 0 ? home && kk_pathf(full, sizeof full, "%s%s", home,
+                                                              k->data + 1)
+                                           : slash && kk_pathf(full, sizeof full, "%.*s/%s",
+                                                               (int)(slash - path), path,
+                                                               k->data))
+            kk_config_set_str(&k->data, full);
     }
     return 0;
 }
