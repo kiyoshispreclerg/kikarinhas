@@ -506,6 +506,15 @@ static void apply_saved(kk_stage *s, kk_avatar *a)
 
 /* ---- chat ---------------------------------------------------------------- */
 
+const kk_sa_avatar *kk_stage_default_avatar(const kk_stage *s, const char *key)
+{
+    if (s->cfg.default_avatar)
+        return s->cfg.default_avatar;
+    if (s->n_usable == 0)
+        return NULL;
+    return &s->lib->avatars[s->usable[fnv1a(key) % (uint32_t)s->n_usable]];
+}
+
 /* Saved choice, else the configured default, else one picked by hashing the
  * id (same person, same avatar). */
 static kk_avatar *spawn_chatter(kk_stage *s, const char *key,

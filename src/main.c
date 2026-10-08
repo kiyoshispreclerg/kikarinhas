@@ -904,7 +904,8 @@ static void refuse(cJSON *reply, const char *error)
 }
 
 /* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,
- *  "points":100} (each field optional; "set_avatar" is the same): from kikarinhas-config,
+ *  "points":100} (each field optional; "set_avatar" is the same; avatar ""
+ *  goes back to the one picked for them): from kikarinhas-config,
  * which must not write the people file under our feet. */
 static void set_user(app *a, const cJSON *req, cJSON *reply)
 {
@@ -913,11 +914,13 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
     const cJSON *trusted = cJSON_GetObjectItemCaseSensitive(req, "trusted");
     const cJSON *points = cJSON_GetObjectItemCaseSensitive(req, "points");
     const char *name = cJSON_GetStringValue(avatar);
-    const kk_sa_avatar *def = name ? kk_sa_find(a->lib, name) : NULL;
+    /* "" goes back to the one picked for them (no saved choice). */
+    bool reset = name && !name[0];
+    const kk_sa_avatar *def = name && !reset ? kk_sa_find(a->lib, name) : NULL;
     const char *error = NULL;
     if (!key || !key[0])
         error = "faltou \"user\"";
-    else if (avatar && !def)
+    else if (avatar && !def && !reset)
         error = "avatar desconhecido";
     else if (trusted && !cJSON_IsBool(trusted))
         error = "\"trusted\" deve ser true ou false";
@@ -935,6 +938,18 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
         kk_users_set(a->users, key, KK_USER_TRUSTED, cJSON_IsTrue(trusted) ? "yes" : NULL);
     if (points && a->points)
         kk_points_set(a->points, key, (long)points->valuedouble);
+    if (reset) {
+        for (int i = 0; i < a->stage->count; i++) {
+            kk_avatar *av = &a->stage->avatars[i];
+            const kk_sa_avatar *d = kk_stage_default_avatar(a->stage, key);
+            if (av->user_id && strcmp(av->user_id, key) == 0 && d && av->def != d)
+                kk_stage_set_avatar(a->stage, av, d);
+        }
+        /* After the change, which saved it: no choice is the point. */
+        kk_users_set(a->users, key, KK_USER_AVATAR, NULL);
+        kk_users_set(a->users, key, KK_USER_PALETTE, NULL);
+        return;
+    }
     if (!def)
         return;
     for (int i = 0; i < a->stage->count; i++) {

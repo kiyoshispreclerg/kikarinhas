@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 13:59-0300\n"
+"POT-Creation-Date: 2026-10-08 14:58-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -348,7 +348,7 @@ msgstr "Sounds"
 msgid "Emote wall"
 msgstr "Emote wall"
 
-#: config/main.c:587 config/audience.c:487
+#: config/main.c:587 config/audience.c:469
 msgid "Points"
 msgstr "Points"
 
@@ -457,13 +457,13 @@ msgstr "Invalid volume: 0 to 400%%."
 msgid "Add sounds"
 msgstr "Add sounds"
 
-#: config/sounds.c:432 config/sources.c:67 config/avatars.c:83
-#: config/commands.c:415
+#: config/sounds.c:432 config/sources.c:67 config/avatars.c:85
+#: config/avatars.c:655 config/commands.c:415
 msgid "_Cancel"
 msgstr "_Cancel"
 
 #: config/sounds.c:432 config/sources.c:68 config/sources.c:184
-#: config/avatars.c:83 config/commands.c:927
+#: config/avatars.c:85 config/commands.c:927
 msgid "_Add"
 msgstr "_Add"
 
@@ -574,7 +574,7 @@ msgstr ""
 msgid "_Add…"
 msgstr "_Add…"
 
-#: config/sounds.c:666 config/sources.c:185 config/avatars.c:150
+#: config/sounds.c:666 config/sources.c:185 config/avatars.c:152
 #: config/commands.c:929
 msgid "_Remove"
 msgstr "_Remove"
@@ -766,101 +766,107 @@ msgstr "Could not read the people file %s."
 msgid " (just read from the running kikarinhas)"
 msgstr " (just read from the running kikarinhas)"
 
-#: config/audience.c:270
+#: config/audience.c:254
 #, c-format
 msgid "kikarinhas refused: %s"
 msgstr "kikarinhas refused: %s"
 
-#: config/audience.c:306
+#: config/audience.c:290
 #, c-format
 msgid "%s is now trusted."
 msgstr "%s is now trusted."
 
-#: config/audience.c:306
+#: config/audience.c:290
 #, c-format
 msgid "%s is no longer trusted."
 msgstr "%s is no longer trusted."
 
-#: config/audience.c:308 config/audience.c:368 config/audience.c:408
+#: config/audience.c:292 config/audience.c:334 config/audience.c:365
 msgid "Could not write the people file."
 msgstr "Could not write the people file."
 
-#: config/audience.c:355
+#: config/audience.c:321
 #, c-format
 msgid "Invalid points: \"%s\" (0 to 1000000000)."
 msgstr "Invalid points: \"%s\" (0 to 1000000000)."
 
-#: config/audience.c:366
+#: config/audience.c:332
 #, c-format
 msgid "%s now has %ld points."
 msgstr "%s now has %ld points."
 
-#: config/audience.c:388
-#, c-format
-msgid "There is no avatar \"%s\" in the avatar folders."
-msgstr "There is no avatar \"%s\" in the avatar folders."
+#: config/audience.c:353
+msgid "random"
+msgstr "random"
 
-#: config/audience.c:401
+#: config/audience.c:356
 #, c-format
 msgid "%s is now %s (already in effect in the running kikarinhas)."
 msgstr "%s is now %s (already in effect in the running kikarinhas)."
 
-#: config/audience.c:406
+#: config/audience.c:362
 #, c-format
 msgid "%s is now %s (saved to the file; takes effect next time)."
 msgstr "%s is now %s (saved to the file; takes effect next time)."
 
-#: config/audience.c:428 config/avatars.c:441
+#: config/audience.c:391
+#, c-format
+msgid "Avatar of %s"
+msgstr "Avatar of %s"
+
+#: config/audience.c:411 config/avatars.c:473 config/avatars.c:663
 msgid "Search"
 msgstr "Search"
 
-#: config/audience.c:434
+#: config/audience.c:417
 msgid "_Refresh"
 msgstr "_Refresh"
 
-#: config/audience.c:459 config/avatars.c:473
+#: config/audience.c:441 config/avatars.c:505
 msgid "Name"
 msgstr "Name"
 
-#: config/audience.c:460 config/sources.c:87 config/sources.c:164
+#: config/audience.c:442 config/sources.c:87 config/sources.c:164
 msgid "Platform"
 msgstr "Platform"
 
-#: config/audience.c:461
+#: config/audience.c:443
 msgid "First seen"
 msgstr "First seen"
 
-#: config/audience.c:462
+#: config/audience.c:444
 msgid "Latest"
 msgstr "Latest"
 
-#: config/audience.c:463
+#: config/audience.c:445
 msgid "Level"
 msgstr "Level"
 
-#: config/audience.c:480
+#: config/audience.c:462
 msgid "Trusted"
 msgstr "Trusted"
 
-#: config/audience.c:497 config/commands.c:468
+#: config/audience.c:478 config/commands.c:468
 msgid "Avatar"
 msgstr "Avatar"
 
-#: config/audience.c:510
+#: config/audience.c:491
 msgid ""
-"Double-click the avatar to change it (you can type the name). With "
-"kikarinhas running, the change takes effect at once. Empty avatar: a random "
-"one, always the same. Level: what the chat badges said on the latest "
-"message. Trusted: ticked by hand, for commands limited to trusted people and "
-"up. Points: double-click to change the balance. People from Stream Avatars "
-"without a name or dates: run kikarinhas --import-sa-users once."
+"Double-click someone to pick their avatar by its picture (with a search "
+"box). With kikarinhas running, the change takes effect at once. Empty "
+"avatar: a random one, always the same. Level: what the chat badges said on "
+"the latest message. Trusted: ticked by hand, for commands limited to trusted "
+"people and up. Points: double-click to change the balance. People from "
+"Stream Avatars without a name or dates: run kikarinhas --import-sa-users "
+"once."
 msgstr ""
-"Double-click the avatar to change it (you can type the name). With "
-"kikarinhas running, the change takes effect at once. Empty avatar: a random "
-"one, always the same. Level: what the chat badges said on the latest "
-"message. Trusted: ticked by hand, for commands limited to trusted people "
-"and up. Points: double-click to change the balance. People from Stream "
-"Avatars without a name or dates: run kikarinhas --import-sa-users once."
+"Double-click someone to pick their avatar by its picture (with a search "
+"box). With kikarinhas running, the change takes effect at once. Empty "
+"avatar: a random one, always the same. Level: what the chat badges said on "
+"the latest message. Trusted: ticked by hand, for commands limited to "
+"trusted people and up. Points: double-click to change the balance. People "
+"from Stream Avatars without a name or dates: run kikarinhas "
+"--import-sa-users once."
 
 #: config/sources.c:64
 msgid "Add a live"
@@ -912,85 +918,85 @@ msgstr "Pick a live in the list."
 msgid "%s: could not understand \"%s\"."
 msgstr "%s: could not understand \"%s\"."
 
-#: config/avatars.c:82
+#: config/avatars.c:84
 msgid "Avatar folder"
 msgstr "Avatar folder"
 
-#: config/avatars.c:88
+#: config/avatars.c:90
 #, c-format
 msgid "Folder names with a comma can't go in the list: %s"
 msgstr "Folder names with a comma can't go in the list: %s"
 
-#: config/avatars.c:106
+#: config/avatars.c:108
 msgid "Pick a folder in the list."
 msgstr "Pick a folder in the list."
 
-#: config/avatars.c:121
+#: config/avatars.c:123
 #, c-format
 msgid "Could not open %s: %s"
 msgstr "Could not open %s: %s"
 
-#: config/avatars.c:149
+#: config/avatars.c:151
 msgid "_Add folder"
 msgstr "_Add folder"
 
-#: config/avatars.c:151
+#: config/avatars.c:153
 msgid "Open my avatars folder"
 msgstr "Open my avatars folder"
 
-#: config/avatars.c:210
+#: config/avatars.c:212 config/avatars.c:633
 msgid "No avatars found in any folder."
 msgstr "No avatars found in any folder."
 
-#: config/avatars.c:323
+#: config/avatars.c:355 config/avatars.c:596
 #, c-format
 msgid "%d avatar"
 msgid_plural "%d avatars"
 msgstr[0] "%d avatar"
 msgstr[1] "%d avatars"
 
-#: config/avatars.c:325
+#: config/avatars.c:357
 #, c-format
 msgid "%d of %d avatars"
 msgstr "%d of %d avatars"
 
-#: config/avatars.c:367
+#: config/avatars.c:399
 msgid "no image"
 msgstr "no image"
 
-#: config/avatars.c:396
+#: config/avatars.c:428
 msgid "Avatar folders read again."
 msgstr "Avatar folders read again."
 
-#: config/avatars.c:447
+#: config/avatars.c:479
 msgid "_Read again"
 msgstr "_Read again"
 
-#: config/avatars.c:473
+#: config/avatars.c:505
 msgid "Key"
 msgstr "Key"
 
-#: config/avatars.c:474
+#: config/avatars.c:506
 msgid "Cell"
 msgstr "Cell"
 
-#: config/avatars.c:474
+#: config/avatars.c:506
 msgid "Animations"
 msgstr "Animations"
 
-#: config/avatars.c:475
+#: config/avatars.c:507
 msgid "Palettes"
 msgstr "Palettes"
 
-#: config/avatars.c:475
+#: config/avatars.c:507
 msgid "Gear sets"
 msgstr "Gear sets"
 
-#: config/avatars.c:476
+#: config/avatars.c:508
 msgid "Folder"
 msgstr "Folder"
 
-#: config/avatars.c:499
+#: config/avatars.c:531
 msgid ""
 "Every avatar of every folder (Avatars tab), as kikarinhas will see them: on "
 "a repeated name, only the first one is here. The name or the key is what "
@@ -1001,6 +1007,14 @@ msgstr ""
 "a repeated name, only the first one is here. The name or the key is what "
 "people type in !avatar; the animations after \";\" are the ones !emote "
 "takes. \"Read again\" after changing the folders."
+
+#: config/avatars.c:654
+msgid "_Random (always the same)"
+msgstr "_Random (always the same)"
+
+#: config/avatars.c:656 config/commands.c:416
+msgid "_OK"
+msgstr "_OK"
 
 #: config/commands.c:42
 msgid "Change avatar"
@@ -1057,10 +1071,6 @@ msgstr "Show a picture"
 #: config/commands.c:55
 msgid "Show the music playing"
 msgstr "Show the music playing"
-
-#: config/commands.c:416
-msgid "_OK"
-msgstr "_OK"
 
 #: config/commands.c:428
 msgid "One word, without \"!\": what people type in the chat."
@@ -1375,8 +1385,8 @@ msgid ""
 "Spending: what changing avatar, accessory or palette by name costs (\"!"
 "pikachu\")."
 msgstr ""
-"Spending: what changing avatar, accessory or palette by name costs "
-"(\"!pikachu\")."
+"Spending: what changing avatar, accessory or palette by name costs (\"!"
+"pikachu\")."
 
 #: config/points.c:108
 msgid ""
@@ -1389,6 +1399,10 @@ msgstr ""
 "does something; the channel owner never pays. A sound \"(as !sound)\" costs "
 "what !sound costs. !points shows the balance, !give @name N gives some "
 "away, !award @name N (moderators) creates them and !top shows the ranking."
+
+#, c-format
+#~ msgid "There is no avatar \"%s\" in the avatar folders."
+#~ msgstr "There is no avatar \"%s\" in the avatar folders."
 
 #~ msgid ""
 #~ "New command: give it a name, pick the action and, for \"sound\", the "

@@ -261,7 +261,9 @@ In the **Sounds** tab of `kikarinhas-config`:
 The people file stores, for everyone who has talked in the chat, the name,
 first seen, most recent visit and choices. The **Viewers** tab of
 `kikarinhas-config` lists everybody (with search and sorting) and changes
-someone's avatar: with kikarinhas running the change takes effect at once;
+someone's avatar: double-clicking a person opens a grid with the thumbnails
+of every avatar and a search box (or **Random**, back to the avatar always
+picked for them). With kikarinhas running the change takes effect at once;
 when it is closed, it is saved for next time.
 
 **Levels.** Each message stores the level the chat badges give (owner,
@@ -378,7 +380,8 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop to st
 
 Other requests: `save` writes the people file now, and
 `{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,"points":100}`
-changes someone's avatar, marks them as trusted and/or sets their points (each field is
+changes someone's avatar (`""` goes back to the random one), marks them as
+trusted and/or sets their points (each field is
 optional; it is what the Viewers tab uses; `set_avatar` is the old name).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,

@@ -46,8 +46,8 @@ struct audience_tab {
     GtkListStore *store;
     GtkTreeModel *filter, *sort;
     GtkWidget *tree, *search, *count;
-    GtkListStore *avatars; /* avatar keys, for the combo */
-    bool avatars_loaded;
+    GtkTreeViewColumn *points_col; /* its double-click edits, not picks */
+    bool shown; /* the list is read the first time the tab shows */
 };
 
 static void users_path(editor *e, char *out, size_t size)
@@ -196,31 +196,15 @@ static void on_search(GtkEditable *ed, gpointer ud)
 
 /* ---- changing someone's avatar ------------------------------------------- */
 
-static void load_avatars(editor *e)
-{
-    audience_tab *t = e->audience;
-    if (t->avatars_loaded)
-        return;
-    t->avatars_loaded = true;
-    const kk_sa_library *lib = editor_library(e);
-    for (int i = 0; lib && i < lib->count; i++) {
-        if (!lib->avatars[i].image)
-            continue;
-        GtkTreeIter it;
-        gtk_list_store_append(t->avatars, &it);
-        gtk_list_store_set(t->avatars, &it, 0, lib->avatars[i].key, -1);
-    }
-}
-
 /* First time the tab is shown: read the list and the avatars. */
 static void on_map(GtkWidget *w, gpointer ud)
 {
     (void)w;
     editor *e = ud;
-    if (e->audience->avatars_loaded)
+    if (e->audience->shown)
         return;
+    e->audience->shown = true;
     refresh(e);
-    load_avatars(e);
 }
 
 /* Writes the file directly: only when no kikarinhas is running. avatar
@@ -311,24 +295,6 @@ static void on_trusted_toggled(GtkCellRendererToggle *r, gchar *path, gpointer u
     g_free(name);
 }
 
-/* The list's spelling of name (any case), or NULL. Without a list (no
- * avatars found), any name is taken: kikarinhas checks it. */
-static gchar *known_avatar(audience_tab *t, const char *name)
-{
-    GtkTreeModel *m = GTK_TREE_MODEL(t->avatars);
-    GtkTreeIter it;
-    if (!gtk_tree_model_get_iter_first(m, &it))
-        return name[0] ? g_strdup(name) : NULL;
-    do {
-        gchar *k;
-        gtk_tree_model_get(m, &it, 0, &k, -1);
-        if (g_ascii_strcasecmp(k, name) == 0)
-            return k;
-        g_free(k);
-    } while (gtk_tree_model_iter_next(m, &it));
-    return NULL;
-}
-
 static void points_text(GtkTreeViewColumn *c, GtkCellRenderer *r, GtkTreeModel *m,
                         GtkTreeIter *it, gpointer ud)
 {
@@ -371,47 +337,64 @@ static void on_points_edited(GtkCellRendererText *r, gchar *path, gchar *text, g
     g_free(name);
 }
 
-static void on_avatar_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
+/* Gives the person at it the avatar key ("" = back to the one picked for
+ * them), through the running kikarinhas or, without it, in the file. */
+static void set_avatar(editor *e, GtkTreeIter *it, const char *avatar)
 {
-    (void)r;
-    editor *e = ud;
     audience_tab *t = e->audience;
-    GtkTreeIter it;
-    if (!store_iter(t, path, &it) || !text[0])
-        return;
     gchar *key, *name, *old;
-    gtk_tree_model_get(GTK_TREE_MODEL(t->store), &it, A_KEY, &key, A_NAME, &name,
-                       A_AVATAR, &old, -1);
-    /* Typed names must be one of the list (as written there). */
-    gchar *known = known_avatar(t, g_strstrip(text));
-    if (!known) {
-        status(e, _("There is no avatar \"%s\" in the avatar folders."), text);
-        goto out;
+    gtk_tree_model_get(GTK_TREE_MODEL(t->store), it, A_KEY, &key, A_NAME, &name, A_AVATAR,
+                       &old, -1);
+    if (strcmp(old, avatar) != 0) {
+        cJSON *req = cJSON_CreateObject();
+        cJSON_AddStringToObject(req, "user", key);
+        cJSON_AddStringToObject(req, "avatar", avatar);
+        send_result sr = send_user(e, req);
+        const char *shown = avatar[0] ? avatar : _("random");
+        if (sr == SENT_OK) {
+            gtk_list_store_set(t->store, it, A_AVATAR, avatar, -1);
+            status(e, _("%s is now %s (already in effect in the running kikarinhas)."), name,
+                   shown);
+        } else if (sr == SENT_REFUSED) {
+            /* the status line says why */
+        } else if (write_directly(e, key, avatar, -1, -1)) {
+            gtk_list_store_set(t->store, it, A_AVATAR, avatar, -1);
+            status(e, _("%s is now %s (saved to the file; takes effect next time)."), name,
+                   shown);
+        } else {
+            status(e, _("Could not write the people file."));
+        }
     }
-    text = known;
-    if (strcmp(old, text) == 0)
-        goto out;
-
-    cJSON *req = cJSON_CreateObject();
-    cJSON_AddStringToObject(req, "user", key);
-    cJSON_AddStringToObject(req, "avatar", text);
-    send_result sr = send_user(e, req);
-    if (sr == SENT_OK) {
-        gtk_list_store_set(t->store, &it, A_AVATAR, text, -1);
-        status(e, _("%s is now %s (already in effect in the running kikarinhas)."), name, text);
-    } else if (sr == SENT_REFUSED) {
-        /* the status line says why */
-    } else if (write_directly(e, key, text, -1, -1)) {
-        gtk_list_store_set(t->store, &it, A_AVATAR, text, -1);
-        status(e, _("%s is now %s (saved to the file; takes effect next time)."), name, text);
-    } else {
-        status(e, _("Could not write the people file."));
-    }
-out:
-    g_free(known);
     g_free(key);
     g_free(name);
     g_free(old);
+}
+
+/* Double-click on someone: pick their avatar by its picture. */
+static void on_row_activated(GtkTreeView *v, GtkTreePath *path, GtkTreeViewColumn *col,
+                             gpointer ud)
+{
+    (void)v;
+    editor *e = ud;
+    audience_tab *t = e->audience;
+    if (col == t->points_col)
+        return; /* that double-click edits the points */
+    GtkTreeIter sit, fit, it;
+    if (!gtk_tree_model_get_iter(t->sort, &sit, path))
+        return;
+    gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(t->sort), &fit, &sit);
+    gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(t->filter), &it,
+                                                     &fit);
+    gchar *name, *avatar;
+    gtk_tree_model_get(GTK_TREE_MODEL(t->store), &it, A_NAME, &name, A_AVATAR, &avatar, -1);
+    char title[256];
+    snprintf(title, sizeof title, _("Avatar of %s"), name);
+    gchar *chosen = editor_pick_avatar(e, title, avatar);
+    if (chosen)
+        set_avatar(e, &it, chosen);
+    g_free(chosen);
+    g_free(name);
+    g_free(avatar);
 }
 
 /* ---- the page ------------------------------------------------------------ */
@@ -446,7 +429,6 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     t->sort = gtk_tree_model_sort_new_with_model(t->filter);
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(t->sort), A_LAST,
                                          GTK_SORT_DESCENDING);
-    t->avatars = gtk_list_store_new(1, G_TYPE_STRING);
 
     t->tree = gtk_tree_view_new_with_model(t->sort);
     gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(t->tree), TRUE);
@@ -488,13 +470,12 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_tree_view_column_set_cell_data_func(pc, pr, points_text, NULL, NULL);
     gtk_tree_view_column_set_sort_column_id(pc, A_POINTS);
     gtk_tree_view_append_column(GTK_TREE_VIEW(t->tree), pc);
+    t->points_col = pc;
+    g_signal_connect(t->tree, "row-activated", G_CALLBACK(on_row_activated), e);
 
-    GtkCellRenderer *combo = gtk_cell_renderer_combo_new();
-    g_object_set(combo, "model", t->avatars, "text-column", 0, "has-entry", TRUE,
-                 "editable", TRUE, NULL);
-    g_signal_connect(combo, "edited", G_CALLBACK(on_avatar_edited), e);
+    GtkCellRenderer *ar = gtk_cell_renderer_text_new();
     GtkTreeViewColumn *c =
-        gtk_tree_view_column_new_with_attributes(_("Avatar"), combo, "text", A_AVATAR, NULL);
+        gtk_tree_view_column_new_with_attributes(_("Avatar"), ar, "text", A_AVATAR, NULL);
     gtk_tree_view_column_set_resizable(c, TRUE);
     gtk_tree_view_column_set_sort_column_id(c, A_AVATAR);
     gtk_tree_view_column_set_min_width(c, 160);
@@ -507,13 +488,14 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_container_add(GTK_CONTAINER(scroll), t->tree);
     gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(box),
-                       hint_label(_("Double-click the avatar to change it (you can type the "
-                                    "name). With kikarinhas running, the change takes effect at "
-                                    "once. Empty avatar: a random one, always the same. Level: "
-                                    "what the chat badges said on the latest message. Trusted: "
-                                    "ticked by hand, for commands limited to trusted people and "
-                                    "up. Points: double-click to change the balance. People from Stream Avatars without a name or dates: run "
-                                    "kikarinhas --import-sa-users once.")),
+                       hint_label(_("Double-click someone to pick their avatar by its picture "
+                                    "(with a search box). With kikarinhas running, the change "
+                                    "takes effect at once. Empty avatar: a random one, always "
+                                    "the same. Level: what the chat badges said on the latest "
+                                    "message. Trusted: ticked by hand, for commands limited to "
+                                    "trusted people and up. Points: double-click to change the "
+                                    "balance. People from Stream Avatars without a name or "
+                                    "dates: run kikarinhas --import-sa-users once.")),
                        FALSE, FALSE, 0);
 
     return box;
@@ -527,7 +509,6 @@ void audience_free(editor *e)
     g_object_unref(t->sort);
     g_object_unref(t->filter);
     g_object_unref(t->store);
-    g_object_unref(t->avatars);
     g_free(t);
     e->audience = NULL;
 }

@@ -35,6 +35,8 @@ struct avatars_tab {
     GtkWidget *dirs_tree;
     kk_sa_library lib;
     bool loaded;
+    GdkPixbuf **thumb_cache; /* by library index, made on first use */
+    signed char *thumb_done; /* 0 not tried, 1 made (may be NULL: no picture) */
     /* the list tab */
     GtkListStore *store;
     GtkTreeModel *filter;
@@ -214,6 +216,37 @@ const kk_sa_library *editor_library(editor *e)
     return t->lib.count ? &t->lib : NULL;
 }
 
+static void drop_thumbs(avatars_tab *t)
+{
+    for (int i = 0; t->thumb_cache && i < t->lib.count; i++)
+        if (t->thumb_cache[i])
+            g_object_unref(t->thumb_cache[i]);
+    g_free(t->thumb_cache);
+    g_free(t->thumb_done);
+    t->thumb_cache = NULL;
+    t->thumb_done = NULL;
+}
+
+static GdkPixbuf *thumbnail(const kk_sa_avatar *a);
+
+/* The thumbnail of the i-th avatar of editor_library, made once; NULL if
+ * it has no picture. Owned by the cache. */
+static GdkPixbuf *thumb_of(editor *e, int i)
+{
+    avatars_tab *t = e->avatars;
+    if (i < 0 || i >= t->lib.count)
+        return NULL;
+    if (!t->thumb_cache) {
+        t->thumb_cache = g_new0(GdkPixbuf *, (gsize)t->lib.count);
+        t->thumb_done = g_new0(signed char, (gsize)t->lib.count);
+    }
+    if (!t->thumb_done[i]) {
+        t->thumb_done[i] = 1;
+        t->thumb_cache[i] = thumbnail(&t->lib.avatars[i]);
+    }
+    return t->thumb_cache[i];
+}
+
 void editor_library_forget(editor *e)
 {
     avatars_tab *t = e->avatars;
@@ -221,6 +254,7 @@ void editor_library_forget(editor *e)
         g_source_remove(t->thumbs);
         t->thumbs = 0;
     }
+    drop_thumbs(t);
     kk_sa_free(&t->lib);
     t->loaded = false;
     t->listed = false;
@@ -300,11 +334,9 @@ static gboolean load_thumbs(gpointer ud)
     for (int n = 0; n < 6 && t->thumb_more; n++) {
         int i;
         gtk_tree_model_get(m, &t->thumb_at, V_INDEX, &i, -1);
-        GdkPixbuf *p = i >= 0 && i < t->lib.count ? thumbnail(&t->lib.avatars[i]) : NULL;
-        if (p) {
+        GdkPixbuf *p = thumb_of(e, i);
+        if (p)
             gtk_list_store_set(t->store, &t->thumb_at, V_PIXBUF, p, -1);
-            g_object_unref(p);
-        }
         t->thumb_more = gtk_tree_model_iter_next(m, &t->thumb_at);
     }
     if (t->thumb_more)
@@ -505,6 +537,194 @@ GtkWidget *avatars_page(editor *e)
     return box;
 }
 
+/* ---- picking an avatar --------------------------------------------------- */
+
+enum { P_PIXBUF, P_NAME, P_KEY, P_INDEX, N_PCOLS };
+#define RESPONSE_RANDOM 1
+
+typedef struct {
+    editor *e;
+    GtkListStore *store;
+    GtkTreeModel *filter;
+    GtkWidget *dlg, *search, *view, *count;
+    GtkTreeIter at; /* next row for a thumbnail */
+    bool more;
+    guint idle;
+} picker;
+
+static gboolean picker_thumbs(gpointer ud)
+{
+    picker *p = ud;
+    GtkTreeModel *m = GTK_TREE_MODEL(p->store);
+    for (int n = 0; n < 8 && p->more; n++) {
+        int i;
+        gtk_tree_model_get(m, &p->at, P_INDEX, &i, -1);
+        GdkPixbuf *pix = thumb_of(p->e, i);
+        if (pix)
+            gtk_list_store_set(p->store, &p->at, P_PIXBUF, pix, -1);
+        p->more = gtk_tree_model_iter_next(m, &p->at);
+    }
+    if (p->more)
+        return TRUE;
+    p->idle = 0;
+    return FALSE;
+}
+
+static gboolean picker_visible(GtkTreeModel *m, GtkTreeIter *it, gpointer ud)
+{
+    picker *p = ud;
+    const char *q = p->search ? gtk_entry_get_text(GTK_ENTRY(p->search)) : "";
+    if (!q[0])
+        return TRUE;
+    gchar *name, *key;
+    gtk_tree_model_get(m, it, P_NAME, &name, P_KEY, &key, -1);
+    gchar *needle = g_utf8_casefold(q, -1);
+    gchar *a = g_utf8_casefold(name ? name : "", -1), *b = g_utf8_casefold(key ? key : "", -1);
+    bool yes = strstr(a, needle) || strstr(b, needle);
+    g_free(a);
+    g_free(b);
+    g_free(needle);
+    g_free(name);
+    g_free(key);
+    return yes;
+}
+
+static void picker_count(picker *p)
+{
+    int n = gtk_tree_model_iter_n_children(p->filter, NULL);
+    char s[64];
+    snprintf(s, sizeof s, ngettext("%d avatar", "%d avatars", n), n);
+    gtk_label_set_text(GTK_LABEL(p->count), s);
+}
+
+/* Typing filters; the first match is selected, so Enter takes it. */
+static void on_picker_search(GtkEditable *ed, gpointer ud)
+{
+    (void)ed;
+    picker *p = ud;
+    gtk_tree_model_filter_refilter(GTK_TREE_MODEL_FILTER(p->filter));
+    picker_count(p);
+    GtkTreePath *first = gtk_tree_path_new_first();
+    GtkTreeIter it;
+    if (gtk_tree_model_get_iter(p->filter, &it, first)) {
+        gtk_icon_view_select_path(GTK_ICON_VIEW(p->view), first);
+        gtk_icon_view_scroll_to_path(GTK_ICON_VIEW(p->view), first, FALSE, 0, 0);
+    }
+    gtk_tree_path_free(first);
+}
+
+static void on_picker_activated(GtkIconView *v, GtkTreePath *path, gpointer ud)
+{
+    (void)v;
+    (void)path;
+    gtk_dialog_response(GTK_DIALOG(((picker *)ud)->dlg), GTK_RESPONSE_OK);
+}
+
+static void on_picker_enter(GtkEntry *en, gpointer ud)
+{
+    (void)en;
+    gtk_dialog_response(GTK_DIALOG(((picker *)ud)->dlg), GTK_RESPONSE_OK);
+}
+
+gchar *editor_pick_avatar(editor *e, const char *title, const char *current)
+{
+    const kk_sa_library *lib = editor_library(e);
+    if (!lib) {
+        status(e, _("No avatars found in any folder."));
+        return NULL;
+    }
+    picker p = {.e = e};
+    p.store = gtk_list_store_new(N_PCOLS, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_STRING,
+                                 G_TYPE_INT);
+    GtkTreeIter it;
+    for (int i = 0; i < lib->count; i++) {
+        if (!lib->avatars[i].image)
+            continue;
+        gtk_list_store_append(p.store, &it);
+        gtk_list_store_set(p.store, &it, P_NAME, lib->avatars[i].name, P_KEY,
+                           lib->avatars[i].key, P_INDEX, i, -1);
+    }
+    p.filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(p.store), NULL);
+    gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(p.filter), picker_visible, &p,
+                                           NULL);
+
+    p.dlg = gtk_dialog_new_with_buttons(title, GTK_WINDOW(e->window),
+                                        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        NULL, NULL);
+    gtk_dialog_add_button(GTK_DIALOG(p.dlg), _("_Random (always the same)"), RESPONSE_RANDOM);
+    gtk_dialog_add_button(GTK_DIALOG(p.dlg), _("_Cancel"), GTK_RESPONSE_CANCEL);
+    gtk_dialog_add_button(GTK_DIALOG(p.dlg), _("_OK"), GTK_RESPONSE_OK);
+    gtk_dialog_set_default_response(GTK_DIALOG(p.dlg), GTK_RESPONSE_OK);
+    gtk_window_set_default_size(GTK_WINDOW(p.dlg), 760, 520);
+
+    GtkWidget *box = gtk_vbox_new(FALSE, 6);
+    gtk_container_set_border_width(GTK_CONTAINER(box), 12);
+    GtkWidget *top = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("Search")), FALSE, FALSE, 0);
+    p.search = gtk_entry_new();
+    g_signal_connect(p.search, "changed", G_CALLBACK(on_picker_search), &p);
+    g_signal_connect(p.search, "activate", G_CALLBACK(on_picker_enter), &p);
+    gtk_box_pack_start(GTK_BOX(top), p.search, TRUE, TRUE, 0);
+    p.count = gtk_label_new(NULL);
+    gtk_box_pack_start(GTK_BOX(top), p.count, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
+
+    p.view = gtk_icon_view_new_with_model(p.filter);
+    gtk_icon_view_set_pixbuf_column(GTK_ICON_VIEW(p.view), P_PIXBUF);
+    gtk_icon_view_set_text_column(GTK_ICON_VIEW(p.view), P_NAME);
+    gtk_icon_view_set_item_width(GTK_ICON_VIEW(p.view), 96);
+    gtk_icon_view_set_selection_mode(GTK_ICON_VIEW(p.view), GTK_SELECTION_BROWSE);
+    g_signal_connect(p.view, "item-activated", G_CALLBACK(on_picker_activated), &p);
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER,
+                                   GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll), GTK_SHADOW_IN);
+    gtk_container_add(GTK_CONTAINER(scroll), p.view);
+    gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(p.dlg))), box, TRUE, TRUE,
+                       0);
+    picker_count(&p);
+    gtk_widget_show_all(p.dlg);
+    gtk_widget_grab_focus(p.search);
+
+    /* Start on the avatar they have now. */
+    GtkTreeModel *m = p.filter;
+    for (bool more = gtk_tree_model_get_iter_first(m, &it); more && current && current[0];
+         more = gtk_tree_model_iter_next(m, &it)) {
+        gchar *key;
+        gtk_tree_model_get(m, &it, P_KEY, &key, -1);
+        bool same = g_ascii_strcasecmp(key, current) == 0;
+        g_free(key);
+        if (same) {
+            GtkTreePath *path = gtk_tree_model_get_path(m, &it);
+            gtk_icon_view_select_path(GTK_ICON_VIEW(p.view), path);
+            gtk_icon_view_scroll_to_path(GTK_ICON_VIEW(p.view), path, TRUE, 0.5, 0);
+            gtk_tree_path_free(path);
+            break;
+        }
+    }
+    p.more = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(p.store), &p.at);
+    if (p.more)
+        p.idle = g_idle_add(picker_thumbs, &p);
+
+    gchar *chosen = NULL;
+    int r = gtk_dialog_run(GTK_DIALOG(p.dlg));
+    if (r == RESPONSE_RANDOM) {
+        chosen = g_strdup("");
+    } else if (r == GTK_RESPONSE_OK) {
+        GList *sel = gtk_icon_view_get_selected_items(GTK_ICON_VIEW(p.view));
+        if (sel && gtk_tree_model_get_iter(p.filter, &it, sel->data))
+            gtk_tree_model_get(p.filter, &it, P_KEY, &chosen, -1);
+        g_list_free_full(sel, (GDestroyNotify)gtk_tree_path_free);
+    }
+    if (p.idle)
+        g_source_remove(p.idle);
+    gtk_widget_destroy(p.dlg);
+    g_object_unref(p.filter);
+    g_object_unref(p.store);
+    return chosen;
+}
+
 void avatars_free(editor *e)
 {
     if (!e->avatars)
@@ -515,6 +735,7 @@ void avatars_free(editor *e)
         g_object_unref(e->avatars->filter);
         g_object_unref(e->avatars->store);
     }
+    drop_thumbs(e->avatars);
     kk_sa_free(&e->avatars->lib);
     g_object_unref(e->avatars->dirs);
     g_free(e->avatars);

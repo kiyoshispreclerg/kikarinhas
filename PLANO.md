@@ -544,6 +544,14 @@ data/         avatar padrão original, exemplo de .ini
      Lição: o critério de cores separa o pontilhado intencional da pixel
      art (Pokémon de 10 a 14 cores, também com xadrez nas asas) do
      pontilhado de conversão (27 a 529 cores).
+   - **Escolher avatar pela imagem** (aba Espectadores): clique duplo numa
+     pessoa abre `editor_pick_avatar` (`config/avatars.c`), uma grade
+     (`GtkIconView`) com as miniaturas e busca por nome ou chave; Enter pega
+     o primeiro resultado. "Sorteado" manda `avatar: ""` no `set_user`, que
+     apaga a escolha e, se a pessoa está na tela, troca para
+     `kk_stage_default_avatar` (o padrão do `.ini` ou o do hash da chave).
+     As miniaturas ficam num cache por avatar, dividido com a aba Avatares
+     instalados.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

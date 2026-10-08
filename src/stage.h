@@ -100,6 +100,10 @@ kk_avatar *kk_stage_chatter(kk_stage *s, const kk_chat_msg *msg);
 /* Jump and show the message in a bubble. */
 void kk_stage_say(kk_stage *s, kk_avatar *a, const kk_chat_msg *msg);
 
+/* What key gets without a saved choice: the configured default, else one
+ * picked by hashing the key (always the same). */
+const kk_sa_avatar *kk_stage_default_avatar(const kk_stage *s, const char *key);
+
 /* Look changes; they are saved for next time when a->user_id is set.
  * palette -1 = original colours. */
 bool kk_stage_set_avatar(kk_stage *s, kk_avatar *a, const kk_sa_avatar *def);

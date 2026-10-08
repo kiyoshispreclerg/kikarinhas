@@ -131,6 +131,9 @@ GtkWidget *avatar_dirs_widget(editor *e, const kk_config *cfg);
 void avatar_dirs_collect(editor *e);
 const kk_sa_library *editor_library(editor *e);
 void editor_library_forget(editor *e);
+/* A dialog to pick an avatar by its picture, with a search box. Returns the
+ * key (g_free it), "" for "random, always the same", or NULL if cancelled. */
+gchar *editor_pick_avatar(editor *e, const char *title, const char *current);
 /* The "Avatares instalados" tab: every avatar of every folder. */
 GtkWidget *avatars_page(editor *e);
 void avatars_free(editor *e);

@@ -255,8 +255,10 @@ Na aba **Sons** do `kikarinhas-config`:
 O arquivo de pessoas guarda, de quem já falou no chat, o nome, a primeira
 vez, a vez mais recente e as escolhas. A aba **Espectadores** do
 `kikarinhas-config` lista todo mundo (com busca e ordenação) e troca o
-avatar de alguém: com o kikarinhas aberto, a troca vale na hora; fechado,
-fica gravada para a próxima vez.
+avatar de alguém: clicar duas vezes na pessoa abre uma grade com as
+miniaturas de todos os avatares e uma caixa de busca (ou **Sorteado**, para
+voltar ao avatar sorteado de sempre). Com o kikarinhas aberto, a troca vale
+na hora; fechado, fica gravada para a próxima vez.
 
 **Níveis.** Cada mensagem grava o nível que os selos do chat dão (dono,
 moderador, membro/assinante; sem selo é comum), visto na coluna **Nível**.
@@ -371,7 +373,8 @@ echo '{"type":"play","sound":"buzina"}' | socat - UNIX-CONNECT:$S   # stop para 
 
 Outros pedidos: `save` grava o arquivo de pessoas agora, e
 `{"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,"points":100}`
-troca o avatar de alguém, marca como confiável e/ou muda o saldo de pontos (cada campo é opcional; é
+troca o avatar de alguém (`""` volta ao sorteado), marca como confiável e/ou
+muda o saldo de pontos (cada campo é opcional; é
 o que a aba Espectadores usa; `set_avatar` é o nome antigo).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
