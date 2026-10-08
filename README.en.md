@@ -495,7 +495,6 @@ transparent on screen too.
 
 ## Planned
 
-- Odysee.
 - Stream Avatars .zip packs, emotes as images inside the bubbles, animated
   emotes (GIF).
 - Optional HTML layers (WPE WebKit) to replace some obs-browser sources.

@@ -490,7 +490,6 @@ transparente também na tela.
 
 ## Previsto
 
-- Odysee.
 - Pacotes .zip do Stream Avatars, emotes como imagem dentro dos balões,
   emotes animados (GIF).
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
