@@ -506,6 +506,17 @@ data/         avatar padrão original, exemplo de .ini
      espectador digita é ignorado: uma aba do navegador não aparece por
      acaso). Socket: `nowplaying`. Testado com o Audacious e com um player
      falso em Python abrindo, trocando de faixa e fechando.
+   - **Diálogo de comandos** (`config/commands.c`, saiu do `main.c` do
+     configurador): a lista virou resumo (ação com nome legível, dado
+     curto, esperas, nível) e cada comando abre um diálogo que mostra só o
+     que a ação usa: texto multilinha (`\n` no arquivo), imagem com
+     seletor de arquivo, `x`/`y`/`scale` e uma prévia desenhada na
+     proporção da janela da aba Janela, som da aba Sons, avatar da
+     biblioteca, filtro de player, segundos. Confere nome, texto, imagem e
+     som antes de aceitar. Caminho de imagem fica como escrito no arquivo
+     (relativo ou `~/`). Lição: eventos de teclado sintéticos (xdotool sem
+     XTEST) não trocam o foco com Tab neste X; o teste da interface foi
+     pelo diálogo de comando novo e pelo salvar sem mudar nada.
    Lições:
    - desenhar os emotes 1:1 (posição inteira, sem escala) é o caminho
      rápido do pixman: com escala aleatória por emote o mesmo wall custava

@@ -154,7 +154,11 @@ e Espectadores, e o botão **Salvar e aplicar**. Ele mantém os comentários do
 arquivo e só grava o que for diferente do padrão. A aba **Avatares
 instalados** lista os avatares de todas as pastas, com miniatura, tamanho da
 célula, animações (as que o `!emote` aceita), paletas, conjuntos de gear e a
-pasta de onde cada um veio, com busca.
+pasta de onde cada um veio, com busca. Na aba **Comandos**, clicar duas
+vezes num comando (ou **Editar**) abre um diálogo com o que a ação dele
+precisa: o texto de um comando de texto, a imagem com a posição, o tamanho e
+uma prévia de onde ela fica na janela, o som, o avatar, o filtro de player
+do `!song`, a espera e o nível mínimo.
 
 Na aba Avatares, `show_names`/`name_position` (embaixo ou em cima do
 avatar) e `show_bubbles` ligam ou desligam o nome e o balão com a mensagem

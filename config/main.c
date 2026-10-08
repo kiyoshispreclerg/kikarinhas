@@ -7,9 +7,10 @@
  * running kikarinhas to reload over the control socket. The core never
  * needs this program.
  *
- * This file has the window and the Janela/Avatares/Chat/Comandos tabs;
- * sounds.c, wall.c and audience.c have the Sons, Emote wall and
- * Espectadores ones, and sources.c the list of lives of the Chat tab. */
+ * This file has the window and the Janela/Avatares/Chat tabs; commands.c,
+ * sounds.c, wall.c and audience.c have the Comandos, Sons, Emote wall and
+ * Espectadores ones, sources.c the list of lives of the Chat tab and
+ * avatars.c the avatar folders and the Avatares instalados tab. */
 #include <errno.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -160,7 +161,7 @@ static GtkWidget *check_with(GtkWidget **out_check, const char *label, bool on,
     return box;
 }
 
-static GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo,
+GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo,
                             double hi, int value)
 {
     GtkWidget *box = gtk_hbox_new(FALSE, 6);
@@ -228,345 +229,6 @@ void fmt_num(char *out, size_t size, double v)
     snprintf(out, size, "%g", v);
 }
 
-/* ---- the commands list --------------------------------------------------- */
-
-static const kk_config_command *builtin(const char *name)
-{
-    int n;
-    const kk_config_command *d = kk_config_default_commands(&n);
-    for (int i = 0; i < n; i++)
-        if (strcmp(d[i].name, name) == 0)
-            return &d[i];
-    return NULL;
-}
-
-static void append_command(editor *e, const kk_config_command *k, bool custom)
-{
-    char aliases[512], cd[32], gcd[32];
-    join(aliases, sizeof aliases, k->aliases, k->n_aliases);
-    fmt_num(cd, sizeof cd, k->user_cd);
-    fmt_num(gcd, sizeof gcd, k->global_cd);
-    GtkTreeIter it;
-    gtk_list_store_append(e->commands, &it);
-    gtk_list_store_set(e->commands, &it, COL_ENABLED, k->enabled, COL_NAME, k->name,
-                       COL_ACTION, k->action ? k->action : "", COL_DATA,
-                       k->data ? k->data : "", COL_ALIASES, aliases, COL_CD, cd,
-                       COL_GCD, gcd, COL_ROLE, _(ROLE_LABELS[k->role]), COL_CUSTOM,
-                       custom, -1);
-}
-
-static GtkTreePath *path_of(const gchar *s)
-{
-    return gtk_tree_path_new_from_string(s);
-}
-
-static void set_cell(editor *e, const gchar *path, int col, const char *value)
-{
-    GtkTreeIter it;
-    GtkTreePath *p = path_of(path);
-    if (gtk_tree_model_get_iter(GTK_TREE_MODEL(e->commands), &it, p))
-        gtk_list_store_set(e->commands, &it, col, value, -1);
-    gtk_tree_path_free(p);
-}
-
-static bool name_taken(editor *e, const char *name, const gchar *except)
-{
-    GtkTreeIter it;
-    GtkTreeModel *m = GTK_TREE_MODEL(e->commands);
-    bool more = gtk_tree_model_get_iter_first(m, &it);
-    while (more) {
-        gchar *n, *p = gtk_tree_model_get_string_from_iter(m, &it);
-        gtk_tree_model_get(m, &it, COL_NAME, &n, -1);
-        bool same = strcmp(n, name) == 0 && strcmp(p, except) != 0;
-        g_free(n);
-        g_free(p);
-        if (same)
-            return true;
-        more = gtk_tree_model_iter_next(m, &it);
-    }
-    return false;
-}
-
-static void on_toggle_enabled(GtkCellRendererToggle *r, gchar *path, gpointer ud)
-{
-    editor *e = ud;
-    GtkTreeIter it;
-    GtkTreePath *p = path_of(path);
-    if (gtk_tree_model_get_iter(GTK_TREE_MODEL(e->commands), &it, p))
-        gtk_list_store_set(e->commands, &it, COL_ENABLED,
-                           !gtk_cell_renderer_toggle_get_active(r), -1);
-    gtk_tree_path_free(p);
-}
-
-static void on_name_edited(GtkCellRendererText *r, gchar *path, gchar *text,
-                           gpointer ud)
-{
-    (void)r;
-    editor *e = ud;
-    char name[64];
-    const char *s = text[0] == '!' ? text + 1 : text;
-    size_t n = strlen(s);
-    if (n == 0 || n >= sizeof name || strpbrk(s, " \t!")) {
-        status(e, _("Invalid command name: use a single word, no spaces."));
-        return;
-    }
-    for (size_t i = 0; i <= n; i++)
-        name[i] = (char)g_ascii_tolower(s[i]);
-    if (name_taken(e, name, path)) {
-        status(e, _("A command !%s already exists."), name);
-        return;
-    }
-    set_cell(e, path, COL_NAME, name);
-}
-
-static void on_number_edited(editor *e, gchar *path, gchar *text, int col)
-{
-    double v;
-    g_strstrip(text);
-    if (!kk_parse_double(text, 0, 86400, &v)) {
-        status(e, _("Invalid cooldown: \"%s\" (seconds, 0 to 86400)."), text);
-        return;
-    }
-    char s[32];
-    fmt_num(s, sizeof s, v);
-    set_cell(e, path, col, s);
-}
-
-static void on_cd_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
-{
-    (void)r;
-    on_number_edited(ud, path, text, COL_CD);
-}
-
-static void on_gcd_edited(GtkCellRendererText *r, gchar *path, gchar *text, gpointer ud)
-{
-    (void)r;
-    on_number_edited(ud, path, text, COL_GCD);
-}
-
-static void on_text_edited(GtkCellRendererText *r, gchar *path, gchar *text,
-                           gpointer ud)
-{
-    int col = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(r), "column"));
-    set_cell(ud, path, col, g_strstrip(text));
-}
-
-static GtkTreeViewColumn *text_column(editor *e, const char *title, int col,
-                                      GCallback edited, bool only_custom)
-{
-    GtkCellRenderer *r = gtk_cell_renderer_text_new();
-    g_object_set_data(G_OBJECT(r), "column", GINT_TO_POINTER(col));
-    g_signal_connect(r, "edited", edited ? edited : G_CALLBACK(on_text_edited), e);
-    GtkTreeViewColumn *c = gtk_tree_view_column_new_with_attributes(
-        title, r, "text", col, NULL);
-    if (only_custom)
-        gtk_tree_view_column_add_attribute(c, r, "editable", COL_CUSTOM);
-    else
-        g_object_set(r, "editable", TRUE, NULL);
-    gtk_tree_view_column_set_resizable(c, TRUE);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(e->tree), c);
-    return c;
-}
-
-static GtkListStore *string_list(const char *const *items, int n)
-{
-    GtkListStore *s = gtk_list_store_new(1, G_TYPE_STRING);
-    for (int i = 0; n < 0 ? items[i] != NULL : i < n; i++) {
-        GtkTreeIter it;
-        gtk_list_store_append(s, &it);
-        gtk_list_store_set(s, &it, 0, items[i], -1);
-    }
-    return s;
-}
-
-static void combo_column(editor *e, const char *title, int col,
-                         GtkListStore *choices, bool only_custom)
-{
-    GtkCellRenderer *r = gtk_cell_renderer_combo_new();
-    g_object_set(r, "model", choices, "text-column", 0, "has-entry", FALSE, NULL);
-    g_object_unref(choices);
-    g_object_set_data(G_OBJECT(r), "column", GINT_TO_POINTER(col));
-    g_signal_connect(r, "edited", G_CALLBACK(on_text_edited), e);
-    GtkTreeViewColumn *c =
-        gtk_tree_view_column_new_with_attributes(title, r, "text", col, NULL);
-    if (only_custom)
-        gtk_tree_view_column_add_attribute(c, r, "editable", COL_CUSTOM);
-    else
-        g_object_set(r, "editable", TRUE, NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(e->tree), c);
-}
-
-static bool selected(editor *e, GtkTreeIter *it)
-{
-    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(e->tree));
-    return gtk_tree_selection_get_selected(sel, NULL, it);
-}
-
-static void on_add(GtkButton *b, gpointer ud)
-{
-    (void)b;
-    editor *e = ud;
-    char name[32], base[16];
-    snprintf(base, sizeof base, "%s", _("new"));
-    snprintf(name, sizeof name, "%s", base);
-    for (int i = 2; name_taken(e, name, ""); i++)
-        snprintf(name, sizeof name, "%s%d", base, i);
-    kk_config_command k = {.name = name, .action = (char *)"sound",
-                           .user_cd = 30, .enabled = true};
-    append_command(e, &k, true);
-    GtkTreeIter it;
-    int n = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(e->commands), NULL);
-    if (gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(e->commands), &it, NULL, n - 1)) {
-        GtkTreePath *p = gtk_tree_model_get_path(GTK_TREE_MODEL(e->commands), &it);
-        gtk_tree_view_set_cursor(GTK_TREE_VIEW(e->tree), p,
-                                 gtk_tree_view_get_column(GTK_TREE_VIEW(e->tree), 1),
-                                 TRUE);
-        gtk_tree_path_free(p);
-    }
-    status(e, _("New command: give it a name, pick the action and, for \"sound\", the sound in \"Data\"."));
-}
-
-static void on_remove(GtkButton *b, gpointer ud)
-{
-    (void)b;
-    editor *e = ud;
-    GtkTreeIter it;
-    if (!selected(e, &it)) {
-        status(e, _("Pick a command in the list."));
-        return;
-    }
-    gboolean custom;
-    gtk_tree_model_get(GTK_TREE_MODEL(e->commands), &it, COL_CUSTOM, &custom, -1);
-    if (!custom) {
-        status(e, _("Default commands cannot be removed: untick \"Active\" to turn one off."));
-        return;
-    }
-    gtk_list_store_remove(e->commands, &it);
-}
-
-static void on_restore(GtkButton *b, gpointer ud)
-{
-    (void)b;
-    editor *e = ud;
-    GtkTreeIter it;
-    if (!selected(e, &it)) {
-        status(e, _("Pick a command in the list."));
-        return;
-    }
-    gchar *name;
-    gtk_tree_model_get(GTK_TREE_MODEL(e->commands), &it, COL_NAME, &name, -1);
-    const kk_config_command *d = builtin(name);
-    g_free(name);
-    if (!d) {
-        status(e, _("Only default commands have default values."));
-        return;
-    }
-    char aliases[512], cd[32], gcd[32];
-    join(aliases, sizeof aliases, d->aliases, d->n_aliases);
-    fmt_num(cd, sizeof cd, d->user_cd);
-    fmt_num(gcd, sizeof gcd, d->global_cd);
-    gtk_list_store_set(e->commands, &it, COL_ENABLED, TRUE, COL_DATA, "",
-                       COL_ALIASES, aliases, COL_CD, cd, COL_GCD, gcd, COL_ROLE,
-                       _(ROLE_LABELS[d->role]), -1);
-}
-
-static GtkWidget *commands_page(editor *e, const kk_config *cfg)
-{
-    GtkWidget *box = gtk_vbox_new(FALSE, 6);
-    gtk_container_set_border_width(GTK_CONTAINER(box), 12);
-
-    GtkWidget *top = gtk_hbox_new(FALSE, 6);
-    e->shortcuts = check(_("Shortcut \"!name\" for an avatar, accessory or palette;"), cfg->shortcuts);
-    e->shortcut_cd = spin(0, 86400, 1, 0);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->shortcut_cd), cfg->shortcut_cd);
-    gtk_box_pack_start(GTK_BOX(top), e->shortcuts, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("cooldown")), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(top), e->shortcut_cd, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(top), gtk_label_new("s"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(box), top, FALSE, FALSE, 0);
-
-    GtkWidget *help = gtk_hbox_new(FALSE, 6);
-    e->help_bubbles = check(_("Help bubble (!help), even with message bubbles off;"),
-                            cfg->help_bubbles);
-    e->help_count = spin(1, 20, 1, 0);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->help_count), cfg->help_count);
-    gtk_box_pack_start(GTK_BOX(help), e->help_bubbles, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(help), gtk_label_new(_("random commands per bubble")),
-                       FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(help), e->help_count, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(help), gtk_label_new(_("staying")), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(help),
-                       auto_spin(&e->help_auto, &e->help_secs, 1, 600,
-                                 cfg->help_seconds < 0 ? -1 : (int)(cfg->help_seconds + 0.5)),
-                       FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(box), help, FALSE, FALSE, 0);
-
-    e->commands = gtk_list_store_new(N_COLS, G_TYPE_BOOLEAN, G_TYPE_STRING,
-                                     G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                                     G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
-                                     G_TYPE_BOOLEAN);
-    for (int i = 0; i < cfg->n_commands; i++) {
-        const kk_config_command *k = &cfg->commands[i];
-        bool custom = builtin(k->name) == NULL;
-        append_command(e, k, custom);
-        if (custom && e->n_loaded_custom < 256)
-            e->loaded_custom[e->n_loaded_custom++] = g_strdup(k->name);
-    }
-    e->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(e->commands));
-    g_object_unref(e->commands);
-    gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(e->tree), TRUE);
-
-    GtkCellRenderer *t = gtk_cell_renderer_toggle_new();
-    g_signal_connect(t, "toggled", G_CALLBACK(on_toggle_enabled), e);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(e->tree),
-                                gtk_tree_view_column_new_with_attributes(
-                                    _("Active"), t, "active", COL_ENABLED, NULL));
-    text_column(e, _("Command"), COL_NAME, G_CALLBACK(on_name_edited), true);
-    combo_column(e, _("Action"), COL_ACTION, string_list(kk_config_actions(), -1), true);
-    text_column(e, _("Data"), COL_DATA, NULL, false);
-    text_column(e, _("Aliases"), COL_ALIASES, NULL, false);
-    text_column(e, _("Cooldown (s)"), COL_CD, G_CALLBACK(on_cd_edited), false);
-    text_column(e, _("Global (s)"), COL_GCD, G_CALLBACK(on_gcd_edited), false);
-    const char *roles[KK_ROLE_COUNT];
-    for (int i = 0; i < KK_ROLE_COUNT; i++)
-        roles[i] = _(ROLE_LABELS[i]);
-    combo_column(e, _("Who can"), COL_ROLE, string_list(roles, KK_ROLE_COUNT), false);
-
-    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
-                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll), GTK_SHADOW_IN);
-    gtk_container_add(GTK_CONTAINER(scroll), e->tree);
-    gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
-
-    GtkWidget *hint = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(hint),
-                         _("<small>Double-click a cell to edit it. Aliases separated by "
-                           "commas. \"Data\" is the command's fixed argument (the sound of "
-                           "a !horn, the avatar of a !pika); empty, whatever the person typed "
-                           "is used. The channel owner never waits. \"Who can\" is the lowest level allowed: "
-                           "anyone, members, trusted (marked in the Viewers tab), moderators, "
-                           "owner.</small>"));
-    gtk_label_set_line_wrap(GTK_LABEL(hint), TRUE);
-    gtk_misc_set_alignment(GTK_MISC(hint), 0, 0);
-    gtk_box_pack_start(GTK_BOX(box), hint, FALSE, FALSE, 0);
-
-    GtkWidget *buttons = gtk_hbutton_box_new();
-    gtk_button_box_set_layout(GTK_BUTTON_BOX(buttons), GTK_BUTTONBOX_START);
-    gtk_box_set_spacing(GTK_BOX(buttons), 6);
-    GtkWidget *add = icon_button(GTK_STOCK_ADD, _("_Add"));
-    GtkWidget *rm = icon_button(GTK_STOCK_REMOVE, _("_Remove"));
-    GtkWidget *restore = gtk_button_new_with_mnemonic(_("Restore _defaults"));
-    g_signal_connect(add, "clicked", G_CALLBACK(on_add), e);
-    g_signal_connect(rm, "clicked", G_CALLBACK(on_remove), e);
-    g_signal_connect(restore, "clicked", G_CALLBACK(on_restore), e);
-    gtk_container_add(GTK_CONTAINER(buttons), add);
-    gtk_container_add(GTK_CONTAINER(buttons), rm);
-    gtk_container_add(GTK_CONTAINER(buttons), restore);
-    gtk_box_pack_start(GTK_BOX(box), buttons, FALSE, FALSE, 0);
-    return box;
-}
-
 /* ---- saving -------------------------------------------------------------- */
 
 /* Writes key when the value differs from the default (NULL: no default) or
@@ -607,7 +269,7 @@ void put_bool(editor *e, const char *section, const char *key, GtkWidget *w,
     put(e, section, key, v ? "yes" : "no", dflt ? "yes" : "no");
 }
 
-static void put_auto(editor *e, const char *section, const char *key,
+void put_auto(editor *e, const char *section, const char *key,
                      GtkWidget *check_w, GtkWidget *spin_w)
 {
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(check_w)))
@@ -625,53 +287,6 @@ const char *text_of(GtkWidget *w)
 int spin_int(GtkWidget *w)
 {
     return gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
-}
-
-static kk_role role_of_label(const char *label)
-{
-    for (int i = 0; i < KK_ROLE_COUNT; i++)
-        if (strcmp(label, _(ROLE_LABELS[i])) == 0)
-            return (kk_role)i;
-    return KK_ROLE_ANYONE;
-}
-
-static void save_command(editor *e, GtkTreeIter *it)
-{
-    gboolean enabled, custom;
-    gchar *name, *action, *data, *aliases, *cd, *gcd, *role;
-    gtk_tree_model_get(GTK_TREE_MODEL(e->commands), it, COL_ENABLED, &enabled,
-                       COL_NAME, &name, COL_ACTION, &action, COL_DATA, &data,
-                       COL_ALIASES, &aliases, COL_CD, &cd, COL_GCD, &gcd, COL_ROLE,
-                       &role, COL_CUSTOM, &custom, -1);
-    char section[128];
-    snprintf(section, sizeof section, "command.%s", name);
-    const kk_config_command *d = custom ? NULL : builtin(name);
-
-    char d_aliases[512] = "", d_cd[32] = "", d_gcd[32] = "";
-    if (d) {
-        join(d_aliases, sizeof d_aliases, d->aliases, d->n_aliases);
-        fmt_num(d_cd, sizeof d_cd, d->user_cd);
-        fmt_num(d_gcd, sizeof d_gcd, d->global_cd);
-    }
-    if (custom)
-        put(e, section, "action", action, NULL);
-    put(e, section, "data", data, NULL);
-    /* An empty alias list must be written, or the defaults come back. */
-    if (!aliases[0] && d && d->n_aliases)
-        kk_ini_set(e->ini, section, "aliases", "");
-    else
-        put(e, section, "aliases", aliases, d ? d_aliases : NULL);
-    put(e, section, "cooldown", cd, d ? d_cd : "0");
-    put(e, section, "global_cooldown", gcd, d ? d_gcd : "0");
-    put(e, section, "role", kk_role_name(role_of_label(role)), "anyone");
-    put(e, section, "enabled", enabled ? "yes" : "no", "yes");
-    g_free(name);
-    g_free(action);
-    g_free(data);
-    g_free(aliases);
-    g_free(cd);
-    g_free(gcd);
-    g_free(role);
 }
 
 static void collect(editor *e)
@@ -718,47 +333,10 @@ static void collect(editor *e)
     put(e, "chat", "users", text_of(e->users), NULL);
     /* [control] */
     put(e, "control", "socket", text_of(e->socket), NULL);
-    /* [commands] */
-    put_bool(e, "commands", "help_bubbles", e->help_bubbles, d.help_bubbles);
-    put_auto(e, "commands", "help_seconds", e->help_auto, e->help_secs);
-    put_int(e, "commands", "help_count", spin_int(e->help_count), d.help_count);
-    put_bool(e, "commands", "shortcuts", e->shortcuts, d.shortcuts);
-    put_num(e, "commands", "shortcut_cooldown",
-            gtk_spin_button_get_value(GTK_SPIN_BUTTON(e->shortcut_cd)), d.shortcut_cd);
     kk_config_free(&d);
-
-    /* Commands that were removed or renamed lose their section. */
-    for (int i = 0; i < e->n_loaded_custom; i++)
-        if (!name_taken(e, e->loaded_custom[i], "")) {
-            char section[128];
-            snprintf(section, sizeof section, "command.%s", e->loaded_custom[i]);
-            kk_ini_remove_section(e->ini, section);
-        }
-    GtkTreeIter it;
-    bool more = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(e->commands), &it);
-    while (more) {
-        save_command(e, &it);
-        more = gtk_tree_model_iter_next(GTK_TREE_MODEL(e->commands), &it);
-    }
+    commands_collect(e);
     sounds_collect(e);
     wall_collect(e);
-
-    /* What is in the file now counts as loaded. */
-    for (int i = 0; i < e->n_loaded_custom; i++)
-        g_free(e->loaded_custom[i]);
-    e->n_loaded_custom = 0;
-    more = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(e->commands), &it);
-    while (more && e->n_loaded_custom < 256) {
-        gboolean custom;
-        gchar *name;
-        gtk_tree_model_get(GTK_TREE_MODEL(e->commands), &it, COL_CUSTOM, &custom,
-                           COL_NAME, &name, -1);
-        if (custom)
-            e->loaded_custom[e->n_loaded_custom++] = name;
-        else
-            g_free(name);
-        more = gtk_tree_model_iter_next(GTK_TREE_MODEL(e->commands), &it);
-    }
 }
 
 /* Checks what will be written the same way kikarinhas will read it. */
@@ -1119,7 +697,6 @@ int main(int argc, char **argv)
     audience_free(&e);
     wall_free(&e);
     kk_ini_free(e.ini);
-    for (int i = 0; i < e.n_loaded_custom; i++)
-        g_free(e.loaded_custom[i]);
+    commands_free(&e);
     return 0;
 }

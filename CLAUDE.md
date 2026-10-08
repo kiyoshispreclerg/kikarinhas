@@ -85,6 +85,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
+| `config/commands.c` | aba Comandos: lista e diálogo de edição por ação (texto, imagem com prévia, som...) |
 | `config/sources.c`, `config/avatars.c` | lista de lives da aba Chat; pastas de avatares e biblioteca carregada uma vez |
 
 ## Convenções

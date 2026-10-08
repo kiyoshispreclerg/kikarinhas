@@ -159,7 +159,11 @@ Commands, Sounds, Emote wall and Viewers, and the **Save and apply** button.
 It keeps the file's comments and only writes what differs from the default.
 The **Installed avatars** tab lists the avatars of every folder, with a
 thumbnail, cell size, animations (the ones `!emote` takes), palettes, gear
-sets and the folder each one came from, with search.
+sets and the folder each one came from, with search. In the **Commands**
+tab, double-clicking a command (or **Edit**) opens a dialog with what its
+action needs: the text of a text command, the picture with its place, size
+and a preview of where it lands in the window, the sound, the avatar, the
+player filter of `!song`, the cooldowns and the minimum level.
 
 In the Avatars tab, `show_names`/`name_position` (below or above the avatar)
 and `show_bubbles` turn the name tag and the speech bubble on or off.

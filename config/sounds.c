@@ -720,6 +720,11 @@ void sounds_collect(editor *e)
     remember_loaded(e);
 }
 
+GtkTreeModel *sounds_model(editor *e)
+{
+    return GTK_TREE_MODEL(e->sounds->store);
+}
+
 void sounds_free(editor *e)
 {
     sounds_tab *t = e->sounds;

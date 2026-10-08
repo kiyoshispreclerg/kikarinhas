@@ -82,6 +82,17 @@ void put_num(editor *e, const char *section, const char *key, double v,
              double dflt);
 void put_bool(editor *e, const char *section, const char *key, GtkWidget *w,
               bool dflt);
+/* An "automatic" check box next to a spin button it disables (value < 0 =
+ * automatic), and writing it back as "auto" or the number. */
+GtkWidget *auto_spin(GtkWidget **check, GtkWidget **spinner, double lo, double hi,
+                     int value);
+void put_auto(editor *e, const char *section, const char *key, GtkWidget *check_w,
+              GtkWidget *spin_w);
+
+/* The "Comandos" tab (commands.c). */
+GtkWidget *commands_page(editor *e, const kk_config *cfg);
+void commands_collect(editor *e);
+void commands_free(editor *e);
 
 /* Effective config of the file as last loaded or saved. */
 const char *editor_sa_dir(editor *e, char *buf, size_t size);
@@ -98,6 +109,8 @@ void editor_refresh_kikarinhas_version(editor *e);
 /* The "Sons" tab (sounds.c). */
 GtkWidget *sounds_page(editor *e, const kk_config *cfg);
 void sounds_collect(editor *e);
+/* The sounds as the tab has them now; column 0 is the name. */
+GtkTreeModel *sounds_model(editor *e);
 void sounds_free(editor *e);
 
 /* The "Emote wall" tab (wall.c). */
