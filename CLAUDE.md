@@ -114,9 +114,9 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 - Desempenho importa (meta: poucos % de CPU com 30 avatares): o que é
   estático vai para superfícies em cache e só é copiado a cada quadro.
 - Caminhos com `kk_pathf` (falha em vez de truncar).
-- `README.md` (pt-BR, padrão) e `README.en.md` andam juntos: mudou um, mude o
+- `README.md` (inglês, padrão) e `README.pt-BR.md` andam juntos: mudou um, mude o
   outro.
-- Commits em português, terminando com a linha Co-Authored-By.
+- Commits em inglês, terminando com a linha Co-Authored-By.
 
 ## Próximas fases (ver PLANO.md)
 
