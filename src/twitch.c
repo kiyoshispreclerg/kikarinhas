@@ -23,9 +23,9 @@
 /* ...and after this long the connection is taken as dead. */
 #define IDLE_DROP_S 300.0
 #define JOIN_TIMEOUT_S 20.0
-/* "2.0" is 56 px, close to the wall's sizes; static: the first frame of an
- * animated one, as PNG. */
-#define TWITCH_EMOTE_URL "https://static-cdn.jtvnw.net/emoticons/v2/%s/static/dark/2.0"
+/* "2.0" is 56 px, close to the wall's sizes; default: a GIF for the animated
+ * ones, a PNG for the rest. */
+#define TWITCH_EMOTE_URL "https://static-cdn.jtvnw.net/emoticons/v2/%s/default/dark/2.0"
 
 /* ---- target -------------------------------------------------------------- */
 
@@ -280,7 +280,8 @@ const kk_tw_emote *kk_tw_emotes_find(const kk_tw_emotes *set, const char *word,
     return NULL;
 }
 
-/* {id, code} in an array: BTTV. */
+/* {id, code, imageType} in an array: BTTV. Animated ones are GIFs ("imageType"
+ * says so); the "2x.png" of those is only the first frame. */
 static int load_bttv(kk_tw_emotes *set, kk_tw_source src, const cJSON *list)
 {
     int n = 0;
@@ -288,8 +289,10 @@ static int load_bttv(kk_tw_emotes *set, kk_tw_source src, const cJSON *list)
     cJSON_ArrayForEach(e, list)
     {
         const char *id = kk_json_str(e, "id");
+        const char *type = kk_json_str(e, "imageType");
         char url[256], key[128];
-        if (id && kk_pathf(url, sizeof url, "https://cdn.betterttv.net/emote/%s/2x.png", id) &&
+        if (id && kk_pathf(url, sizeof url, "https://cdn.betterttv.net/emote/%s/2x.%s", id,
+                           type && strcmp(type, "gif") == 0 ? "gif" : "png") &&
             kk_pathf(key, sizeof key, "bttv:%s", id) &&
             add_entry(set, src, kk_json_str(e, "code"), key, url))
             n++;
@@ -319,8 +322,8 @@ static int load_ffz_set(kk_tw_emotes *set, kk_tw_source src, const cJSON *s)
 }
 
 /* 7TV: [{id, name, data: {animated, host: {url: "//cdn.7tv.app/emote/ID"}}}].
- * The name is the set's (it may be an alias). Static PNG either way:
- * animated ones only have it as 2x_static.png, still ones as 2x.png. */
+ * The name is the set's (it may be an alias). Animated ones come as GIF
+ * (2x.gif), still ones as PNG. */
 static int load_7tv(kk_tw_emotes *set, kk_tw_source src, const cJSON *list)
 {
     int n = 0;
@@ -333,7 +336,7 @@ static int load_7tv(kk_tw_emotes *set, kk_tw_source src, const cJSON *list)
         char url[256], key[128];
         if (id && host &&
             kk_pathf(url, sizeof url, "%s%s/%s", strncmp(host, "//", 2) == 0 ? "https:" : "",
-                     host, animated ? "2x_static.png" : "2x.png") &&
+                     host, animated ? "2x.gif" : "2x.png") &&
             kk_pathf(key, sizeof key, "7tv:%s", id) &&
             add_entry(set, src, kk_json_str(e, "name"), key, url))
             n++;

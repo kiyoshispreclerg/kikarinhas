@@ -689,7 +689,22 @@ data/         avatar padrão original, exemplo de .ini
      rótulos próprios com o ícone pronto.
    Não verificado: o som no OBS (só conferido que o fluxo aparece no
    PipeWire e some parado) e mp3 com taxa variável longos.
-   Pendentes: fundos do SA, emotes como imagem dentro do balão (o cache do
-   `emotes.c` já serve), emotes animados (GIF), BTTV/FFZ/7TV, plugin de
+   - **Emotes animados e emotes no balão**: `kk_emotes_get_anim` devolve um
+     `kk_emote_anim` (quadros já encaixados no quadrado do emote, atrasos,
+     contagem de referências); GIFs com mais de ~1 M pixels no total ficam
+     só com o 1º quadro, e o cache em disco agora é `.img` (guarda o
+     arquivo como veio, PNG ou GIF). Fontes animadas: Twitch `default/dark/2.0`
+     (GIF se animado), BTTV `2x.gif` (pelo `imageType`), 7TV `2x.gif` (pelo
+     `animated`), Kick (GIF de sempre); FFZ animado só vem em WebP, que não
+     decodificamos, e Odysee não tem. Na wall a partícula escolhe o quadro
+     pela idade. No balão o texto leva U+FFFC no lugar do emote (atributo
+     `shape` do Pango deixa um quadrado da altura da linha) e o `avatar`
+     guarda os `kk_bubble_emote` (posição + animação), pintados por cima do
+     balão a cada quadro; o balão repinta quando o quadro de algum muda
+     (`emote_sig`). Emote ainda baixando aparece como vazio e entra quando
+     chega (o `stage` resolve no `update`); se falhar fica o vazio. Só
+     emotes de imagem com `start`/`len` entram no balão; o emoji Unicode
+     segue como texto, pela fonte.
+   Pendentes: fundos do SA, plugin de
    OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
    (layer-shell) no futuro.

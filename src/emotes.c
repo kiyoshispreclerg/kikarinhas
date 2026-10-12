@@ -16,6 +16,9 @@
 #define BUCKETS 256
 #define MAX_ENTRIES 512 /* least recently used ones go beyond this */
 #define MAX_INFLIGHT 6  /* downloads at once; the rest wait their turn */
+/* An animation takes this many pixels at most (4 bytes each); beyond that
+ * only its first frame is kept. */
+#define MAX_ANIM_PIXELS (1L << 20)
 #define EMOJI_FONT "Noto Color Emoji, emoji"
 #define EMOJI_RENDER_PX 96 /* drawn big once, then scaled down smoothly */
 
@@ -32,7 +35,7 @@ typedef struct entry {
     char *key;
     char *url;  /* while queued or fetching */
     char *file; /* disk cache path; NULL without one */
-    cairo_surface_t *img;
+    kk_emote_anim *anim;
     entry_state st;
     uint64_t used; /* recency, for eviction */
 } entry;
@@ -52,6 +55,61 @@ static uint64_t fnv1a(const char *s)
     for (; *s; s++)
         h = (h ^ (unsigned char)*s) * 0x100000001b3ULL;
     return h;
+}
+
+/* ---- animations ---------------------------------------------------------- */
+
+static kk_emote_anim *anim_new(int n)
+{
+    kk_emote_anim *a = calloc(1, sizeof *a);
+    if (!a)
+        return NULL;
+    a->refs = 1;
+    a->frames = calloc((size_t)n, sizeof *a->frames);
+    a->delay_ms = n > 1 ? calloc((size_t)n, sizeof *a->delay_ms) : NULL;
+    if (!a->frames || (n > 1 && !a->delay_ms)) {
+        free(a->frames);
+        free(a->delay_ms);
+        free(a);
+        return NULL;
+    }
+    return a;
+}
+
+kk_emote_anim *kk_emote_anim_ref(kk_emote_anim *a)
+{
+    if (a)
+        a->refs++;
+    return a;
+}
+
+void kk_emote_anim_unref(kk_emote_anim *a)
+{
+    if (!a || --a->refs > 0)
+        return;
+    for (int i = 0; i < a->n; i++)
+        cairo_surface_destroy(a->frames[i]);
+    free(a->frames);
+    free(a->delay_ms);
+    free(a);
+}
+
+int kk_emote_anim_index(const kk_emote_anim *a, double t)
+{
+    if (a->n <= 1 || a->total_ms <= 0 || t <= 0)
+        return 0;
+    long ms = (long)(t * 1000.0) % a->total_ms;
+    for (int i = 0; i < a->n; i++) {
+        ms -= a->delay_ms[i];
+        if (ms < 0)
+            return i;
+    }
+    return a->n - 1;
+}
+
+cairo_surface_t *kk_emote_anim_frame(const kk_emote_anim *a, double t)
+{
+    return a->frames[kk_emote_anim_index(a, t)];
 }
 
 kk_emotes *kk_emotes_new(kk_http *http, const char *cache_dir, int px)
@@ -74,8 +132,7 @@ static void entry_free(entry *en)
         kk_http_cancel(en->owner->http, en);
         en->owner->inflight--;
     }
-    if (en->img)
-        cairo_surface_destroy(en->img);
+    kk_emote_anim_unref(en->anim);
     free(en->key);
     free(en->url);
     free(en->file);
@@ -175,20 +232,63 @@ static bool is_png(const char *data, size_t len)
     return len > 8 && memcmp(data, "\x89PNG\r\n\x1a\n", 8) == 0;
 }
 
-static cairo_surface_t *decode_image(const char *data, size_t len, int px)
+static kk_emote_anim *one_frame(cairo_surface_t *fitted)
 {
-    if (!is_png(data, len)) {
-        /* Some only come animated (Kick's GIFs): their first frame. */
-        cairo_surface_t *s = kk_image_decode_still(data, len);
-        return s ? fit(s, px) : NULL;
+    if (!fitted)
+        return NULL;
+    kk_emote_anim *a = anim_new(1);
+    if (!a) {
+        cairo_surface_destroy(fitted);
+        return NULL;
     }
+    a->frames[0] = fitted;
+    a->n = 1;
+    return a;
+}
+
+/* GIFs: all the frames if they fit the budget, else only the first. */
+static kk_emote_anim *decode_gif(const char *data, size_t len, int px)
+{
+    kk_image img;
+    if (!kk_image_decode(&img, data, len))
+        return NULL;
+    int n = img.n;
+    if (n > 1 && (long)n * px * px > MAX_ANIM_PIXELS)
+        n = 1;
+    kk_emote_anim *a = n > 1 ? anim_new(n) : NULL;
+    if (!a) {
+        cairo_surface_t *first = img.frames[0];
+        img.frames[0] = NULL;
+        kk_image_free(&img);
+        return one_frame(fit(first, px));
+    }
+    for (int i = 0; i < n; i++) {
+        cairo_surface_t *f = fit(img.frames[i], px);
+        img.frames[i] = NULL;
+        if (!f) {
+            kk_image_free(&img);
+            kk_emote_anim_unref(a);
+            return NULL;
+        }
+        a->frames[a->n++] = f;
+        a->delay_ms[i] = img.delay_ms[i];
+        a->total_ms += img.delay_ms[i];
+    }
+    kk_image_free(&img);
+    return a;
+}
+
+static kk_emote_anim *decode_image(const char *data, size_t len, int px)
+{
+    if (!is_png(data, len))
+        return decode_gif(data, len, px);
     png_reader r = {(const unsigned char *)data, len};
     cairo_surface_t *s = cairo_image_surface_create_from_png_stream(read_png, &r);
     if (cairo_surface_status(s) != CAIRO_STATUS_SUCCESS) {
         cairo_surface_destroy(s);
         return NULL;
     }
-    return fit(s, px);
+    return one_frame(fit(s, px));
 }
 
 /* Drawn once at a big size into a surface the size of its ink, then fitted
@@ -239,7 +339,7 @@ bool kk_emotes_file(const kk_emotes *e, const char *platform, const char *id,
                         ? *p
                         : '_';
     safe[n] = '\0';
-    return kk_pathf(out, size, "%s/%s/%016llx.png", e->dir, n ? safe : "_",
+    return kk_pathf(out, size, "%s/%s/%016llx.img", e->dir, n ? safe : "_",
                     (unsigned long long)fnv1a(id));
 }
 
@@ -249,15 +349,15 @@ static char *cache_file(const kk_emotes *e, const char *platform, const char *id
     return kk_emotes_file(e, platform, id, path, sizeof path) ? strdup(path) : NULL;
 }
 
-static cairo_surface_t *load_file(const char *path, int px)
+static kk_emote_anim *load_file(const char *path, int px)
 {
     size_t len;
     char *data = kk_read_file(path, &len);
     if (!data)
         return NULL;
-    cairo_surface_t *s = decode_image(data, len, px);
+    kk_emote_anim *a = decode_image(data, len, px);
     free(data);
-    return s;
+    return a;
 }
 
 /* Written to a temporary name and renamed, so a crash never leaves half a
@@ -287,9 +387,9 @@ static void on_image(void *ud, long status, const char *body, size_t len,
     entry *en = ud;
     kk_emotes *e = en->owner;
     e->inflight--;
-    cairo_surface_t *img = status == 200 ? decode_image(body, len, e->px) : NULL;
-    if (img) {
-        en->img = img;
+    kk_emote_anim *anim = status == 200 ? decode_image(body, len, e->px) : NULL;
+    if (anim) {
+        en->anim = anim;
         en->st = E_READY;
         if (en->file)
             save_file(en->file, body, len);
@@ -354,11 +454,11 @@ static entry *find(kk_emotes *e, const char *key, entry ***bucket)
     return NULL;
 }
 
-static kk_emote_state state_of(const entry *en, cairo_surface_t **out)
+static kk_emote_state state_of(const entry *en, kk_emote_anim **out)
 {
     switch (en->st) {
     case E_READY:
-        *out = en->img;
+        *out = en->anim;
         return KK_EMOTE_READY;
     case E_FAILED:
         return KK_EMOTE_FAILED;
@@ -369,6 +469,15 @@ static kk_emote_state state_of(const entry *en, cairo_surface_t **out)
 
 kk_emote_state kk_emotes_get(kk_emotes *e, const char *platform,
                              const kk_emote *em, cairo_surface_t **out)
+{
+    kk_emote_anim *a;
+    kk_emote_state st = kk_emotes_get_anim(e, platform, em, &a);
+    *out = st == KK_EMOTE_READY ? a->frames[0] : NULL;
+    return st;
+}
+
+kk_emote_state kk_emotes_get_anim(kk_emotes *e, const char *platform,
+                                  const kk_emote *em, kk_emote_anim **out)
 {
     *out = NULL;
     char key[512];
@@ -404,13 +513,13 @@ kk_emote_state kk_emotes_get(kk_emotes *e, const char *platform,
     e->count++;
 
     if (!em->url) {
-        en->img = render_emoji(em->text, e->px);
-        en->st = en->img ? E_READY : E_FAILED;
+        en->anim = one_frame(render_emoji(em->text, e->px));
+        en->st = en->anim ? E_READY : E_FAILED;
         return state_of(en, out);
     }
 
     en->file = cache_file(e, platform ? platform : "", em->id && em->id[0] ? em->id : em->url);
-    if (en->file && (en->img = load_file(en->file, e->px))) {
+    if (en->file && (en->anim = load_file(en->file, e->px))) {
         en->st = E_READY;
     } else if (!e->http || !(en->url = strdup(em->url))) {
         en->st = E_FAILED;

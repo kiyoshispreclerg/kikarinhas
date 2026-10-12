@@ -94,7 +94,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
 | `src/chat.h` | eventos neutros de todas as plataformas: mensagem, emote, reação, `kk_chat_sink` |
 | `src/emoji.c`, `src/emoji_table.h` | acha emojis Unicode no texto (tabela gerada por `tools/gen_emoji_table.py`) |
-| `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG baixado + cache em `~/.cache/kikarinhas/emotes` |
+| `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG/GIF baixado (todos os quadros, `kk_emote_anim` com contagem de referências) + cache em `~/.cache/kikarinhas/emotes` |
 | `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
 | `docs/avatares/` | guia para criar avatares, gear e paletas (formato do SA); `kit-exemplo/` é gerado por `tools/gen_kit_exemplo.py`. Mudou o leitor (`sa.c`)? Atualize aqui |
 | `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas e o ícone |
@@ -122,7 +122,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 
 5. Feita: Twitch, Kick e Odysee.
 6. Camadas HTML (WPE WebKit), opcional.
-7. Extras que faltam: fundos e zips do SA, emotes como imagem no balão,
-   emotes animados, duelo e minijogos grandes (battle royale, basquete,
-   boss). (Mesa de som, espectadores, emote wall, bomba, estilingue,
-   estrelas e jogos de sorte já feitos.)
+7. Extras que faltam: fundos e zips do SA, duelo e minijogos grandes
+   (battle royale, basquete, boss). (Mesa de som, espectadores, emote wall,
+   bomba, estilingue, estrelas, jogos de sorte e emotes animados, na tela e
+   no balão, já feitos.)

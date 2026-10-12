@@ -85,10 +85,33 @@ static void bubble_path(cairo_t *cr, double w, double h)
     cairo_close_path(cr);
 }
 
+/* U+FFFC in the text marks where an emote image goes: the layout leaves a
+ * px square there and the position comes back in x/y (-1 if it ended up
+ * cut off by the line limit). */
+#define HOLE "\xEF\xBF\xBC"
+typedef struct {
+    int n, px;
+    int idx[KK_BUBBLE_MAX_EMOTES]; /* byte of each hole in the text */
+    int x[KK_BUBBLE_MAX_EMOTES], y[KK_BUBBLE_MAX_EMOTES];
+} bubble_holes;
+
+/* Height of a line of the bubble font: emotes are as tall as the text. */
+static int line_px(kk_stage *s)
+{
+    PangoLayout *layout = pango_layout_new(s->pango);
+    pango_layout_set_font_description(layout, s->bubble_font);
+    pango_layout_set_text(layout, "Ág", -1);
+    PangoRectangle logical;
+    pango_layout_get_pixel_extents(layout, NULL, &logical);
+    g_object_unref(layout);
+    return logical.height;
+}
+
 /* Bubble with up to max_lines wrapped lines of plain text (never parsed as
  * markup), the first bold_len bytes in bold, on a fill-coloured body. */
 static cairo_surface_t *render_text_bubble(kk_stage *s, const char *text,
-                                           int bold_len, rgb fill, int max_lines)
+                                           int bold_len, rgb fill, int max_lines,
+                                           bubble_holes *holes)
 {
     PangoLayout *layout = pango_layout_new(s->pango);
     pango_layout_set_font_description(layout, s->bubble_font);
@@ -97,12 +120,22 @@ static cairo_surface_t *render_text_bubble(kk_stage *s, const char *text,
     pango_layout_set_height(layout, -max_lines);
     pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
     pango_layout_set_text(layout, text, -1);
-    if (bold_len) {
+    if (bold_len || (holes && holes->n)) {
         PangoAttrList *attrs = pango_attr_list_new();
-        PangoAttribute *bold = pango_attr_weight_new(PANGO_WEIGHT_BOLD);
-        bold->start_index = 0;
-        bold->end_index = (guint)bold_len;
-        pango_attr_list_insert(attrs, bold);
+        if (bold_len) {
+            PangoAttribute *bold = pango_attr_weight_new(PANGO_WEIGHT_BOLD);
+            bold->start_index = 0;
+            bold->end_index = (guint)bold_len;
+            pango_attr_list_insert(attrs, bold);
+        }
+        for (int i = 0; holes && i < holes->n; i++) {
+            PangoRectangle r = {0, -holes->px * PANGO_SCALE * 4 / 5, holes->px * PANGO_SCALE,
+                                holes->px * PANGO_SCALE};
+            PangoAttribute *shape = pango_attr_shape_new(&r, &r);
+            shape->start_index = (guint)holes->idx[i];
+            shape->end_index = (guint)holes->idx[i] + 3;
+            pango_attr_list_insert(attrs, shape);
+        }
         pango_layout_set_attributes(layout, attrs);
         pango_attr_list_unref(attrs);
     }
@@ -127,32 +160,99 @@ static cairo_surface_t *render_text_bubble(kk_stage *s, const char *text,
     cairo_move_to(cr, BUBBLE_PAD - logical.x, BUBBLE_PAD - logical.y);
     cairo_set_source_rgb(cr, 0.1, 0.09, 0.12);
     pango_cairo_show_layout(cr, layout);
+    for (int i = 0; holes && i < holes->n; i++) {
+        PangoRectangle at;
+        pango_layout_index_to_pos(layout, holes->idx[i], &at);
+        int x = (int)BUBBLE_PAD - logical.x + at.x / PANGO_SCALE;
+        int y = (int)BUBBLE_PAD - logical.y + at.y / PANGO_SCALE +
+                (at.height / PANGO_SCALE - holes->px) / 2;
+        bool inside = x >= 0 && x + holes->px <= w && y >= 0 &&
+                      y + holes->px <= (int)BUBBLE_PAD + logical.height + (int)BUBBLE_PAD;
+        holes->x[i] = inside ? x : -1;
+        holes->y[i] = y;
+    }
     cairo_destroy(cr);
     g_object_unref(layout);
     return surf;
 }
 
-/* A chat message: paid ones get the amount on top in bold and a gold body,
- * new members a green one. Nothing when bubbles are off. */
-static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m)
+/* Fills the text of a message into out with its platform emotes replaced by
+ * holes, and makes the slots for them. Emotes that failed to load, or that
+ * don't fit, stay as text. */
+static void message_text(kk_stage *s, const kk_chat_msg *m, char *out, size_t size,
+                         bubble_holes *holes, kk_bubble_emote *slots)
 {
+    size_t used = strlen(out), len = strlen(m->text), pos = 0;
+    holes->n = 0;
+    for (int i = 0; s->emotes && i < m->n_emotes && holes->n < KK_BUBBLE_MAX_EMOTES; i++) {
+        const kk_emote *em = &m->emotes[i];
+        if (!em->url || em->len == 0 || em->start < pos || em->start + em->len > len ||
+            used + (em->start - pos) + 3 + 1 > size)
+            continue;
+        kk_emote_anim *anim;
+        kk_emote_state st = kk_emotes_get_anim(s->emotes, m->platform, em, &anim);
+        if (st == KK_EMOTE_FAILED)
+            continue;
+        memcpy(out + used, m->text + pos, em->start - pos);
+        used += em->start - pos;
+        holes->idx[holes->n] = (int)used;
+        memcpy(out + used, HOLE, 3);
+        used += 3;
+        pos = em->start + em->len;
+        kk_bubble_emote *e = &slots[holes->n++];
+        *e = (kk_bubble_emote){.size = holes->px};
+        if (st == KK_EMOTE_READY) {
+            e->anim = kk_emote_anim_ref(anim);
+        } else {
+            e->platform = strdup(m->platform);
+            e->id = strdup(em->id ? em->id : "");
+            e->url = strdup(em->url);
+        }
+    }
+    size_t rest = len - pos;
+    if (rest > size - used - 1)
+        rest = size - used - 1;
+    memcpy(out + used, m->text + pos, rest);
+    out[used + rest] = '\0';
+}
+
+/* A chat message: paid ones get the amount on top in bold and a gold body,
+ * new members a green one. Nothing when bubbles are off. The slots (up to
+ * KK_BUBBLE_MAX_EMOTES; *n of them) are the emote images to paint over it. */
+static cairo_surface_t *render_bubble(kk_stage *s, const kk_chat_msg *m,
+                                      kk_bubble_emote *slots, int *n)
+{
+    *n = 0;
     if (!s->cfg.show_bubbles)
         return NULL;
     char text[600];
     int bold_len = 0;
+    text[0] = '\0';
     if (m->kind == KK_MSG_PAID && m->amount && m->amount[0]) {
-        snprintf(text, sizeof text, "%s%s%s", m->amount, m->text[0] ? "\n" : "",
-                 m->text);
+        snprintf(text, sizeof text, "%s%s", m->amount, m->text[0] ? "\n" : "");
         bold_len = (int)strlen(m->amount);
-    } else {
-        snprintf(text, sizeof text, "%s", m->text);
     }
+    bubble_holes holes = {.px = line_px(s)};
+    kk_bubble_emote tmp[KK_BUBBLE_MAX_EMOTES];
+    message_text(s, m, text, sizeof text, &holes, tmp);
     rgb fill = {1.0, 1.0, 1.0};
     if (m->kind == KK_MSG_PAID)
         fill = (rgb){1.0, 0.84, 0.35};
     else if (m->kind == KK_MSG_MEMBER)
         fill = (rgb){0.62, 0.95, 0.68};
-    return render_text_bubble(s, text, bold_len, fill, BUBBLE_LINES);
+    cairo_surface_t *bubble =
+        render_text_bubble(s, text, bold_len, fill, BUBBLE_LINES, &holes);
+    for (int i = 0; i < holes.n; i++) {
+        if (holes.x[i] < 0) { /* cut off by the line limit */
+            kk_bubble_emote_resolve(&tmp[i], NULL);
+            kk_emote_anim_unref(tmp[i].anim);
+            continue;
+        }
+        tmp[i].x = holes.x[i];
+        tmp[i].y = holes.y[i];
+        slots[(*n)++] = tmp[i];
+    }
+    return bubble;
 }
 
 /* Fixed by the config, else long messages stay up longer, within limits. */
@@ -263,6 +363,11 @@ void kk_stage_free(kk_stage *s)
     if (s->pango)
         g_object_unref(s->pango);
     memset(s, 0, sizeof *s);
+}
+
+void kk_stage_set_emotes(kk_stage *s, kk_emotes *emotes)
+{
+    s->emotes = emotes;
 }
 
 void kk_stage_resize(kk_stage *s, int width, int height)
@@ -578,8 +683,10 @@ void kk_stage_say(kk_stage *s, kk_avatar *a, const kk_chat_msg *m)
 {
     kk_avatar_jump(a);
     bool has_text = m->text[0] || (m->kind == KK_MSG_PAID && m->amount && m->amount[0]);
-    kk_avatar_say(a, has_text ? render_bubble(s, m) : NULL,
-                  bubble_seconds(s, m->text));
+    kk_bubble_emote slots[KK_BUBBLE_MAX_EMOTES];
+    int n = 0;
+    cairo_surface_t *bubble = has_text ? render_bubble(s, m, slots, &n) : NULL;
+    kk_avatar_say_emotes(a, bubble, bubble_seconds(s, m->text), slots, bubble ? n : 0);
 }
 
 void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,
@@ -587,7 +694,7 @@ void kk_stage_help_bubble(kk_stage *s, kk_avatar *a, const char *text,
 {
     kk_avatar_jump(a);
     kk_avatar_say(a, render_text_bubble(s, text, title_len, (rgb){0.78, 0.89, 1.0},
-                                        lines),
+                                        lines, NULL),
                   seconds);
 }
 
@@ -651,7 +758,9 @@ kk_avatar *kk_stage_find_user(kk_stage *s, const char *key)
 static cairo_surface_t *heart_bubble(kk_stage *s)
 {
     kk_chat_msg m = {.text = "❤️", .kind = KK_MSG_TEXT};
-    return render_bubble(s, &m);
+    kk_bubble_emote none[KK_BUBBLE_MAX_EMOTES];
+    int n;
+    return render_bubble(s, &m, none, &n);
 }
 
 /* Keeps approaching avatars heading for their goal and performs the action
@@ -730,11 +839,28 @@ static void assign_tag_rows(kk_stage *s)
         free(order);
 }
 
+/* Emotes that were still downloading when the bubble went up. */
+static void resolve_bubble_emotes(kk_stage *s, kk_avatar *a)
+{
+    for (int i = 0; s->emotes && i < a->n_bubble_emotes; i++) {
+        kk_bubble_emote *e = &a->bubble_emotes[i];
+        if (e->anim || !e->url)
+            continue;
+        kk_emote anim_em = {.id = e->id, .url = e->url};
+        kk_emote_anim *anim;
+        kk_emote_state st = kk_emotes_get_anim(s->emotes, e->platform, &anim_em, &anim);
+        if (st != KK_EMOTE_LOADING)
+            kk_bubble_emote_resolve(e, st == KK_EMOTE_READY ? anim : NULL);
+    }
+}
+
 void kk_stage_update(kk_stage *s, double dt)
 {
     kk_view v = view(s);
-    for (int i = 0; i < s->count; i++)
+    for (int i = 0; i < s->count; i++) {
         kk_avatar_update(&s->avatars[i], dt, &v, &s->rng);
+        resolve_bubble_emotes(s, &s->avatars[i]);
+    }
     run_interactions(s);
     for (int i = s->count - 1; i >= 0; i--)
         if (s->avatars[i].user_id && s->avatars[i].quiet > s->cfg.despawn &&

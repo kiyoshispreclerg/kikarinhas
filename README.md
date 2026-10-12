@@ -361,6 +361,8 @@ canal no Kick) e os do Odysee (emotes e stickers), baixados uma vez e
 guardados em `~/.cache/kikarinhas/emotes` (`third_party_emotes = no` em
 `[chat]` desliga BTTV, FFZ e 7TV), e, se quiser,
 as reações do YouTube (os corações flutuantes), misturadas com o resto.
+Os emotes animados (GIF no Twitch, BTTV, 7TV e Kick) se mexem na tela e nos
+balões; os que só existem em WebP (alguns do FFZ) ficam parados.
 Três efeitos: `rise` (sobem em ondas), `bounce` (diagonal quicando nas
 bordas, como o logo do DVD) e `fly` (atravessam a tela).
 
@@ -423,12 +425,13 @@ Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
 conhece pode virar uma bridge em qualquer linguagem.
 
 Emojis comuns vão no próprio `text`. Emotes que são imagem (os da Twitch, de
-membros, 7TV...) vão em `emotes`, com a URL de um PNG (só `https`) e, se
-quiser, onde estão no texto (`start` e `len`, em bytes). Reações vão à
+membros, 7TV...) vão em `emotes`, com a URL de um PNG ou GIF (só `https`) e, se
+quiser, onde estão no texto (`start` e `len`, em bytes): com isso o emote
+aparece como imagem, animada se for GIF, dentro do balão da mensagem. Reações vão à
 parte:
 
 ```sh
-echo '{"type":"message","platform":"twitch","user_id":"123","text":"oi Kappa","emotes":[{"id":"25","name":"Kappa","url":"https://static-cdn.jtvnw.net/emoticons/v2/25/static/dark/2.0","start":3,"len":5}]}' \
+echo '{"type":"message","platform":"twitch","user_id":"123","text":"oi Kappa","emotes":[{"id":"25","name":"Kappa","url":"https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/2.0","start":3,"len":5}]}' \
     | socat - UNIX-CONNECT:$S
 echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX-CONNECT:$S
 ```
@@ -535,8 +538,7 @@ transparente também na tela.
 
 ## Previsto
 
-- Pacotes .zip do Stream Avatars, emotes como imagem dentro dos balões,
-  emotes animados (GIF).
+- Pacotes .zip do Stream Avatars e fundos do Stream Avatars.
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
 
 ## Licença

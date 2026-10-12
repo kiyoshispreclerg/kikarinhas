@@ -365,7 +365,9 @@ the channel's BTTV, FFZ and 7TV emotes, Kick emotes (and the channel's 7TV
 ones on Kick) and Odysee emotes and stickers, downloaded once and kept in
 `~/.cache/kikarinhas/emotes` (`third_party_emotes = no` in `[chat]` turns
 off BTTV, FFZ and 7TV), and, if you want, YouTube
-reactions (the floating hearts), mixed in with the rest. Three effects:
+reactions (the floating hearts), mixed in with the rest. Animated emotes
+(GIFs on Twitch, BTTV, 7TV and Kick) move on screen and in the bubbles; the
+ones only served as WebP (some FFZ ones) stay still. Three effects:
 `rise` (they rise in waves), `bounce` (diagonals bouncing off the edges,
 like the DVD logo) and `fly` (they cross the screen).
 
@@ -428,12 +430,13 @@ In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
 become a bridge written in any language.
 
 Common emoji go in the `text` itself. Emotes that are images (Twitch's,
-member emotes, 7TV...) go in `emotes`, with the URL of a PNG (`https` only)
-and, optionally, where they are in the text (`start` and `len`, in bytes).
+member emotes, 7TV...) go in `emotes`, with the URL of a PNG or GIF (`https` only)
+and, optionally, where they are in the text (`start` and `len`, in bytes): with
+that the emote shows as an image, animated if it is a GIF, inside the message bubble.
 Reactions go on their own:
 
 ```sh
-echo '{"type":"message","platform":"twitch","user_id":"123","text":"hi Kappa","emotes":[{"id":"25","name":"Kappa","url":"https://static-cdn.jtvnw.net/emoticons/v2/25/static/dark/2.0","start":3,"len":5}]}' \
+echo '{"type":"message","platform":"twitch","user_id":"123","text":"hi Kappa","emotes":[{"id":"25","name":"Kappa","url":"https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/2.0","start":3,"len":5}]}' \
     | socat - UNIX-CONNECT:$S
 echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX-CONNECT:$S
 ```
@@ -544,8 +547,7 @@ transparent on screen too.
 
 ## Planned
 
-- Stream Avatars .zip packs, emotes as images inside the bubbles, animated
-  emotes (GIF).
+- Stream Avatars .zip packs and backgrounds.
 - Optional HTML layers (WPE WebKit) to replace some obs-browser sources.
 
 ## License

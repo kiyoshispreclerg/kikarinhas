@@ -345,8 +345,31 @@ static void pick_next(kk_avatar *a, int width, kk_rng *rng)
     }
 }
 
+void kk_bubble_emote_resolve(kk_bubble_emote *e, kk_emote_anim *anim)
+{
+    free(e->platform);
+    free(e->id);
+    free(e->url);
+    e->platform = e->id = e->url = NULL;
+    if (anim)
+        e->anim = kk_emote_anim_ref(anim);
+}
+
+static void clear_bubble_emotes(kk_avatar *a)
+{
+    for (int i = 0; i < a->n_bubble_emotes; i++) {
+        kk_bubble_emote *e = &a->bubble_emotes[i];
+        kk_bubble_emote_resolve(e, NULL);
+        kk_emote_anim_unref(e->anim);
+        e->anim = NULL;
+    }
+    a->n_bubble_emotes = 0;
+}
+
 static void set_bubble(kk_avatar *a, cairo_surface_t *bubble, double seconds)
 {
+    clear_bubble_emotes(a);
+    a->bubble_age = 0.0;
     if (a->bubble)
         cairo_surface_destroy(a->bubble);
     a->bubble = bubble;
@@ -360,6 +383,15 @@ void kk_avatar_say(kk_avatar *a, cairo_surface_t *bubble, double seconds)
 {
     set_bubble(a, bubble, seconds);
     a->quiet = 0.0;
+}
+
+void kk_avatar_say_emotes(kk_avatar *a, cairo_surface_t *bubble, double seconds,
+                          const kk_bubble_emote *slots, int n)
+{
+    set_bubble(a, bubble, seconds);
+    a->quiet = 0.0;
+    for (int i = 0; i < n && i < KK_BUBBLE_MAX_EMOTES; i++)
+        a->bubble_emotes[a->n_bubble_emotes++] = slots[i];
 }
 
 /* Flying: both axes, off the walls and the ceiling, bouncing on the
@@ -410,6 +442,7 @@ void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
             gear_fps = a->gear[i].piece->fps;
     a->gear_tick = gear_fps > 0.0 ? (int)(a->clock * gear_fps) : 0;
     if (a->bubble) {
+        a->bubble_age += dt;
         a->bubble_left -= dt;
         if (a->bubble_left <= 0.0)
             set_bubble(a, NULL, 0.0);
@@ -576,6 +609,7 @@ void kk_avatar_free(kk_avatar *a)
     free(a->user_id);
     if (a->tag)
         cairo_surface_destroy(a->tag);
+    clear_bubble_emotes(a);
     if (a->bubble)
         cairo_surface_destroy(a->bubble);
 }
@@ -735,11 +769,24 @@ kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
     return r;
 }
 
+/* Which frame each emote of the bubble is on (and whether it has loaded):
+ * the bubble repaints when this changes. */
+static unsigned emote_sig(const kk_avatar *a)
+{
+    unsigned sig = 0;
+    for (int i = 0; i < a->n_bubble_emotes; i++) {
+        const kk_emote_anim *m = a->bubble_emotes[i].anim;
+        sig = sig * 131u + (m ? (unsigned)kk_emote_anim_index(m, a->bubble_age) + 1u : 0u);
+    }
+    return sig;
+}
+
 bool kk_avatar_changed(const kk_avatar *a, const kk_view *v)
 {
     return a->anim.frame != a->drawn_frame || a->anim.row != a->drawn_row ||
            a->left != a->drawn_left || a->angle != a->drawn_angle ||
            a->bubble_serial != a->drawn_serial ||
+           emote_sig(a) != a->drawn_emote_sig ||
            a->gear_tick != a->drawn_gear_tick ||
            !kk_rect_equal(kk_avatar_bounds(a, v), a->drawn);
 }
@@ -777,6 +824,20 @@ void kk_avatar_draw_bubble(const kk_avatar *a, cairo_t *cr, const kk_view *v)
     bubble_origin(a, v, &bx, &by);
     cairo_set_source_surface(cr, a->bubble, bx, by);
     cairo_paint(cr);
+    for (int i = 0; i < a->n_bubble_emotes; i++) {
+        const kk_bubble_emote *e = &a->bubble_emotes[i];
+        if (!e->anim)
+            continue;
+        cairo_surface_t *f = kk_emote_anim_frame(e->anim, a->bubble_age);
+        double k = (double)e->size / cairo_image_surface_get_width(f);
+        cairo_save(cr);
+        cairo_translate(cr, bx + e->x, by + e->y);
+        cairo_scale(cr, k, k);
+        cairo_set_source_surface(cr, f, 0, 0);
+        cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+        cairo_paint(cr);
+        cairo_restore(cr);
+    }
 }
 
 void kk_avatar_mark_drawn(kk_avatar *a, const kk_view *v)
@@ -787,5 +848,6 @@ void kk_avatar_mark_drawn(kk_avatar *a, const kk_view *v)
     a->drawn_left = a->left;
     a->drawn_angle = a->angle;
     a->drawn_serial = a->bubble_serial;
+    a->drawn_emote_sig = emote_sig(a);
     a->drawn_gear_tick = a->gear_tick;
 }

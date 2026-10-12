@@ -163,7 +163,7 @@ TEST(privmsg_with_emotes)
     CHECK(emote_is(m, 2, "PogChamp"));
     CHECK_STR_EQ(m->e[0].id, "25");
     CHECK_STR_EQ(m->e[0].name, "Kappa");
-    CHECK_STR_EQ(m->e[0].url, "https://static-cdn.jtvnw.net/emoticons/v2/25/static/dark/2.0");
+    CHECK_STR_EQ(m->e[0].url, "https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/2.0");
     CHECK_STR_EQ(m->e[2].id, "88");
 }
 
@@ -247,7 +247,7 @@ static const char bttv_global[] =
     "[{\"id\":\"b1\",\"code\":\"catJAM\",\"imageType\":\"gif\",\"animated\":true},"
     "{\"id\":\"b2\",\"code\":\"Clap\",\"imageType\":\"png\",\"animated\":false}]";
 static const char bttv_channel[] =
-    "{\"id\":\"u\",\"channelEmotes\":[{\"id\":\"b3\",\"code\":\"meuEmote\"}],"
+    "{\"id\":\"u\",\"channelEmotes\":[{\"id\":\"b3\",\"code\":\"meuEmote\",\"imageType\":\"gif\"}],"
     "\"sharedEmotes\":[{\"id\":\"b4\",\"code\":\"Shared\"}]}";
 static const char ffz_global[] =
     "{\"default_sets\":[3],\"sets\":{\"3\":{\"id\":3,\"emoticons\":["
@@ -283,11 +283,13 @@ TEST(extra_emote_lists)
     const kk_tw_emote *e = kk_tw_emotes_find(set, "catJAM", 6);
     CHECK(e);
     CHECK_STR_EQ(e->id, "7tv:s1");
-    CHECK_STR_EQ(e->url, "https://cdn.7tv.app/emote/s1/2x_static.png");
+    CHECK_STR_EQ(e->url, "https://cdn.7tv.app/emote/s1/2x.gif");
     e = kk_tw_emotes_find(set, "Clap", 4);
     CHECK(e);
     CHECK_STR_EQ(e->id, "bttv:b2");
     CHECK_STR_EQ(e->url, "https://cdn.betterttv.net/emote/b2/2x.png");
+    e = kk_tw_emotes_find(set, "meuEmote", 8);
+    CHECK(e && strcmp(e->url, "https://cdn.betterttv.net/emote/b3/2x.gif") == 0);
     e = kk_tw_emotes_find(set, "peepoHi", 7);
     CHECK(e && strcmp(e->url, "https://cdn.7tv.app/emote/s2/2x.png") == 0);
     e = kk_tw_emotes_find(set, "ffzOnly", 7);

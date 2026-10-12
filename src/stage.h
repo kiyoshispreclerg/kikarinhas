@@ -66,6 +66,7 @@ typedef struct {
     kk_avatar *avatars;
     int count, cap;
 
+    kk_emotes *emotes; /* images for emotes inside bubbles; may be NULL */
     PangoContext *pango;
     PangoFontDescription *tag_font;
     PangoFontDescription *bubble_font;
@@ -81,6 +82,8 @@ typedef struct {
 int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
                   const kk_stage_config *cfg);
 void kk_stage_free(kk_stage *s);
+/* Where emote images for the bubbles come from (NULL: emotes stay text). */
+void kk_stage_set_emotes(kk_stage *s, kk_emotes *emotes);
 void kk_stage_resize(kk_stage *s, int width, int height);
 
 /* Changes the font of the bubbles drawn from now on (open ones keep theirs).

@@ -1498,6 +1498,7 @@ int main(int argc, char **argv)
                                          ? emote_dir : NULL,
                              a.cfg.wall_size);
     a.wall = a.emotes ? kk_emotewall_new(a.emotes, x.seed) : NULL;
+    kk_stage_set_emotes(a.stage, a.emotes);
     if (!a.wall) {
         kk_log_error("sem memória");
         return 1;

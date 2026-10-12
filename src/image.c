@@ -41,26 +41,20 @@ static cairo_surface_t *to_surface(const unsigned char *rgba, int w, int h)
     return s;
 }
 
-bool kk_image_load(kk_image *img, const char *path)
+/* Frames of a picture in memory into img. what names it in warnings. */
+static bool decode_into(kk_image *img, const void *data, size_t len, const char *what)
 {
     memset(img, 0, sizeof *img);
-    size_t len;
-    char *data = kk_read_file(path, &len);
-    if (!data) {
-        kk_log_warn("não consegui ler a imagem %s: %s", path, strerror(errno));
-        return false;
-    }
     int w, h, n, *delays;
-    unsigned char *px = kk_decode_image((const unsigned char *)data, len, &w, &h, &n, &delays);
-    free(data);
+    unsigned char *px = kk_decode_image(data, len, &w, &h, &n, &delays);
     if (!px || n < 1) {
-        kk_log_warn("%s: não é uma imagem PNG, JPEG, GIF ou BMP que eu consiga ler", path);
+        kk_log_warn("%s: não é uma imagem PNG, JPEG, GIF ou BMP que eu consiga ler", what);
         kk_decode_image_free(px);
         kk_decode_image_free(delays);
         return false;
     }
     if ((long)w * h * n > MAX_PIXELS) {
-        kk_log_warn("%s: grande demais (%dx%d, %d quadros)", path, w, h, n);
+        kk_log_warn("%s: grande demais (%dx%d, %d quadros)", what, w, h, n);
         kk_decode_image_free(px);
         kk_decode_image_free(delays);
         return false;
@@ -83,10 +77,29 @@ bool kk_image_load(kk_image *img, const char *path)
     img->w = w;
     img->h = h;
     if (!ok) {
-        kk_log_warn("%s: sem memória para a imagem", path);
+        kk_log_warn("%s: sem memória para a imagem", what);
         kk_image_free(img);
     }
     return ok;
+}
+
+bool kk_image_load(kk_image *img, const char *path)
+{
+    memset(img, 0, sizeof *img);
+    size_t len;
+    char *data = kk_read_file(path, &len);
+    if (!data) {
+        kk_log_warn("não consegui ler a imagem %s: %s", path, strerror(errno));
+        return false;
+    }
+    bool ok = decode_into(img, data, len, path);
+    free(data);
+    return ok;
+}
+
+bool kk_image_decode(kk_image *img, const void *data, size_t len)
+{
+    return decode_into(img, data, len, "imagem");
 }
 
 cairo_surface_t *kk_image_decode_still(const void *data, size_t len)

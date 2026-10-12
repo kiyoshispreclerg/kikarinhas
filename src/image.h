@@ -22,6 +22,8 @@ typedef struct {
 /* Reads path into img. False (and img empty) if it can't, or if it would
  * take too much memory (a long, big GIF). */
 bool kk_image_load(kk_image *img, const char *path);
+/* Same from bytes in memory (animated emotes). */
+bool kk_image_decode(kk_image *img, const void *data, size_t len);
 void kk_image_free(kk_image *img);
 
 /* The first frame of a picture in memory (PNG, JPEG, GIF, BMP), or NULL:

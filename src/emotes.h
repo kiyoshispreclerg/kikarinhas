@@ -26,6 +26,23 @@
 
 typedef struct kk_emotes kk_emotes;
 
+/* The frames of one emote, each already a square of the emote size. A still
+ * emote has one frame. Shared by whoever shows it: take a reference to keep
+ * it past the next call into kk_emotes. */
+typedef struct {
+    int refs;
+    cairo_surface_t **frames;
+    int *delay_ms; /* per frame; NULL for one frame */
+    int n;
+    int total_ms; /* one loop */
+} kk_emote_anim;
+
+kk_emote_anim *kk_emote_anim_ref(kk_emote_anim *a);
+void kk_emote_anim_unref(kk_emote_anim *a);
+/* The frame to show t seconds after it started (looping), and its index. */
+cairo_surface_t *kk_emote_anim_frame(const kk_emote_anim *a, double t);
+int kk_emote_anim_index(const kk_emote_anim *a, double t);
+
 typedef enum {
     KK_EMOTE_LOADING,
     KK_EMOTE_READY,
@@ -45,6 +62,10 @@ int kk_emotes_size(const kk_emotes *e);
  * download on the first call. *out is set when READY. */
 kk_emote_state kk_emotes_get(kk_emotes *e, const char *platform,
                              const kk_emote *em, cairo_surface_t **out);
+
+/* Same, with every frame (animated GIFs). *out is not referenced. */
+kk_emote_state kk_emotes_get_anim(kk_emotes *e, const char *platform,
+                                  const kk_emote *em, kk_emote_anim **out);
 
 /* Where the image of a platform emote is kept on disk; false without a
  * cache dir. */

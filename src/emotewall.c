@@ -30,7 +30,8 @@ typedef struct {
 } job;
 
 typedef struct {
-    cairo_surface_t *img; /* referenced */
+    kk_emote_anim *anim;  /* referenced */
+    cairo_surface_t *img; /* its frame for this paint */
     double born, life;
     kk_wall_style style;
     double x0, y0, x1, y1; /* top-left at the start and at the end */
@@ -228,7 +229,7 @@ static void drop_particle(kk_emotewall *w, int i)
 {
     particle *p = &w->parts[i];
     add_removed(w, p->drawn);
-    cairo_surface_destroy(p->img);
+    kk_emote_anim_unref(p->anim);
     w->parts[i] = w->parts[--w->n_parts];
 }
 
@@ -472,7 +473,7 @@ static double reflect(double p, double len)
     return m <= len ? m : 2 * len - m;
 }
 
-static void launch(kk_emotewall *w, cairo_surface_t *img, double now)
+static void launch(kk_emotewall *w, kk_emote_anim *anim, double now)
 {
     if (w->n_parts >= w->cfg.max_on_screen || w->n_parts == MAX_PARTICLES)
         return;
@@ -482,7 +483,7 @@ static void launch(kk_emotewall *w, cairo_surface_t *img, double now)
     particle *p = &w->parts[w->n_parts++];
     /* Some faster, some slower, so a burst spreads out instead of moving
      * as a block. */
-    *p = (particle){.img = cairo_surface_reference(img), .born = now,
+    *p = (particle){.anim = kk_emote_anim_ref(anim), .img = anim->frames[0], .born = now,
                     .life = w->cfg.duration * kk_rng_range(rng, 0.8, 1.2),
                     .style = w->cfg.style,
                     .phase = kk_rng_range(rng, 0, TWO_PI)};
@@ -524,6 +525,7 @@ static void place(kk_emotewall *w, particle *p, double now)
 {
     double size = kk_emotes_size(w->images);
     double age = now - p->born;
+    p->img = kk_emote_anim_frame(p->anim, age);
     double t = age / p->life;
     t = t < 0 ? 0 : t > 1 ? 1 : t;
     double x, y;
@@ -557,10 +559,10 @@ void kk_emotewall_update(kk_emotewall *w, double now)
     /* Start what is due; images still loading wait their turn. */
     for (int i = 0; i < w->n_jobs;) {
         job *j = &w->jobs[i];
-        cairo_surface_t *img = NULL;
+        kk_emote_anim *img = NULL;
         kk_emote_state st = KK_EMOTE_LOADING;
         if (j->at <= now)
-            st = kk_emotes_get(w->images, j->platform, &j->em, &img);
+            st = kk_emotes_get_anim(w->images, j->platform, &j->em, &img);
         if (j->at > now || (st == KK_EMOTE_LOADING && now - j->at < GIVE_UP_S)) {
             i++;
             continue;

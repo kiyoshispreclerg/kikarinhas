@@ -6,9 +6,21 @@
 
 #include <cairo.h>
 
+#include "emotes.h"
 #include "sa.h"
 #include "sprite.h"
 #include "util.h"
+
+/* An emote image inside a speech bubble: a hole in the bubble surface the
+ * avatar fills with the current frame of anim each time it paints. The
+ * stage fills anim in once the image is loaded (platform/id/url are what it
+ * asks the cache for until then). */
+#define KK_BUBBLE_MAX_EMOTES 12
+typedef struct {
+    int x, y, size; /* in the bubble surface */
+    kk_emote_anim *anim; /* referenced; NULL while loading */
+    char *platform, *id, *url; /* owned; NULL once resolved */
+} kk_bubble_emote;
 
 typedef enum {
     KK_ST_IDLE,
@@ -82,6 +94,10 @@ typedef struct {
     int bubble_w, bubble_h;
     double bubble_left; /* seconds until the bubble goes away */
     unsigned bubble_serial; /* bumps when the bubble changes */
+    kk_bubble_emote bubble_emotes[KK_BUBBLE_MAX_EMOTES];
+    int n_bubble_emotes;
+    double bubble_age; /* seconds since the bubble appeared (animations) */
+    unsigned drawn_emote_sig; /* frames of the emotes as last painted */
 
     double x;      /* horizontal centre, px */
     double lift;   /* height above the ground while jumping, px */
@@ -169,6 +185,12 @@ void kk_avatar_stop(kk_avatar *a, kk_rng *rng);
 /* Shows bubble (owned by the avatar from now on; NULL for none) for
  * seconds, replacing the current one. */
 void kk_avatar_say(kk_avatar *a, cairo_surface_t *bubble, double seconds);
+/* The same with emote images to paint over the bubble; the avatar takes
+ * over what the n slots own. */
+void kk_avatar_say_emotes(kk_avatar *a, cairo_surface_t *bubble, double seconds,
+                          const kk_bubble_emote *slots, int n);
+/* Gives a loaded image to the slot that was waiting for it. */
+void kk_bubble_emote_resolve(kk_bubble_emote *e, kk_emote_anim *anim);
 
 /* Area the avatar covers (sprite, tag and bubble). */
 kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v);
