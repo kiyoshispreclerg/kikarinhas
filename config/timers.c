@@ -131,10 +131,11 @@ static void build(editor *e, dialog *d, const char *title, const char *name, con
 
     d->problem = gtk_label_new(NULL);
     gtk_misc_set_alignment(GTK_MISC(d->problem), 0, 0.5);
-    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(d->dlg));
-    gtk_box_pack_start(GTK_BOX(content), table, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(content), d->problem, FALSE, FALSE, 6);
+    GtkWidget *scroll = dialog_body(d->dlg, table);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(d->dlg))), d->problem,
+                       FALSE, FALSE, 6);
     gtk_widget_show_all(d->dlg);
+    dialog_body_fit(scroll);
 }
 
 /* The dialog into the row at it; false (and why) if something is off. */

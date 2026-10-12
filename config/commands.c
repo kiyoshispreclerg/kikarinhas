@@ -190,7 +190,7 @@ static bool selected(editor *e, GtkTreeIter *it)
 typedef struct {
     editor *e;
     bool custom;
-    GtkWidget *dlg, *table, *problem;
+    GtkWidget *dlg, *table, *problem, *scroll;
     GtkWidget *name, *action, *enabled, *aliases, *cd, *gcd, *role, *cost;
     GtkWidget *data, *sound, *avatar, *text, *file, *x, *y, *scale, *sec_auto, *sec,
         *preview, *player;
@@ -263,6 +263,7 @@ static void update_rows(dialog *d)
     show_row(d, d->r_preview, is(a, "image"));
     show_row(d, d->r_player, is(a, "nowplaying"));
     show_row(d, d->r_seconds, is(a, "text") || is(a, "image") || is(a, "nowplaying"));
+    dialog_body_fit(d->scroll);
     gtk_window_resize(GTK_WINDOW(d->dlg), 1, 1); /* shrink to what shows */
 }
 
@@ -567,9 +568,9 @@ static void build_dialog(dialog *d, const kk_config_command *k, const char *titl
         gtk_entry_set_activates_default(GTK_ENTRY(*w), TRUE);
     d->problem = gtk_label_new(NULL);
     gtk_misc_set_alignment(GTK_MISC(d->problem), 0, 0.5);
-    GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(d->dlg));
-    gtk_box_pack_start(GTK_BOX(content), d->table, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(content), d->problem, FALSE, FALSE, 6);
+    d->scroll = dialog_body(d->dlg, d->table);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(d->dlg))), d->problem,
+                       FALSE, FALSE, 6);
     g_signal_connect(d->action, "changed", G_CALLBACK(on_action_changed), d);
     gtk_widget_show_all(d->dlg);
     on_action_changed(GTK_COMBO_BOX(d->action), d);

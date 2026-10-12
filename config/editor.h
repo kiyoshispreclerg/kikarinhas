@@ -63,6 +63,11 @@ void status(editor *e, const char *fmt, ...) __attribute__((format(printf, 2, 3)
 
 /* Widgets. */
 GtkWidget *page(GtkWidget *notebook, const char *title);
+/* Puts content in a dialog inside a scrolled window, as tall as the content
+ * but never more than the screen allows; dialog_body_fit again when the
+ * content changes size. Returns the scrolled window. */
+GtkWidget *dialog_body(GtkWidget *dlg, GtkWidget *content);
+void dialog_body_fit(GtkWidget *scroll);
 GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w, const char *hint);
 GtkWidget *spin(double lo, double hi, double step, int digits);
 GtkWidget *entry(const char *text);

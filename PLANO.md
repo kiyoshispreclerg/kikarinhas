@@ -326,10 +326,15 @@ data/         avatar padrão original, exemplo de .ini
      `$XDG_RUNTIME_DIR`, e caminho longo dá erro claro em vez de truncar;
    - o GTK põe o `LC_NUMERIC` do sistema (vírgula decimal): o configurador
      volta para "C" para gravar `1.5`.
-   Não verificado: a interface do configurador só foi conferida em parte
-   (abre, salva sem mudar nada do arquivo, aplica no programa aberto e
-   grava um campo alterado); não deu para capturar a tela aqui, então a
-   edição da lista de comandos pela interface ficou sem teste.
+   A edição da lista de comandos pela interface foi conferida de ponta a
+   ponta (2026-10-12, num Xvfb com `xdotool`, sem gerenciador de janelas):
+   adicionar um comando de texto, editar apelidos/espera/custo de um padrão
+   (só o que mudou vai para o `.ini`), "Restaurar padrão", recusa de remover
+   padrão, nome repetido e imagem faltando (mensagem em vermelho no
+   diálogo), remover um novo, salvar e reabrir (o diálogo de imagem mostra
+   a prévia na posição certa). Lições: os diálogos agora rolam e respeitam
+   a altura da tela (`dialog_body`); a roda do mouse sobre um combo dentro
+   do diálogo troca o valor do combo em vez de rolar (comportamento do GTK2).
 5. **Twitch** *(feita)*, **Kick** e **Odysee** *(feitos, ver abaixo)*. `src/twitch.c`: IRC sobre
    TLS em `irc.chat.twitch.tv:6697` como `justinfanNNNNN`, com
    `twitch.tv/tags` e `twitch.tv/commands`. Nada bloqueia: o

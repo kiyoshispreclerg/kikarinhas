@@ -79,6 +79,29 @@ GtkWidget *page(GtkWidget *notebook, const char *title)
     return table;
 }
 
+GtkWidget *dialog_body(GtkWidget *dlg, GtkWidget *content)
+{
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER,
+                                   GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroll), content);
+    gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(scroll))),
+                                 GTK_SHADOW_NONE);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), scroll, TRUE,
+                       TRUE, 0);
+    return scroll;
+}
+
+void dialog_body_fit(GtkWidget *scroll)
+{
+    GtkRequisition req;
+    gtk_widget_size_request(gtk_bin_get_child(GTK_BIN(gtk_bin_get_child(GTK_BIN(scroll)))),
+                            &req);
+    /* Room for the title bar, the buttons and the panels around. */
+    int room = gdk_screen_get_height(gdk_screen_get_default()) - 200;
+    gtk_widget_set_size_request(scroll, req.width, req.height < room ? req.height : room);
+}
+
 /* A labelled row; hint (optional) goes under the widget in small text. */
 GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w,
                       const char *hint)
@@ -492,7 +515,7 @@ static void build(editor *e, const kk_config *cfg)
     /* Fits small screens: leaves room for the panels around the window. */
     GdkScreen *screen = gdk_screen_get_default();
     gtk_window_set_default_size(GTK_WINDOW(e->window),
-                                MIN(860, gdk_screen_get_width(screen) - 40),
+                                MIN(980, gdk_screen_get_width(screen) - 40),
                                 MIN(560, gdk_screen_get_height(screen) - 120));
     g_signal_connect(e->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
