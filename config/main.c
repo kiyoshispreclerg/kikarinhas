@@ -470,13 +470,30 @@ static void on_apply(GtkButton *b, gpointer ud)
 
 /* ---- the window ---------------------------------------------------------- */
 
+/* Wraps a page in a scrolled window: a notebook is as tall as its tallest
+ * page, so without this the window can't be smaller than the biggest tab. */
+static GtkWidget *scrolled(GtkWidget *content)
+{
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroll), content);
+    gtk_viewport_set_shadow_type(GTK_VIEWPORT(gtk_bin_get_child(GTK_BIN(scroll))),
+                                 GTK_SHADOW_NONE);
+    return scroll;
+}
+
 static void build(editor *e, const kk_config *cfg)
 {
     e->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     char title[64];
     snprintf(title, sizeof title, _("Kikarinhas v%s — settings"), KK_VERSION);
     gtk_window_set_title(GTK_WINDOW(e->window), title);
-    gtk_window_set_default_size(GTK_WINDOW(e->window), 860, 560);
+    /* Fits small screens: leaves room for the panels around the window. */
+    GdkScreen *screen = gdk_screen_get_default();
+    gtk_window_set_default_size(GTK_WINDOW(e->window),
+                                MIN(860, gdk_screen_get_width(screen) - 40),
+                                MIN(560, gdk_screen_get_height(screen) - 120));
     g_signal_connect(e->window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *vbox = gtk_vbox_new(FALSE, 6);
@@ -590,19 +607,19 @@ static void build(editor *e, const kk_config *cfg)
                     _("For bridges and the Apply button; empty: the default; off: disabled."));
 
     /* Right after the Avatars tab, which sets the folders it lists. */
-    gtk_notebook_insert_page(GTK_NOTEBOOK(nb), avatars_page(e),
+    gtk_notebook_insert_page(GTK_NOTEBOOK(nb), scrolled(avatars_page(e)),
                              gtk_label_new(_("Installed avatars")), 2);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), commands_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(commands_page(e, cfg)),
                              gtk_label_new(_("Commands")));
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), sounds_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(sounds_page(e, cfg)),
                              gtk_label_new(_("Sounds")));
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), wall_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(wall_page(e, cfg)),
                              gtk_label_new(_("Emote wall")));
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), points_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(points_page(e, cfg)),
                              gtk_label_new(_("Points")));
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), timers_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(timers_page(e, cfg)),
                              gtk_label_new(_("Timers")));
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), audience_page(e, cfg),
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(audience_page(e, cfg)),
                              gtk_label_new(_("Viewers")));
 
     GtkWidget *footer = gtk_hbox_new(FALSE, 12);
