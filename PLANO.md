@@ -738,6 +738,27 @@ data/         avatar padrão original, exemplo de .ini
      de sempre (`KK_ST_FLY`, o do estilingue) com a velocidade do ponteiro,
      limitada a 3000 px/s, e giro proporcional a vx. Cada avatar tem um
      `id` do palco, que o ponteiro usa no lugar de índice (o vetor muda).
+   - **Danmaku** (`src/danmaku.c`, aba em `config/danmaku.c`, seção
+     `[danmaku]`): com ele ligado, `main.c` desliga os balões de chat
+     (`chat_bubbles`) e manda cada mensagem que não é comando para a
+     camada, com as áreas dos avatares (`kk_stage_avatar_areas`). Ajuda e
+     comandos de texto seguem em balão. A tela vira faixas de uma linha
+     (medida com texto CJK e emoji, para os fallbacks caberem); toda
+     mensagem atravessa em `seconds`, então as compridas andam mais
+     rápido. Uma faixa está livre se a última já entrou inteira (mais
+     24 px) e a nova, mais rápida, não a alcança antes de ela sair. Entre
+     as livres, as de menor custo (altura × largura de avatar cruzada),
+     sorteando entre as empatadas; sem faixa livre, a que libera primeiro.
+     Cada mensagem é desenhada uma vez (Pango: contorno com
+     `pango_cairo_layout_path` + traço redondo, depois o texto; valor em
+     negrito nas pagas; emotes de imagem em U+FFFC com atributo `shape`,
+     como no balão, reaproveitando `kk_bubble_emote`) e copiada a cada
+     quadro. O dano é um retângulo por mensagem (posição anterior ∪ atual).
+     Opacidade < 100% usa `push_group`. Passando de `max_on_screen`, as
+     novas são descartadas. Cores `#rrggbb` (`kk_parse_color`), botões de
+     cor do GTK no configurador, opções acinzentadas enquanto desligado.
+     `KK_MAX_LAYERS` foi para 6. Medido no Xephyr com o chat de mentira:
+     ~3% de CPU, igual com ele desligado (quem pesa é a emote wall).
    Pendentes: fundos do SA, plugin de
    OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
    (layer-shell) no futuro.

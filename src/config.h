@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "commands.h"
 #include "ini.h"
@@ -54,6 +55,10 @@
  *              max_per_message = 10, max_on_screen = 150,
  *              reactions = yes, reactions_per_icon = 1,
  *              blacklist = 😂, :_hello:, Kappa
+ *   [danmaku]  enabled = no, seconds = 8, font = Sans Bold, size = 24,
+ *              color = #ffffff, outline = #000000, paid_color = #ffd24a,
+ *              member_color = #8ef09c, opacity = 100 (%),
+ *              avoid_avatars = yes, max_on_screen = 100
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -173,6 +178,16 @@ typedef struct {
     bool wall_reactions;
     int wall_reactions_per_icon;
     char *wall_blacklist;    /* comma-separated; NULL = none */
+    /* [danmaku]: messages fly across instead of bubbles (danmaku.h) */
+    bool danmaku_enabled;
+    double danmaku_seconds;  /* to cross the window */
+    char *danmaku_font;      /* NULL = "Sans Bold" */
+    double danmaku_size;     /* points */
+    uint32_t danmaku_color, danmaku_outline, danmaku_paid_color,
+        danmaku_member_color; /* 0xRRGGBB */
+    int danmaku_opacity;     /* percent */
+    bool danmaku_avoid;      /* keep off the avatars when it can */
+    int danmaku_max;         /* on screen at once */
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;
@@ -240,5 +255,9 @@ bool kk_parse_role(const char *s, kk_role *out);
 const char *kk_role_name(kk_role r);
 bool kk_parse_long(const char *s, long lo, long hi, long *out);
 bool kk_parse_double(const char *s, double lo, double hi, double *out);
+/* "#rrggbb", "rrggbb" or "#rgb" to 0xRRGGBB. */
+bool kk_parse_color(const char *s, uint32_t *out);
+/* 0xRRGGBB to "#rrggbb" (out has room for 8 bytes). */
+void kk_format_color(char out[8], uint32_t c);
 
 #endif

@@ -18,7 +18,7 @@
 #include "util.h"
 
 #define KK_MAX_DAMAGE 16
-#define KK_MAX_LAYERS 4
+#define KK_MAX_LAYERS 6
 
 typedef struct {
     double scale;
@@ -149,6 +149,9 @@ bool kk_stage_add_layer(kk_stage *s, const kk_layer *l);
 void kk_stage_remove_layer(kk_stage *s, const kk_layer *l);
 
 void kk_stage_update(kk_stage *s, double dt);
+
+/* The areas the avatars cover now (sprite and name; at most max). */
+int kk_stage_avatar_areas(kk_stage *s, kk_rect *out, int max);
 
 /* The avatars as something the mouse can click (they jump), pick up and
  * throw. Topmost avatar first; s must outlive the target. */

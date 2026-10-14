@@ -108,6 +108,35 @@ bool kk_parse_double(const char *s, double lo, double hi, double *out)
     return true;
 }
 
+bool kk_parse_color(const char *s, uint32_t *out)
+{
+    if (*s == '#')
+        s++;
+    size_t n = strlen(s);
+    if (n != 6 && n != 3)
+        return false;
+    uint32_t v = 0;
+    for (size_t i = 0; i < n; i++) {
+        int d;
+        if (s[i] >= '0' && s[i] <= '9')
+            d = s[i] - '0';
+        else if (s[i] >= 'a' && s[i] <= 'f')
+            d = s[i] - 'a' + 10;
+        else if (s[i] >= 'A' && s[i] <= 'F')
+            d = s[i] - 'A' + 10;
+        else
+            return false;
+        v = n == 6 ? v << 4 | (uint32_t)d : v << 8 | (uint32_t)(d * 17);
+    }
+    *out = v;
+    return true;
+}
+
+void kk_format_color(char out[8], uint32_t c)
+{
+    snprintf(out, 8, "#%06x", (unsigned)(c & 0xffffff));
+}
+
 bool kk_parse_size(const char *s, int *w, int *h)
 {
     int a, b;
@@ -282,6 +311,7 @@ void kk_config_free(kk_config *c)
         sound_free(&c->sounds[i]);
     free(c->sounds);
     free(c->wall_blacklist);
+    free(c->danmaku_font);
     free(c->points_name);
     for (int i = 0; i < c->n_timers; i++)
         timer_free(&c->timers[i]);
@@ -326,6 +356,15 @@ void kk_config_defaults(kk_config *c)
         .wall_max_screen = 150,
         .wall_reactions = true,
         .wall_reactions_per_icon = 1,
+        .danmaku_seconds = 8,
+        .danmaku_size = 24,
+        .danmaku_color = 0xffffff,
+        .danmaku_outline = 0x000000,
+        .danmaku_paid_color = 0xffd24a,
+        .danmaku_member_color = 0x8ef09c,
+        .danmaku_opacity = 100,
+        .danmaku_avoid = true,
+        .danmaku_max = 100,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -361,6 +400,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->sounds = NULL;
     dst->n_sounds = 0;
     dst->wall_blacklist = NULL;
+    dst->danmaku_font = NULL;
     dst->points_name = NULL;
     dst->timers = NULL;
     dst->n_timers = 0;
@@ -380,6 +420,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->users, src->users) && ok;
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
     ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
+    ok = kk_config_set_str(&dst->danmaku_font, src->danmaku_font) && ok;
     ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
     for (int i = 0; i < src->n_timers && ok; i++) {
         kk_config_timer *t = add_timer(dst, src->timers[i].name);
@@ -904,6 +945,40 @@ static void apply_wall(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void get_color(const warner *w, uint32_t *dst)
+{
+    if (!kk_parse_color(w->value, dst))
+        bad_value(w, "uma cor como #ffcc00");
+}
+
+static void apply_danmaku(kk_config *c, const warner *w)
+{
+    if (key_is(w, "enabled"))
+        get_bool(w, &c->danmaku_enabled);
+    else if (key_is(w, "seconds"))
+        get_double(w, &c->danmaku_seconds, 1, 60);
+    else if (key_is(w, "font"))
+        get_str(w, &c->danmaku_font);
+    else if (key_is(w, "size"))
+        get_double(w, &c->danmaku_size, 4, 200);
+    else if (key_is(w, "color"))
+        get_color(w, &c->danmaku_color);
+    else if (key_is(w, "outline"))
+        get_color(w, &c->danmaku_outline);
+    else if (key_is(w, "paid_color"))
+        get_color(w, &c->danmaku_paid_color);
+    else if (key_is(w, "member_color"))
+        get_color(w, &c->danmaku_member_color);
+    else if (key_is(w, "opacity"))
+        get_int(w, &c->danmaku_opacity, 10, 100, false);
+    else if (key_is(w, "avoid_avatars"))
+        get_bool(w, &c->danmaku_avoid);
+    else if (key_is(w, "max_on_screen"))
+        get_int(w, &c->danmaku_max, 1, 1000, false);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -1057,6 +1132,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_soundboard(c, &w);
         } else if (strcasecmp(s, "emote_wall") == 0) {
             apply_wall(c, &w);
+        } else if (strcasecmp(s, "danmaku") == 0) {
+            apply_danmaku(c, &w);
         } else if (strcasecmp(s, "points") == 0) {
             apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {

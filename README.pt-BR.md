@@ -404,6 +404,37 @@ Tudo isso também está na aba **Emote wall** do `kikarinhas-config`. Na
 blacklist, `❤` e `❤️` são o mesmo emoji, e `:_oi:`, `:oi:` e `oi` são o mesmo
 atalho.
 
+### Danmaku
+
+As mensagens do chat podem atravessar a tela da direita para a esquerda no
+lugar dos balões, como no Niconico e no Bilibili: só o texto, numa linha,
+com contorno e sem nome, numa altura sorteada. Os emotes ficam no texto como
+imagem; mensagens pagas vêm com cor própria e o valor na frente, e membros
+novos também têm a sua. Entre as linhas livres (onde a mensagem não alcança
+a da frente), prefere as que menos cruzam os avatares, então o texto passa
+pela parte vazia do palco quando há espaço. A ajuda e os comandos de texto
+(`!help`, `!discord`...) continuam com balão, e o avatar continua pulando
+quando a pessoa fala.
+
+```ini
+[danmaku]
+enabled = yes
+# segundos para atravessar a tela (as compridas andam mais rápido)
+seconds = 8
+font = Sans Bold
+size = 24
+color = #ffffff
+outline = #000000
+paid_color = #ffd24a
+member_color = #8ef09c
+# em %
+opacity = 100
+avoid_avatars = yes
+max_on_screen = 100
+```
+
+Tudo isso também está na aba **Danmaku** do `kikarinhas-config`.
+
 ### Socket de controle e bridges
 
 O kikarinhas escuta em `$XDG_RUNTIME_DIR/kikarinhas.sock` (só o seu usuário

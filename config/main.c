@@ -363,6 +363,7 @@ static void collect(editor *e)
     commands_collect(e);
     sounds_collect(e);
     wall_collect(e);
+    danmaku_collect(e);
     points_collect(e);
     timers_collect(e);
 }
@@ -588,7 +589,8 @@ static void build(editor *e, const kk_config *cfg)
           "after this quiet time only the drawing stays. Independent of the time until "
           "the avatar leaves."));
     e->show_bubbles = row(t, _("Messages"),
-                          check(_("Show a speech bubble with the message"), cfg->show_bubbles), NULL);
+                          check(_("Show a speech bubble with the message"), cfg->show_bubbles),
+                          _("With danmaku on (its own tab), messages fly across instead."));
 
     row(t, _("Message bubble stays"),
         auto_spin(&e->bubble_auto, &e->bubble_secs, 1, 600,
@@ -638,6 +640,8 @@ static void build(editor *e, const kk_config *cfg)
                              gtk_label_new(_("Sounds")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(wall_page(e, cfg)),
                              gtk_label_new(_("Emote wall")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(danmaku_page(e, cfg)),
+                             gtk_label_new(_("Danmaku")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(points_page(e, cfg)),
                              gtk_label_new(_("Points")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(timers_page(e, cfg)),
@@ -756,6 +760,7 @@ int main(int argc, char **argv)
     avatars_free(&e);
     audience_free(&e);
     wall_free(&e);
+    danmaku_free(&e);
     points_free(&e);
     timers_free(&e);
     kk_ini_free(e.ini);

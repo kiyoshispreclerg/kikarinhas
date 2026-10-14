@@ -872,6 +872,15 @@ void kk_stage_update(kk_stage *s, double dt)
     assign_tag_rows(s);
 }
 
+int kk_stage_avatar_areas(kk_stage *s, kk_rect *out, int max)
+{
+    kk_view v = view(s);
+    int n = 0;
+    for (int i = 0; i < s->count && n < max; i++)
+        out[n++] = kk_avatar_bounds(&s->avatars[i], &v);
+    return n;
+}
+
 /* ---- mouse --------------------------------------------------------------- */
 
 static kk_avatar *find_id(kk_stage *s, uint64_t id)

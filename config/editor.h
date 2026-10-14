@@ -18,6 +18,7 @@
 typedef struct sounds_tab sounds_tab;
 typedef struct audience_tab audience_tab;
 typedef struct wall_tab wall_tab;
+typedef struct danmaku_tab danmaku_tab;
 typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
 typedef struct points_tab points_tab;
@@ -49,6 +50,7 @@ typedef struct {
     sounds_tab *sounds;
     audience_tab *audience;
     wall_tab *wall;
+    danmaku_tab *danmaku;
     sources_tab *sources;
     avatars_tab *avatars;
     points_tab *points;
@@ -132,6 +134,11 @@ void sounds_free(editor *e);
 GtkWidget *wall_page(editor *e, const kk_config *cfg);
 void wall_collect(editor *e);
 void wall_free(editor *e);
+
+/* The "Danmaku" tab (danmaku.c). */
+GtkWidget *danmaku_page(editor *e, const kk_config *cfg);
+void danmaku_collect(editor *e);
+void danmaku_free(editor *e);
 
 /* Avatar folders (avatars.c): the list in the Avatares tab, and every
  * avatar of every folder as the widgets say, loaded once on demand (NULL if

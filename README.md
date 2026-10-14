@@ -409,6 +409,37 @@ All of this is also in the **Emote wall** tab of `kikarinhas-config`. In
 the blacklist, `❤` and `❤️` are the same emoji, and `:_hi:`, `:hi:` and `hi`
 are the same shortcut.
 
+### Danmaku
+
+Chat messages can fly across the screen from right to left instead of going
+in speech bubbles, as on Niconico and Bilibili: only the text, on one line,
+with an outline and no name, at a random height. Emotes stay in the text as
+pictures; paid messages come in their own colour with the amount first, and
+so do new members. Among the free lines (where a message can't catch up
+with the one ahead), it prefers those that cross the avatars least, so the
+text goes over the empty part of the stage when there is room. Help and
+text commands (`!help`, `!discord`...) keep their bubbles, and the avatar
+still jumps when its person talks.
+
+```ini
+[danmaku]
+enabled = yes
+# seconds to cross the screen (longer messages go faster)
+seconds = 8
+font = Sans Bold
+size = 24
+color = #ffffff
+outline = #000000
+paid_color = #ffd24a
+member_color = #8ef09c
+# percent
+opacity = 100
+avoid_avatars = yes
+max_on_screen = 100
+```
+
+All of it is also in the **Danmaku** tab of `kikarinhas-config`.
+
 ### Control socket and bridges
 
 kikarinhas listens on `$XDG_RUNTIME_DIR/kikarinhas.sock` (only your user can

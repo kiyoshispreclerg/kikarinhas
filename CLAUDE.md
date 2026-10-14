@@ -99,11 +99,12 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/emoji.c`, `src/emoji_table.h` | acha emojis Unicode no texto (tabela gerada por `tools/gen_emoji_table.py`) |
 | `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG/GIF baixado (todos os quadros, `kk_emote_anim` com contagem de referências) + cache em `~/.cache/kikarinhas/emotes` |
 | `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
+| `src/danmaku.c` | danmaku: mensagens atravessando a tela no lugar dos balões, faixas sorteadas desviando dos avatares |
 | `docs/avatares/` | guia para criar avatares, gear e paletas (formato do SA); `kit-exemplo/` é gerado por `tools/gen_kit_exemplo.py`. Mudou o leitor (`sa.c`)? Atualize aqui |
 | `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas e o ícone |
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
-| `config/sounds.c`, `config/wall.c`, `config/audience.c` | abas Sons, Emote wall e Espectadores |
+| `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
 | `config/timers.c` | aba Timers: lista e diálogo de cada timer |
 | `config/commands.c` | aba Comandos: lista e diálogo de edição por ação (texto, imagem com prévia, som...) |

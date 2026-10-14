@@ -18,6 +18,7 @@
 #include "commands.h"
 #include "config.h"
 #include "control.h"
+#include "danmaku.h"
 #include "demochat.h"
 #include "emotes.h"
 #include "emotewall.h"
@@ -531,6 +532,7 @@ typedef struct {
     kk_commands *commands;
     kk_actions *actions;
     kk_emotewall *wall;
+    kk_danmaku *danmaku;
     kk_timers *timers;
     bool verbose;
 } chat_sink;
@@ -572,6 +574,11 @@ static void on_chat(void *ud, const kk_chat_msg *m)
             kk_stage_say(sink->stage, a, m);
         else if (r == KK_CMD_POOR)
             say_poor(sink, a, key);
+    }
+    if (r == KK_CMD_NONE && kk_danmaku_enabled(sink->danmaku)) {
+        kk_rect avatars[256];
+        int n = kk_stage_avatar_areas(sink->stage, avatars, 256);
+        kk_danmaku_message(sink->danmaku, m, avatars, n, now_seconds());
     }
     if (sink->verbose) {
         static const char *const kinds[] = {"", " [pago]", " [membro]"};
@@ -625,6 +632,29 @@ static kk_wall_config wall_config(const kk_config *c)
         .reactions_per_icon = c->wall_reactions_per_icon,
         .blacklist = c->wall_blacklist,
     };
+}
+
+static kk_danmaku_config danmaku_config(const kk_config *c)
+{
+    return (kk_danmaku_config){
+        .enabled = c->danmaku_enabled,
+        .seconds = c->danmaku_seconds,
+        .font = c->danmaku_font,
+        .size = c->danmaku_size,
+        .color = c->danmaku_color,
+        .outline = c->danmaku_outline,
+        .paid_color = c->danmaku_paid_color,
+        .member_color = c->danmaku_member_color,
+        .opacity = c->danmaku_opacity / 100.0,
+        .avoid_avatars = c->danmaku_avoid,
+        .max_on_screen = c->danmaku_max,
+    };
+}
+
+/* With danmaku on, chat messages fly across instead of going in bubbles. */
+static bool chat_bubbles(const kk_config *c)
+{
+    return c->show_bubbles && !c->danmaku_enabled;
 }
 
 static bool on_sound(void *ud, const kk_chat_msg *m, const char *sound)
@@ -711,6 +741,7 @@ typedef struct {
     kk_chat_sink chat;    /* what every connector feeds: on_chat, on_reaction */
     kk_emotes *emotes;
     kk_emotewall *wall;
+    kk_danmaku *danmaku;  /* chat flying across, when on */
     kk_overlay *overlay;  /* pictures shown by commands */
     kk_props *props;      /* bombs and collectibles */
     kk_pointer *pointer;  /* clicks and drags on the window (OBS mode) */
@@ -1005,12 +1036,14 @@ static bool reload(app *a, cJSON *warnings)
     a->stage->cfg.show_names = cfg.show_names;
     a->stage->cfg.name_above = cfg.name_above;
     a->stage->cfg.name_idle = cfg.name_idle_hide ? cfg.name_idle_seconds : 0;
-    a->stage->cfg.show_bubbles = cfg.show_bubbles;
+    a->stage->cfg.show_bubbles = chat_bubbles(&cfg);
     a->stage->cfg.bubble_seconds = cfg.bubble_seconds;
     kk_stage_set_bubble_font(a->stage, cfg.bubble_font, cfg.bubble_size);
     kk_emotes_set_size(a->emotes, cfg.wall_size);
     kk_wall_config wc = wall_config(&cfg);
     kk_emotewall_configure(a->wall, &wc);
+    kk_danmaku_config dc = danmaku_config(&cfg);
+    kk_danmaku_configure(a->danmaku, &dc);
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
 
@@ -1221,6 +1254,7 @@ static void run(app *a)
             kk_stage_resize(a->stage, a->win->width, a->win->height);
             kk_emotewall_resize(a->wall, a->win->width, a->win->height);
             kk_overlay_resize(a->overlay, a->win->width, a->win->height);
+            kk_danmaku_resize(a->danmaku, a->win->width, a->win->height);
         }
         if (ev.redraw)
             full = true;
@@ -1304,6 +1338,7 @@ static void run(app *a)
                 kk_props_update(a->props, dt > 0.1 ? 0.1 : dt);
                 kk_emotewall_update(a->wall, t);
                 kk_overlay_update(a->overlay, t);
+                kk_danmaku_update(a->danmaku, t);
                 tick = true;
             }
         }
@@ -1474,7 +1509,7 @@ int main(int argc, char **argv)
         .show_names = a.cfg.show_names,
         .name_above = a.cfg.name_above,
         .name_idle = a.cfg.name_idle_hide ? a.cfg.name_idle_seconds : 0,
-        .show_bubbles = a.cfg.show_bubbles,
+        .show_bubbles = chat_bubbles(&a.cfg),
         .bubble_seconds = a.cfg.bubble_seconds,
         .name_font = a.cfg.name_font,
         .name_size = a.cfg.name_size,
@@ -1528,9 +1563,19 @@ int main(int argc, char **argv)
     }
     kk_pointer_target avatars_target = kk_stage_pointer_target(&stage);
     kk_pointer_add_target(a.pointer, &avatars_target);
-    /* Pictures under the bombs and stars, the emote wall over all. */
+    a.danmaku = kk_danmaku_new(a.emotes, x.seed);
+    if (!a.danmaku) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_danmaku_config dc = danmaku_config(&a.cfg);
+    kk_danmaku_configure(a.danmaku, &dc);
+    kk_danmaku_resize(a.danmaku, win.width, win.height);
+    /* Pictures under the bombs and stars, then the danmaku, the emote wall
+     * over all. */
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));
+    kk_stage_add_layer(&stage, kk_danmaku_layer(a.danmaku));
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
 
     a.mpris = kk_mpris_new();
@@ -1550,6 +1595,7 @@ int main(int argc, char **argv)
         .stage = &stage,
         .actions = &actions,
         .wall = a.wall,
+        .danmaku = a.danmaku,
         .verbose = a.cfg.verbose,
         .timers = a.timers,
         .commands = build_commands(&a, &a.cfg, &warn),
@@ -1579,10 +1625,12 @@ int main(int argc, char **argv)
         source_free(&a.sources[i]);
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
     kk_stage_remove_layer(&stage, kk_props_layer(a.props));
+    kk_stage_remove_layer(&stage, kk_danmaku_layer(a.danmaku));
     kk_stage_remove_layer(&stage, kk_overlay_layer(a.overlay));
     kk_emotewall_free(a.wall);
     kk_props_free(a.props);
     kk_overlay_free(a.overlay);
+    kk_danmaku_free(a.danmaku);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */
