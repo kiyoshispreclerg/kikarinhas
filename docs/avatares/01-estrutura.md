@@ -16,8 +16,17 @@ subpastas, um kit por subpasta:
 └── pacote-baixado/     ← pacote descompactado (data.txt)
 ```
 
+Por último, o Kikarinhas lê as **pastas do sistema**, para todos os usuários
+da máquina: `kikarinhas/avatars` dentro de cada diretório de dados
+(`/usr/share`, `/usr/local/share` e os outros de `$XDG_DATA_DIRS`), cada kit
+em uma subpasta. É onde o programa instala o pacote de avatares padrão
+(`/usr/share/kikarinhas/avatars/default`) e onde um pacote `.deb` ou outro
+instalador pode pôr kits novos (veja [07](07-testando-e-distribuindo.md)).
+Os avatares dessas pastas aparecem para todo mundo, mas não são sorteados
+como avatar padrão de ninguém enquanto houver outros.
+
 Com o mesmo nome de avatar em dois lugares, vale o que foi lido primeiro:
-a sua pasta, depois as de `paths`, depois o SA.
+a sua pasta, depois as de `paths`, depois o SA, depois as do sistema.
 
 ```
 data/

@@ -291,10 +291,11 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
     s->sheets = calloc(n, sizeof *s->sheets);
     s->sheet_state = calloc(n, sizeof *s->sheet_state);
     s->usable = calloc(n, sizeof *s->usable);
+    s->pool = calloc(n, sizeof *s->pool);
     size_t np = lib->n_pieces > 0 ? (size_t)lib->n_pieces : 1;
     s->gear_sheets = calloc(np, sizeof *s->gear_sheets);
     s->gear_state = calloc(np, sizeof *s->gear_state);
-    if (!s->sheets || !s->sheet_state || !s->usable || !s->gear_sheets ||
+    if (!s->sheets || !s->sheet_state || !s->usable || !s->pool || !s->gear_sheets ||
         !s->gear_state)
         return -1;
     for (int i = 0; i < lib->count; i++) {
@@ -302,6 +303,13 @@ int kk_stage_init(kk_stage *s, const kk_sa_library *lib,
         if (a->image && (a->anims[KK_ANIM_IDLE].frames ||
                          a->anims[KK_ANIM_WALK].frames))
             s->usable[s->n_usable++] = i;
+    }
+    for (int i = 0; i < s->n_usable; i++)
+        if (!lib->avatars[s->usable[i]].system)
+            s->pool[s->n_pool++] = s->usable[i];
+    if (s->n_pool == 0) { /* only system avatars: they are all there is */
+        memcpy(s->pool, s->usable, (size_t)s->n_usable * sizeof *s->pool);
+        s->n_pool = s->n_usable;
     }
 
     s->pango = pango_font_map_create_context(pango_cairo_font_map_get_default());
@@ -345,6 +353,7 @@ void kk_stage_free(kk_stage *s)
     free(s->sheets);
     free(s->sheet_state);
     free(s->usable);
+    free(s->pool);
     while (s->palette_sheets) {
         kk_palette_sheet *ps = s->palette_sheets;
         s->palette_sheets = ps->next;
@@ -622,9 +631,9 @@ const kk_sa_avatar *kk_stage_default_avatar(const kk_stage *s, const char *key)
 {
     if (s->cfg.default_avatar)
         return s->cfg.default_avatar;
-    if (s->n_usable == 0)
+    if (s->n_pool == 0)
         return NULL;
-    return &s->lib->avatars[s->usable[fnv1a(key) % (uint32_t)s->n_usable]];
+    return &s->lib->avatars[s->pool[fnv1a(key) % (uint32_t)s->n_pool]];
 }
 
 /* Saved choice, else the configured default, else one picked by hashing the
@@ -639,11 +648,11 @@ static kk_avatar *spawn_chatter(kk_stage *s, const char *key,
         def = s->cfg.default_avatar;
     kk_avatar *a = def ? add_avatar(s, def, m->name, key, m->badges) : NULL;
 
-    if (!a && s->n_usable > 0) {
-        uint32_t start = fnv1a(key) % (uint32_t)s->n_usable;
-        for (int k = 0; k < s->n_usable && !a; k++) {
-            def = &s->lib->avatars[s->usable[(start + (uint32_t)k) %
-                                             (uint32_t)s->n_usable]];
+    if (!a && s->n_pool > 0) {
+        uint32_t start = fnv1a(key) % (uint32_t)s->n_pool;
+        for (int k = 0; k < s->n_pool && !a; k++) {
+            def = &s->lib->avatars[s->pool[(start + (uint32_t)k) %
+                                           (uint32_t)s->n_pool]];
             a = add_avatar(s, def, m->name, key, m->badges);
         }
     }

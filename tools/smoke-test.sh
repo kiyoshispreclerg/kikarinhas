@@ -3,7 +3,8 @@
 # binaries need is there, the program runs the fake chat for a few seconds
 # on a virtual X screen and quits cleanly on SIGTERM, and the configurator
 # opens. It runs like a new install (no avatars of its own, no Stream
-# Avatars), so what shows is the default pack that comes with the package.
+# Avatars), so what shows is the default pack the package installs among
+# the system-wide avatars (share/kikarinhas/avatars).
 # Optionally runs the program under valgrind too.
 #
 # Usage: tools/smoke-test.sh [--valgrind]      (from the repository root)
@@ -47,8 +48,8 @@ prefix=$(dirname "$(dirname "$(command -v kikarinhas)")")
 for f in "$prefix/share/doc/kikarinhas/kikarinhas.ini" \
 	"$prefix/share/applications/kikarinhas.desktop" \
 	"$prefix/share/applications/kikarinhas-config.desktop" \
-	"$prefix/share/kikarinhas/default-avatars/streamavatars_json.txt" \
-	"$prefix/share/kikarinhas/default-avatars/avatars/gato.png"; do
+	"$prefix/share/kikarinhas/avatars/default/streamavatars_json.txt" \
+	"$prefix/share/kikarinhas/avatars/default/avatars/gato.png"; do
 	[ -f "$f" ] && continue
 	# Minimal container images (Ubuntu's) tell dpkg to skip /usr/share/doc:
 	# then it is enough that the package lists the file.
@@ -75,7 +76,7 @@ demo() {
 		fail "kikarinhas exited with status $status"
 	fi
 	grep -q "janela .* no modo obs" "$log" || { cat "$log" >&2; fail "no window was opened"; }
-	grep -q "avatares padrão em" "$log" || { cat "$log" >&2; fail "the default avatars were not used"; }
+	grep -q "avatares do sistema em .*kikarinhas/avatars" "$log" || { cat "$log" >&2; fail "the default avatars were not used"; }
 	grep -q "^\[demo\]" "$log" || { cat "$log" >&2; fail "the fake chat said nothing"; }
 	if grep -q "erro:" "$log"; then
 		cat "$log" >&2

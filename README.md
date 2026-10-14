@@ -80,20 +80,28 @@ one):
 3. the Stream Avatars installation (the `data` folder inside the Proton
    prefix), looked up in the Steam libraries; if it is not found, point to
    it with `--sa-dir`, and `sa_dir = off` turns it off. Nothing there is
-   copied or changed.
+   copied or changed;
+4. the **system-wide** folders, `kikarinhas/avatars` in each data directory
+   (`/usr/share`, `/usr/local/share` and the others in `$XDG_DATA_DIRS`),
+   one kit per subfolder: where the program installs its default pack, and
+   where a `.deb` or any other installer can put new avatar kits for
+   everyone on the machine.
 
 Each folder may hold a data folder (`streamavatars_json.txt`), a pack
 (`data.txt`, the format of SA's `.zip` files, unzipped) or subfolders with
 those. Without Stream Avatars, kikarinhas runs with whatever the other
 folders have.
 
-**On a fresh install, with none of that found, a small default pack is
-used:** five characters (cat, slime, robot, ghost and mushroom) with three
-colours each, hats, glasses and armchairs to wear (`!gear crown`...), all
-drawn for the project (`data/default-avatars`, installed in
-`/usr/share/kikarinhas/default-avatars`; `tools/gen_default_avatars.py`
-draws them). It is only used when nothing else is found, so it never changes
-the avatar anyone gets by default once you have your own or Stream Avatars.
+**A small default pack comes with kikarinhas** and is what you get on a fresh
+install: five characters (cat, slime, robot, ghost and mushroom) with three
+colours each, and hats, glasses and armchairs to wear (`!gear coroa`...),
+all drawn for the project (`data/avatars/default`, installed in
+`/usr/share/kikarinhas/avatars/default`; `tools/gen_default_avatars.py`
+draws them). Avatars of the system-wide folders are there for everyone
+(`!avatar cat`, `!avatar random`), but they are not handed out by hash as
+somebody's default avatar while there are others, so having your own avatars
+or Stream Avatars, or installing a new kit, never changes who looks like
+what.
 
 Want to **make your own avatars, gear and palettes**? The format is the Stream
 Avatars one and is explained in [docs/avatares](docs/avatares/README.md) (in

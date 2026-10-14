@@ -36,7 +36,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
   por 15 s; `make asan` + `build/asan/kikarinhas --demo-chat ...` num Xvfb
   reproduz isso (já achou um vazamento ao sair que os testes de unidade não
   veem). Sem avatares seus nem SA (CI, HOME vazio) entra o pacote padrão de
-  `data/default-avatars`, achado ao lado do executável.
+  `data/avatars/default`, achado ao lado do executável.
 - `make lint` roda o cppcheck (instalado aqui) e procura funções proibidas:
   strcpy, strcat, sprintf, vsprintf, gets.
 - Testes com arquivos de usuário: use `--users` apontando para um arquivo
@@ -82,7 +82,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/avatar.c` | máquina de estados, animação, geometria (sprite, gear, nome, balão) |
 | `src/sprite.c` | folhas: recorte, recolor, escala (pixel art fica 1x e amplia com nearest) |
 | `src/sa.c` | leitura do Stream Avatars: avatares, gear, pivôs, paletas, userData; pacotes e junção de bibliotecas |
-| `src/library.c` | de onde vêm os avatares: pasta própria, `[avatars] paths` e o SA, nessa ordem; sem nenhum, o pacote padrão (`data/default-avatars`, gerado por `tools/gen_default_avatars.py`, instalado em `share/kikarinhas/default-avatars`) |
+| `src/library.c` | de onde vêm os avatares: pasta própria, `[avatars] paths`, o SA e, por último, as pastas do sistema (`kikarinhas/avatars` em cada `XDG_DATA_DIRS`, um kit por subpasta; ali o programa instala o pacote padrão `data/avatars/default`, gerado por `tools/gen_default_avatars.py`); os avatares do sistema levam `system = true` e o palco não os sorteia por hash enquanto houver outros |
 | `src/youtube.c`, `src/http.c` | chat do YouTube (InnerTube) sobre libcurl multi |
 | `src/tls.c`, `src/ws.c` | TLS sem bloquear (BIOs de memória, fd no `poll()`) e websocket por cima |
 | `src/twitch.c` | chat da Twitch (IRC anônimo sobre TLS), emotes do BTTV/FFZ/7TV |
@@ -111,7 +111,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/danmaku.c` | danmaku: mensagens atravessando a tela no lugar dos balões, faixas sorteadas desviando dos avatares |
 | `docs/screenshots/`, `tools/screenshots.py` | imagens do README, tiradas por um Xephyr com cena montada pelo socket (`python3 tools/screenshots.py`) |
 | `docs/avatares/` | guia para criar avatares, gear e paletas (formato do SA); `kit-exemplo/` é gerado por `tools/gen_kit_exemplo.py`. Mudou o leitor (`sa.c`)? Atualize aqui |
-| `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas, o ícone e `default-avatars/` (o pacote padrão) |
+| `data/` | `kikarinhas.ini` de exemplo, `.desktop` dos dois programas, o ícone e `avatars/` (instalado como `share/kikarinhas/avatars`; hoje só o kit `default`) |
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |

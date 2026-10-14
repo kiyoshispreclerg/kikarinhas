@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates data/default-avatars: the pack kikarinhas falls back on when no
+"""Generates data/avatars/default: the pack kikarinhas falls back on when no
 other avatar is found (a new install), made of drawings of our own.
 
 Five characters (cat, slime, robot, ghost, mushroom) in 32x32 cells, each
@@ -22,7 +22,7 @@ from dataclasses import dataclass, replace
 
 from PIL import Image
 
-OUT = "data/default-avatars"
+OUT = "data/avatars/default"
 CELL = 32
 COLS = 6
 OUTLINE = (38, 28, 46)

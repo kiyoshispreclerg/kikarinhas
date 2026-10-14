@@ -166,7 +166,8 @@ TEST(library_order)
     CHECK(s2.sa[1]);
 }
 
-#define DEFAULTS KK_FIXTURES_DIR "/../../data/default-avatars"
+#define SYSTEM_DIR KK_FIXTURES_DIR "/../../data/avatars"
+#define DEFAULTS SYSTEM_DIR "/default"
 
 TEST(default_pack_loads_and_is_valid)
 {
@@ -185,29 +186,83 @@ TEST(default_pack_loads_and_is_valid)
     kk_sa_free(&lib);
 }
 
-TEST(default_pack_only_when_nothing_else)
+/* The system-wide folder is a folder of kits: each one in its own folder. */
+TEST(system_folder_is_read_last_and_marked)
 {
     char used[KK_PATH_MAX];
+    const char *const system[] = {SYSTEM_DIR};
     kk_sa_library lib;
-    /* No folder of the user's, no Stream Avatars: the default pack. */
-    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", NULL, DEFAULTS, used, sizeof used, false), 0);
+    /* Alone: the pack, all marked. */
+    CHECK_INT_EQ(kk_library_load_with_system(&lib, "", NULL, system, 1, used, sizeof used, false), 0);
     CHECK_INT_EQ(lib.count, 5);
+    for (int i = 0; i < lib.count; i++)
+        CHECK(lib.avatars[i].system);
     kk_sa_free(&lib);
-    /* Something found: the pack stays out, so nobody's default avatar moves. */
-    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", KIT, DEFAULTS, used, sizeof used, false), 0);
-    CHECK_INT_EQ(lib.count, 1);
-    CHECK(kk_sa_find(&lib, "bloco") != NULL && kk_sa_find(&lib, "gato") == NULL);
+    /* Next to a folder of the user's: both are there, and only the pack's
+     * avatars are marked. */
+    CHECK_INT_EQ(kk_library_load_with_system(&lib, "", KIT, system, 1, used, sizeof used, false), 0);
+    CHECK_INT_EQ(lib.count, 6);
+    const kk_sa_avatar *bloco = kk_sa_find(&lib, "bloco"), *gato = kk_sa_find(&lib, "gato");
+    CHECK(bloco && !bloco->system);
+    CHECK(gato && gato->system);
     kk_sa_free(&lib);
-    /* A folder that holds nothing counts as nothing. */
-    char empty[KK_PATH_MAX];
-    snprintf(empty, sizeof empty, "%s/empty", tmp);
-    mkdir(empty, 0700);
-    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", empty, DEFAULTS, used, sizeof used, false), 0);
-    CHECK_INT_EQ(lib.count, 5);
+    /* A kit of the user's with the same key wins over the system one. */
+    char mine[KK_PATH_MAX];
+    snprintf(mine, sizeof mine, "%s/mine", tmp);
+    char json[1024];
+    snprintf(json, sizeof json, "{\"avatarData\":{\"gato\":{\"name\":\"Meu Gato\",\"width\":16,"
+                                "\"height\":16,\"animationData\":{}}},\"gear\":{}}");
+    write_file(mine, "streamavatars_json.txt", json);
+    CHECK_INT_EQ(kk_library_load_with_system(&lib, "", mine, system, 1, used, sizeof used, false), 0);
+    gato = kk_sa_find(&lib, "gato");
+    CHECK(gato && !gato->system && strcmp(gato->name, "Meu Gato") == 0);
+    CHECK_INT_EQ(lib.count, 5); /* the other four of the pack, plus the user's */
     kk_sa_free(&lib);
-    /* No fallback and nothing else: an error, as before. */
-    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", NULL, NULL, used, sizeof used, false), -1);
+    /* Nothing anywhere: an error. */
+    CHECK_INT_EQ(kk_library_load_with_system(&lib, "", NULL, NULL, 0, used, sizeof used, false), -1);
     kk_sa_free(&lib);
+}
+
+static int n_seen;
+static char seen_dir[4][KK_PATH_MAX];
+
+static void note_dir(void *ud, const char *dir)
+{
+    (void)ud;
+    if (n_seen < 4)
+        snprintf(seen_dir[n_seen], sizeof seen_dir[0], "%s", dir);
+    n_seen++;
+}
+
+/* Other packages install kits in <data dir>/kikarinhas/avatars of any
+ * directory of XDG_DATA_DIRS. */
+TEST(system_folders_come_from_xdg_data_dirs)
+{
+    char a[KK_PATH_MAX], b[KK_PATH_MAX], dirs[3 * KK_PATH_MAX];
+    snprintf(a, sizeof a, "%s/share_a/kikarinhas/avatars", tmp);
+    snprintf(b, sizeof b, "%s/share_b/kikarinhas/avatars", tmp);
+    char cmd[3 * KK_PATH_MAX];
+    snprintf(cmd, sizeof cmd, "mkdir -p '%s' '%s'", a, b);
+    CHECK_INT_EQ(system(cmd), 0);
+    /* a listed twice, a missing directory, a relative one: ignored or merged */
+    snprintf(dirs, sizeof dirs, "%s/share_a:%s/nope:relative:%s/share_b:%s/share_a/../share_a", tmp,
+             tmp, tmp, tmp);
+    setenv("XDG_DATA_DIRS", dirs, 1);
+    n_seen = 0;
+    int n = kk_library_each_system_dir(note_dir, NULL);
+    unsetenv("XDG_DATA_DIRS");
+    int ia = -1, ib = -1, count_a = 0;
+    for (int i = 0; i < n_seen && i < 4; i++) {
+        if (strstr(seen_dir[i], "/share_a/kikarinhas/avatars")) {
+            ia = i;
+            count_a++;
+        }
+        if (strstr(seen_dir[i], "/share_b/kikarinhas/avatars"))
+            ib = i;
+    }
+    CHECK(n >= 2);
+    CHECK_INT_EQ(count_a, 1); /* once, whatever the spelling */
+    CHECK(ia >= 0 && ib > ia); /* in the order of the variable */
 }
 
 int main(void)
@@ -220,7 +275,8 @@ int main(void)
     RUN(library_folder_of_packs);
     RUN(library_order);
     RUN(default_pack_loads_and_is_valid);
-    RUN(default_pack_only_when_nothing_else);
+    RUN(system_folder_is_read_last_and_marked);
+    RUN(system_folders_come_from_xdg_data_dirs);
     int failed = harness_report();
     if (!failed) { /* a failing run keeps the files to look at */
         char cmd[128];

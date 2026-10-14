@@ -97,6 +97,11 @@ typedef struct {
     int n_main_colors;
     kk_sa_palette *palettes;
     int n_palettes;
+
+    /* Came from a system-wide folder (kk_library): offered to everyone,
+     * but never picked by hash as somebody's default avatar while there
+     * are others, so installing one doesn't change who looks like what. */
+    bool system;
 } kk_sa_avatar;
 
 typedef struct {

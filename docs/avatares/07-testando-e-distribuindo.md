@@ -79,6 +79,30 @@ junto com os do SA. Com o mesmo nome de avatar dos dois lados, vale o do
 kit. Os conjuntos de gear de cada kit ficam separados: um avatar só usa as
 peças do próprio kit.
 
+### Para todos os usuários da máquina
+
+Um instalador (um `.deb`, um pacote do Arch, um `make install`) pode pôr o
+kit na **pasta do sistema**, que o Kikarinhas sempre lê (depois das pastas
+do usuário e do SA):
+
+```
+/usr/share/kikarinhas/avatars/meu-kit/
+├── streamavatars_json.txt
+├── avatars/
+└── gear/
+```
+
+Uma pasta por kit, com o nome que quiser (use um que não choque com o de
+outros kits, como `autor-nome`). O mesmo vale para `/usr/local/share` e
+qualquer diretório de `$XDG_DATA_DIRS`. Não dá para o instalador dizer onde
+fica a pasta: o Kikarinhas é que procura. Com o mesmo nome de avatar em dois
+lugares vale o do usuário, depois o do SA, e só então o do sistema; e os
+avatares do sistema aparecem para todos (`!avatar nome`, `!avatar random`),
+mas **não são sorteados como avatar padrão** de ninguém enquanto houver
+outros: instalar um kit não muda a cara de quem nunca escolheu um avatar. O
+pacote padrão do próprio programa é o kit
+[`data/avatars/default`](../../data/avatars/default/), instalado assim.
+
 Para o **Stream Avatars**, pacotes `.zip` (com `data.txt`, ver
 [01](01-estrutura.md)) são a forma de distribuição dele (oficina do Steam
 etc.). O jeito de importar está na documentação do próprio SA; se você

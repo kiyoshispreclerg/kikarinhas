@@ -770,20 +770,30 @@ data/         avatar padrão original, exemplo de .ini
      `kk_stage_add_back_layer`, que o palco pinta depois de limpar a área
      de dano e antes dos avatares. O `reload` limpa as duas e fixa de novo
      (`pin_scenery`). Máximo de 16 (`KK_CONFIG_MAX_SCENERY`).
-   - **Pacote de avatares padrão** (`data/default-avatars`, gerado por
-     `tools/gen_default_avatars.py`): gato, slime, robô, fantasma e
-     cogumelo, células de 32×32, as 8 animações de sempre (idle, walk, sit,
-     stand, jump, dance, attack, hurt), 3 paletas cada, chapéus (coroa,
-     festa, bruxo, boné), óculos e cadeiras (poltrona, almofada). O script
-     desenha por formas com contorno próprio por peça (de trás para a
-     frente) e tira os pivôs de chapéu e óculos dos mesmos números que
-     posicionam o corpo; a saída é determinística. `kk_library_load` cai
-     nele só quando nada mais foi achado (nem pasta própria, nem `paths`,
-     nem SA), para não mudar o avatar por hash de ninguém; a pasta é achada
-     ao lado do executável (`../share/kikarinhas/default-avatars`,
-     `../data/…`, `../../data/…` para `build/asan`) e, por último, em
-     `KK_DATADIR` (do `make`). O `make install` instala (e o .deb leva); o
-     `smoke-test.sh` roda como instalação nova e confere o pacote.
+   - **Pacote de avatares padrão e pastas do sistema**
+     (`data/avatars/default`, gerado por `tools/gen_default_avatars.py`):
+     gato, slime, robô, fantasma e cogumelo, células de 32×32, as 8
+     animações de sempre (idle, walk, sit, stand, jump, dance, attack,
+     hurt), 3 paletas cada, chapéus (coroa, festa, bruxo, boné), óculos e
+     cadeiras (poltrona, almofada). O script desenha por formas com
+     contorno próprio por peça (de trás para a frente) e tira os pivôs de
+     chapéu e óculos dos mesmos números que posicionam o corpo; a saída é
+     determinística. O `make install` põe `data/avatars` em
+     `share/kikarinhas/avatars` (o .deb leva; o `uninstall` só tira o kit
+     `default`, a pasta é do sistema e outros pacotes podem pôr kits ali).
+     `kk_library_load` lê, por último, as *pastas do sistema*
+     (`kk_library_each_system_dir`): ao lado do executável
+     (`../share/kikarinhas/avatars`, `../data/avatars` e
+     `../../data/avatars` para `build/asan`), `kikarinhas/avatars` em cada
+     diretório de `$XDG_DATA_DIRS` (padrão `/usr/local/share:/usr/share`) e
+     em `KK_DATADIR`, sem repetir (por `realpath`). Cada kit numa subpasta;
+     com nome repetido vale o do usuário, depois o SA, depois o do sistema.
+     Esses avatares levam `kk_sa_avatar.system` e o palco mantém um
+     `pool` para o sorteio por hash do avatar padrão: sem os do sistema
+     enquanto houver outros, para instalar um kit não mudar a cara de quem
+     nunca escolheu (`!avatar random` e afins usam todos). Dá para outras
+     pessoas distribuírem kits (docs/avatares/07). `smoke-test.sh` roda
+     como instalação nova e confere o pacote;
      `tools/screenshots.py` monta a cena no Xephyr (HOME vazio, cenário
      desenhado ali, elenco por comandos: `!avatar`, `!color`, `!gear`,
      `!move`, `!freeze`) e grava `docs/screenshots/chat.png` e

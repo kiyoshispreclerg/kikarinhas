@@ -568,7 +568,9 @@ static void build(editor *e, const kk_config *cfg)
     row(t, _("More avatar folders"), avatar_dirs_widget(e, cfg),
         _("Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) or "
           "folders of those. Your own folder is read first, then these, then Stream "
-          "Avatars; on a repeated name the first one wins. Only changes when kikarinhas "
+          "Avatars, then the system-wide ones (kikarinhas/avatars in /usr/share and the "
+          "other data directories: the default avatars, and kits other packages install); "
+          "on a repeated name the first one wins. Only changes when kikarinhas "
           "restarts."));
 
     e->name_position = gtk_combo_box_text_new();

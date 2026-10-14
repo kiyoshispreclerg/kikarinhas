@@ -80,20 +80,26 @@ a primeira, então um avatar seu pode substituir um do Stream Avatars):
    na aba Avatares), na ordem dada;
 3. a instalação do Stream Avatars (a pasta `data` dentro do prefixo do
    Proton), procurada nas bibliotecas do Steam; se não for achada, indique
-   com `--sa-dir`, e `sa_dir = off` desliga. Nada é copiado nem alterado lá.
+   com `--sa-dir`, e `sa_dir = off` desliga. Nada é copiado nem alterado lá;
+4. as **pastas do sistema**, `kikarinhas/avatars` em cada diretório de dados
+   (`/usr/share`, `/usr/local/share` e os outros de `$XDG_DATA_DIRS`), um kit
+   por subpasta: onde o programa instala o pacote padrão e onde um `.deb` ou
+   outro instalador pode pôr kits novos para todos da máquina.
 
 Cada pasta pode ter uma pasta de dados (`streamavatars_json.txt`), um pacote
 (`data.txt`, o formato dos `.zip` do SA, já descompactado) ou subpastas com
 eles. Sem o Stream Avatars, o kikarinhas roda com o que houver nas outras.
 
-**Numa instalação nova, sem nada disso, entra um pacote padrão pequeno:**
-cinco personagens (gato, slime, robô, fantasma e cogumelo) com três cores
-cada, chapéus, óculos e poltronas para vestir (`!gear coroa`...), todos
-desenhados para o projeto (`data/default-avatars`, instalado em
-`/usr/share/kikarinhas/default-avatars`; o `tools/gen_default_avatars.py`
-desenha). Só entra quando nada mais é achado, então nunca muda o avatar que
-cada pessoa recebe por padrão depois que você tem os seus ou o do Stream
-Avatars.
+**Um pacote padrão pequeno vem com o kikarinhas** e é o que aparece numa
+instalação nova: cinco personagens (gato, slime, robô, fantasma e cogumelo)
+com três cores cada, e chapéus, óculos e poltronas para vestir (`!gear
+coroa`...), todos desenhados para o projeto (`data/avatars/default`,
+instalado em `/usr/share/kikarinhas/avatars/default`; o
+`tools/gen_default_avatars.py` desenha). Os avatares das pastas do sistema
+ficam à disposição de todos (`!avatar gato`, `!avatar random`), mas não são
+sorteados por hash como avatar padrão de ninguém enquanto houver outros:
+ter os seus ou o do Stream Avatars, ou instalar um kit novo, nunca muda a
+cara de quem nunca escolheu.
 
 Quer **criar os seus próprios avatares, acessórios e paletas**? O formato é o
 do Stream Avatars e está explicado em [docs/avatares](docs/avatares/README.md)

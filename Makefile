@@ -138,7 +138,7 @@ install: $(BUILD)/kikarinhas $(MO_FILES)
 	install -Dm644 data/kikarinhas.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop
 	$(if $(CONFIG_BIN),install -Dm644 data/kikarinhas-config.desktop $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop)
 	install -Dm644 data/kikarinhas.svg $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg
-	cd data/default-avatars && find . -type f -exec install -Dm644 {} $(DESTDIR)$(DATADIR)/kikarinhas/default-avatars/{} \;
+	cd data/avatars && find . -type f -exec install -Dm644 {} $(DESTDIR)$(DATADIR)/kikarinhas/avatars/{} \;
 	$(foreach l,$(if $(MO_FILES),$(LINGUAS)),install -Dm644 $(BUILD)/locale/$(l)/LC_MESSAGES/kikarinhas.mo \
 		$(DESTDIR)$(LOCALEDIR)/$(l)/LC_MESSAGES/kikarinhas.mo;)
 
@@ -149,8 +149,8 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/applications/kikarinhas.desktop \
 	      $(DESTDIR)$(DATADIR)/applications/kikarinhas-config.desktop \
 	      $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/kikarinhas.svg
-	rm -rf $(DESTDIR)$(DATADIR)/kikarinhas/default-avatars
-	-rmdir $(DESTDIR)$(DATADIR)/kikarinhas
+	rm -rf $(DESTDIR)$(DATADIR)/kikarinhas/avatars/default
+	-rmdir $(DESTDIR)$(DATADIR)/kikarinhas/avatars $(DESTDIR)$(DATADIR)/kikarinhas
 
 lint:
 	@if grep -nE '\b(strcpy|strcat|sprintf|vsprintf|gets)[[:space:]]*\(' src/*.c src/*.h tests/unit/*.c config/*.c; then \

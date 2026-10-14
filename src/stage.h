@@ -60,6 +60,9 @@ typedef struct {
     signed char *sheet_state; /* 0 not tried, 1 loaded, -1 failed */
     int *usable; /* library indexes that look drawable */
     int n_usable;
+    int *pool;   /* those a person gets by default (by hash): not the system
+                  * ones, unless nothing else is there */
+    int n_pool;
     kk_palette_sheet *palette_sheets;
     kk_sheet *gear_sheets; /* by piece id, loaded on first use */
     signed char *gear_state;

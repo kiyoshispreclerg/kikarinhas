@@ -25,7 +25,7 @@ como o formato é o mesmo, também para quem usa o SA.
 | Fazer dança, abraço, ataque e outras animações | [06 — Animações e interações](06-animacoes-e-interacoes.md) |
 | Conferir se deu certo e empacotar | [07 — Testando e distribuindo](07-testando-e-distribuindo.md) |
 | Copiar um exemplo mínimo que funciona | [Exemplo completo](exemplo-minimo.md) |
-| Ver um pacote maior, com personagens, paletas e acessórios para vários avatares | [`data/default-avatars`](../../data/default-avatars/), o pacote padrão que vem com o programa (gerado por [`tools/gen_default_avatars.py`](../../tools/gen_default_avatars.py), que mostra como calcular os pivôs) |
+| Ver um pacote maior, com personagens, paletas e acessórios para vários avatares | [`data/avatars/default`](../../data/avatars/default/), o pacote padrão que vem com o programa (gerado por [`tools/gen_default_avatars.py`](../../tools/gen_default_avatars.py), que mostra como calcular os pivôs) |
 
 ## Resumo em um minuto
 
