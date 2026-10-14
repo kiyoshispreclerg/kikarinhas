@@ -30,10 +30,10 @@ fail() {
 }
 
 echo "== versions"
-got=$(kikarinhas --version)
-[ "$got" = "kikarinhas $version" ] || fail "kikarinhas --version: \"$got\", expected $version"
-got=$(kikarinhas-config --version 2>/dev/null)
-[ "$got" = "kikarinhas-config $version" ] || fail "kikarinhas-config --version: \"$got\""
+for b in kikarinhas kikarinhas-config; do
+	got=$("$b" --version 2>&1) || fail "$b --version exited with an error: $got"
+	[ "$got" = "$b $version" ] || fail "$b --version: \"$got\", expected \"$b $version\""
+done
 
 echo "== libraries"
 for b in kikarinhas kikarinhas-config; do

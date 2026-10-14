@@ -704,16 +704,17 @@ static void setup_gettext(void)
 
 int main(int argc, char **argv)
 {
+    /* Before gtk_init, which dies without a display (a CI, a terminal). */
+    if (argc == 2 && (strcmp(argv[1], "-V") == 0 || strcmp(argv[1], "--version") == 0)) {
+        printf("kikarinhas-config %s\n", KK_VERSION);
+        return 0;
+    }
     gtk_init(&argc, &argv); /* also does setlocale(LC_ALL, "") */
     setup_gettext();
     /* The file uses "1.5", whatever the language of the desktop. */
     setlocale(LC_NUMERIC, "C");
 
     editor e = {0};
-    if (argc == 2 && (strcmp(argv[1], "-V") == 0 || strcmp(argv[1], "--version") == 0)) {
-        printf("kikarinhas-config %s\n", KK_VERSION);
-        return 0;
-    }
     if (argc > 2 || (argc == 2 && argv[1][0] == '-')) {
         fprintf(stderr, _("Usage: kikarinhas-config [FILE]\n"
                           "       kikarinhas-config -V, --version\n"
