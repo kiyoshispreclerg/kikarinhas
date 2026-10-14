@@ -1,7 +1,8 @@
 name: Release
 
-# Source zip + .deb for Ubuntu 22.04+ and Devuan excalibur+ (Debian 13
-# "trixie" base) on every v* tag, or on demand from the Actions tab.
+# Source zip + .deb for Ubuntu 22.04 and 24.04, Devuan daedalus (Debian 12
+# "bookworm" base) and Devuan excalibur+ (Debian 13 "trixie" base) on every
+# v* tag, or on demand from the Actions tab.
 on:
   push:
     tags: ['v*']
@@ -41,6 +42,11 @@ jobs:
           # come from dpkg-shlibdeps, so they match the libraries there.
           - name: ubuntu22.04
             runner: ubuntu-22.04
+          - name: ubuntu24.04
+            runner: ubuntu-24.04
+          - name: devuan-daedalus
+            runner: ubuntu-latest
+            image: debian:bookworm   # Devuan daedalus is bookworm without systemd
           - name: devuan-excalibur
             runner: ubuntu-latest
             image: debian:trixie   # Devuan excalibur is trixie without systemd
