@@ -477,6 +477,7 @@ static kk_avatar *add_avatar(kk_stage *s, const kk_sa_avatar *def,
     kk_avatar_init(a, def, sheet, label, user_id,
                    render_tag(s, label, tag_color(badges)), x, s->cfg.scale,
                    &s->rng);
+    a->id = ++s->next_id;
     return a;
 }
 
@@ -671,6 +672,8 @@ kk_avatar *kk_stage_chatter(kk_stage *s, const kk_chat_msg *m)
         if (!s->avatars[i].user_id)
             continue;
         chatters++;
+        if (kk_avatar_held(&s->avatars[i]))
+            continue; /* not while in someone's hand */
         if (oldest < 0 || s->avatars[i].quiet > s->avatars[oldest].quiet)
             oldest = i;
     }
@@ -864,9 +867,98 @@ void kk_stage_update(kk_stage *s, double dt)
     run_interactions(s);
     for (int i = s->count - 1; i >= 0; i--)
         if (s->avatars[i].user_id && s->avatars[i].quiet > s->cfg.despawn &&
-            !s->avatars[i].bubble)
+            !s->avatars[i].bubble && !kk_avatar_held(&s->avatars[i]))
             remove_avatar(s, i);
     assign_tag_rows(s);
+}
+
+/* ---- mouse --------------------------------------------------------------- */
+
+static kk_avatar *find_id(kk_stage *s, uint64_t id)
+{
+    for (int i = 0; i < s->count; i++)
+        if (s->avatars[i].id == id)
+            return &s->avatars[i];
+    return NULL;
+}
+
+static bool pointer_hit(void *ud, int x, int y, uint64_t *id)
+{
+    kk_stage *s = ud;
+    kk_view v = view(s);
+    /* Painted in order: the last one is on top. */
+    for (int i = s->count - 1; i >= 0; i--)
+        if (kk_avatar_hit(&s->avatars[i], &v, x, y)) {
+            *id = s->avatars[i].id;
+            return true;
+        }
+    return false;
+}
+
+static void pointer_click(void *ud, uint64_t id, int x, int y)
+{
+    (void)x;
+    (void)y;
+    kk_avatar *a = find_id(ud, id);
+    if (a)
+        kk_avatar_jump(a);
+}
+
+static bool pointer_grab(void *ud, uint64_t id, int x, int y)
+{
+    kk_stage *s = ud;
+    kk_avatar *a = find_id(s, id);
+    if (!a)
+        return false;
+    /* On top of everyone while carried (and after). */
+    int i = (int)(a - s->avatars);
+    kk_avatar held = *a;
+    memmove(&s->avatars[i], &s->avatars[i + 1],
+            (size_t)(s->count - i - 1) * sizeof *a);
+    a = &s->avatars[s->count - 1];
+    *a = held;
+    kk_avatar_hold(a);
+    kk_view v = view(s);
+    s->grab_dx = x - a->x;
+    s->grab_dy = y - (v.ground_y - a->lift);
+    return true;
+}
+
+static void pointer_move(void *ud, uint64_t id, int x, int y)
+{
+    kk_stage *s = ud;
+    kk_avatar *a = find_id(s, id);
+    if (!a)
+        return;
+    kk_view v = view(s);
+    kk_avatar_hold_at(a, x - s->grab_dx, v.ground_y - (y - s->grab_dy), &v);
+}
+
+static void pointer_drop(void *ud, uint64_t id, int x, int y, double vx, double vy)
+{
+    kk_stage *s = ud;
+    kk_avatar *a = find_id(s, id);
+    if (!a)
+        return;
+    pointer_move(s, id, x, y);
+    double speed = hypot(vx, vy);
+    if (speed > KK_STAGE_MAX_THROW) {
+        vx *= KK_STAGE_MAX_THROW / speed;
+        vy *= KK_STAGE_MAX_THROW / speed;
+    }
+    kk_avatar_throw(a, vx, -vy); /* the screen's y grows downwards */
+}
+
+kk_pointer_target kk_stage_pointer_target(kk_stage *s)
+{
+    return (kk_pointer_target){
+        .ud = s,
+        .hit = pointer_hit,
+        .click = pointer_click,
+        .grab = pointer_grab,
+        .move = pointer_move,
+        .drop = pointer_drop,
+    };
 }
 
 /* ---- damage and painting ------------------------------------------------- */

@@ -19,6 +19,13 @@
 #define BOUNCE_KEEP 0.45
 #define WALL_KEEP 0.6
 #define MIN_BOUNCE 260.0
+/* Held: how far it leans per px/s of sideways speed (radians), the most it
+ * leans, and how fast it follows (1/s). */
+#define SWING_PER_SPEED 0.0012
+#define SWING_MAX 0.7
+#define SWING_RATE 10.0
+/* Slack around the sprite's pixels that still grabs it, on screen. */
+#define HIT_SLACK 3.0
 
 /* ---- size ---------------------------------------------------------------- */
 
@@ -198,7 +205,7 @@ static bool enter_emote(kk_avatar *a, kk_rng *rng)
 
 bool kk_avatar_emote(kk_avatar *a, const char *name, kk_rng *rng)
 {
-    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
+    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY || a->state == KK_ST_HELD)
         return false;
     if (!name)
         return enter_emote(a, rng);
@@ -212,7 +219,7 @@ bool kk_avatar_emote(kk_avatar *a, const char *name, kk_rng *rng)
 bool kk_avatar_sit(kk_avatar *a)
 {
     if (!has_row(a, KK_ANIM_SIT) || a->state == KK_ST_JUMP || a->state == KK_ST_FLY ||
-        a->state == KK_ST_SIT || a->state == KK_ST_SITTING)
+        a->state == KK_ST_HELD || a->state == KK_ST_SIT || a->state == KK_ST_SITTING)
         return false;
     a->state = KK_ST_SIT;
     play(a, KK_ANIM_SIT, 1, 0.0);
@@ -221,6 +228,8 @@ bool kk_avatar_sit(kk_avatar *a)
 
 void kk_avatar_approach(kk_avatar *a, const char *key, kk_action act)
 {
+    if (a->state == KK_ST_HELD)
+        return;
     free(a->goal_key);
     a->goal_key = strdup(key);
     a->goal_act = act;
@@ -256,7 +265,7 @@ static int air_row(const kk_avatar *a)
 
 void kk_avatar_jump(kk_avatar *a)
 {
-    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
+    if (a->state == KK_ST_JUMP || a->state == KK_ST_FLY || a->state == KK_ST_HELD)
         return;
     /* Talking interrupts sitting, emotes and approaches. */
     drop_goal(a);
@@ -266,7 +275,7 @@ void kk_avatar_jump(kk_avatar *a)
     play(a, air_row(a), 1, 0.0);
 }
 
-void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin)
+static void launch(kk_avatar *a, double vx, double vy, double spin)
 {
     drop_goal(a);
     a->vx = vx;
@@ -281,14 +290,92 @@ void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin)
     play(a, air_row(a), 1, 0.0);
 }
 
+void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin)
+{
+    if (a->state != KK_ST_HELD)
+        launch(a, vx, vy, spin);
+}
+
 bool kk_avatar_flying(const kk_avatar *a)
 {
     return a->state == KK_ST_FLY;
 }
 
+/* What it looks like while held: a custom animation made for it, if the
+ * avatar has one, else the jump. */
+static void play_hang(kk_avatar *a)
+{
+    static const char *const names[] = {"hang", "hanging", "held", "grab", "grabbed",
+                                        "carry", "carried", "fall", "falling"};
+    for (size_t i = 0; i < sizeof names / sizeof names[0]; i++) {
+        int row = named_row(a, names[i]);
+        if (row >= 0) {
+            play(a, row, 0, 0.0);
+            return;
+        }
+    }
+    play(a, air_row(a), 1, 0.0);
+}
+
+void kk_avatar_hold(kk_avatar *a)
+{
+    drop_goal(a);
+    a->state = KK_ST_HELD;
+    a->vx = a->vy = a->spin = 0.0;
+    a->target = a->x;
+    play_hang(a);
+}
+
+bool kk_avatar_held(const kk_avatar *a)
+{
+    return a->state == KK_ST_HELD;
+}
+
+void kk_avatar_hold_at(kk_avatar *a, double x, double lift, const kk_view *v)
+{
+    if (a->state != KK_ST_HELD)
+        return;
+    double half = cell_w(a) / 2.0;
+    a->x = fmax(half, fmin(v->width - half, x));
+    a->lift = fmax(0.0, fmin(v->ground_y - cell_h(a), lift));
+}
+
+void kk_avatar_throw(kk_avatar *a, double vx, double vy)
+{
+    if (a->state != KK_ST_HELD)
+        return;
+    /* It faces the way it goes (launch turns it), and the angle is drawn
+     * mirrored when facing left: keep the lean it has on screen. */
+    bool left = fabs(vx) > 1.0 ? vx < 0 : a->left;
+    if (left != a->left)
+        a->angle = -a->angle;
+    /* Tumbles the way it was thrown, faster the faster it goes. */
+    double spin = fmax(-14.0, fmin(14.0, vx / 120.0));
+    launch(a, vx, vy, left ? -spin : spin);
+}
+
+/* Carried around: leans against the way it moves, like something hanging,
+ * and straightens up when it stops. */
+static void swing(kk_avatar *a, double dt)
+{
+    if (dt <= 0.0)
+        return;
+    double k = fmin(1.0, dt * SWING_RATE);
+    a->vx += ((a->x - a->target) / dt - a->vx) * k;
+    a->target = a->x;
+    double lean = fmax(-SWING_MAX, fmin(SWING_MAX, a->vx * SWING_PER_SPEED));
+    /* The drawing mirrors the angle of an avatar facing left. */
+    if (a->left)
+        lean = -lean;
+    a->angle += (lean - a->angle) * k;
+    if (fabs(a->angle) < 0.002)
+        a->angle = 0.0;
+}
+
 bool kk_avatar_walk_to(kk_avatar *a, double x, int width)
 {
-    if (a->frozen || a->state == KK_ST_JUMP || a->state == KK_ST_FLY)
+    if (a->frozen || a->state == KK_ST_JUMP || a->state == KK_ST_FLY ||
+        a->state == KK_ST_HELD)
         return false;
     double half = cell_w(a) / 2.0;
     x = fmax(half, fmin(width - half, x));
@@ -512,6 +599,9 @@ void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
     case KK_ST_FLY:
         fly(a, dt, v, rng);
         break;
+    case KK_ST_HELD:
+        swing(a, dt);
+        break;
     }
 
     /* The window may have shrunk under the avatar. */
@@ -566,6 +656,10 @@ void kk_avatar_set_look(kk_avatar *a, const kk_sa_avatar *def,
             a->gear[kept++] = a->gear[i];
     }
     a->n_gear = kept;
+    if (a->state == KK_ST_HELD) {
+        play_hang(a); /* still in hand, in the new look */
+        return;
+    }
     a->lift = 0.0;
     a->vx = a->vy = a->spin = a->angle = 0.0;
     enter_idle(a, rng);
@@ -767,6 +861,30 @@ kk_rect kk_avatar_bounds(const kk_avatar *a, const kk_view *v)
         r = kk_rect_union(r, (kk_rect){bx, by, a->bubble_w, a->bubble_h});
     }
     return r;
+}
+
+bool kk_avatar_hit(const kk_avatar *a, const kk_view *v, int x, int y)
+{
+    double px = x + 0.5, py = y + 0.5;
+    if (a->angle != 0.0) {
+        /* Back to the upright sprite: turn the point the other way. */
+        double cx, cy;
+        sprite_centre(a, v, &cx, &cy);
+        double t = a->left ? a->angle : -a->angle;
+        double dx = px - cx, dy = py - cy;
+        px = cx + dx * cos(t) - dy * sin(t);
+        py = cy + dx * sin(t) + dy * cos(t);
+    }
+    int sx, sy;
+    sprite_origin(a, v, &sx, &sy);
+    double lx = (px - sx) / a->size, ly = (py - sy) / a->size;
+    double r = HIT_SLACK / a->size;
+    for (int j = -1; j <= 1; j++)
+        for (int i = -1; i <= 1; i++)
+            if (kk_sheet_opaque(a->sheet, a->anim.row, a->anim.frame, a->left,
+                                lx + i * r, ly + j * r))
+                return true;
+    return false;
 }
 
 /* Which frame each emote of the bubble is on (and whether it has loaded):

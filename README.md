@@ -139,6 +139,12 @@ that entered or left the list connect or disconnect.
 Right-click the window (`obs` mode) to open `kikarinhas-config` on the same
 `.ini`; only one is opened at a time.
 
+With the left button (also `obs` mode only; in `desktop` mode clicks go
+through to the desktop), click an avatar to make it jump, or pick it up and
+drag it around: it hangs from the pointer, swinging as you carry it, and
+flies off at the speed you let go with, bouncing off the walls like with
+`!sling`.
+
 ### Configurator languages
 
 `kikarinhas-config` speaks the session's language (`LANGUAGE`, `LC_ALL` or

@@ -1526,6 +1526,8 @@ int main(int argc, char **argv)
         kk_log_error("sem memória");
         return 1;
     }
+    kk_pointer_target avatars_target = kk_stage_pointer_target(&stage);
+    kk_pointer_add_target(a.pointer, &avatars_target);
     /* Pictures under the bombs and stars, the emote wall over all. */
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));

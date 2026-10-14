@@ -11,6 +11,7 @@
 #include "avatar.h"
 #include "chat.h"
 #include "layer.h"
+#include "pointer.h"
 #include "sa.h"
 #include "sprite.h"
 #include "users.h"
@@ -65,6 +66,11 @@ typedef struct {
 
     kk_avatar *avatars;
     int count, cap;
+    unsigned next_id;
+
+    /* The avatar held with the mouse: where the pointer took it, from its
+     * centre and its feet. */
+    double grab_dx, grab_dy;
 
     kk_emotes *emotes; /* images for emotes inside bubbles; may be NULL */
     PangoContext *pango;
@@ -143,6 +149,13 @@ bool kk_stage_add_layer(kk_stage *s, const kk_layer *l);
 void kk_stage_remove_layer(kk_stage *s, const kk_layer *l);
 
 void kk_stage_update(kk_stage *s, double dt);
+
+/* The avatars as something the mouse can click (they jump), pick up and
+ * throw. Topmost avatar first; s must outlive the target. */
+kk_pointer_target kk_stage_pointer_target(kk_stage *s);
+
+/* Throws above this speed (px/s) are slowed down to it. */
+#define KK_STAGE_MAX_THROW 3000.0
 
 /* Repaints what changed (everything if full) into cr and returns the
  * painted rectangles in *rects. */

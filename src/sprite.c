@@ -350,3 +350,21 @@ void kk_sheet_draw_zoom(const kk_sheet *s, cairo_t *cr, int row, int col, bool l
     cairo_fill(cr);
     cairo_restore(cr);
 }
+
+bool kk_sheet_opaque(const kk_sheet *s, int row, int col, bool left, double x,
+                     double y)
+{
+    if (row < 0 || row >= s->rows || col < 0 || col >= s->cols || x < 0 ||
+        y < 0 || x >= s->cell_w || y >= s->cell_h || !s->pixels)
+        return false;
+    if (left)
+        x = s->cell_w - x;
+    int px = (int)(x * s->store_w / s->cell_w);
+    int py = (int)(y * s->store_h / s->cell_h);
+    px = px < s->store_w ? px : s->store_w - 1;
+    py = py < s->store_h ? py : s->store_h - 1;
+    const unsigned char *data = cairo_image_surface_get_data(s->pixels);
+    int stride = cairo_image_surface_get_stride(s->pixels);
+    const uint32_t *line = (const uint32_t *)(const void *)(data + (size_t)(row * s->store_h + py) * (size_t)stride);
+    return (line[col * s->store_w + px] >> 24) >= 64;
+}

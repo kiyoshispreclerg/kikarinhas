@@ -37,7 +37,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
   (`device = null` ou `kk_audio_new("null", ...)`). Fora disso, o teste
   toca de verdade nas caixas do usuário: volume baixo.
 - Captura de tela da janela: num X à parte, sem mexer no desktop do
-  usuário: `Xephyr :78 -screen 1200x700 &` (o usuário prefere o Xephyr,
+  usuário: `Xephyr :78 -screen 1280x720 &` (o tamanho da janela; o usuário prefere o Xephyr,
   para ver também; o `Xvfb :77` serve quando não há o que olhar), rode
   com `DISPLAY=:78`, mouse com `xdotool` nesse display, e
   capture com `python3 -c "from PIL import ImageGrab;

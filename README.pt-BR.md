@@ -137,6 +137,12 @@ desconectam.
 Clique com o botão direito na janela (modo `obs`) para abrir o
 `kikarinhas-config` com o mesmo `.ini`; só abre um por vez.
 
+Com o botão esquerdo (também só no modo `obs`; no `desktop` o clique passa
+para a área de trabalho), clique num avatar para ele pular, ou pegue e
+arraste: ele fica pendurado no ponteiro, balançando enquanto você carrega, e
+sai voando com a velocidade com que você soltou, quicando nas paredes como no
+`!sling`.
+
 ### Idiomas do configurador
 
 O `kikarinhas-config` fala o idioma da sessão (`LANGUAGE`, `LC_ALL` ou

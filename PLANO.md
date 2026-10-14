@@ -722,9 +722,22 @@ data/         avatar padrão original, exemplo de .ini
      soltar, `drop` com a velocidade dos últimos 100 ms (zero se parou
      antes de soltar): a base para arremessar avatares. `kk_pointer_cancel`
      larga o que está seguro (avatar que saiu). O clique direito continua
-     abrindo o configurador e não passa por aqui. Ainda sem alvos:
-     próximos são os avatares (estado pendurado e arremesso), a camada de
-     imagens e os blocos HTML. Conferido no Xephyr com `xdotool`.
+     abrindo o configurador e não passa por aqui. Conferido no Xephyr com
+     `xdotool`. Próximos alvos: a camada de imagens e os blocos HTML.
+   - **Pegar e arremessar avatares** (`kk_stage_pointer_target`): o
+     acerto é no pixel do sprite (alfa ≥ 64 na folha, com 3 px de folga,
+     desfazendo a rotação de quem está girando), o de cima primeiro.
+     Clique faz pular. Pegar leva o avatar para o fim da lista (desenhado
+     por cima) e entra em `KK_ST_HELD`: segue o ponteiro mantendo o ponto
+     onde foi pego, preso dentro da janela, e se inclina contra o
+     movimento (até 0,7 rad, suavizado) como algo pendurado. A animação é
+     uma custom chamada hang/held/grab/carry/fall, se o avatar tiver, ou o
+     pulo. O SA não tem linha própria para isso. Segurado, nada mais o move:
+     pulo, emote, sentar, andar, aproximação e bomba são ignorados, e ele
+     não sai por silêncio nem para dar lugar a outro. Ao soltar vira o voo
+     de sempre (`KK_ST_FLY`, o do estilingue) com a velocidade do ponteiro,
+     limitada a 3000 px/s, e giro proporcional a vx. Cada avatar tem um
+     `id` do palco, que o ponteiro usa no lugar de índice (o vetor muda).
    Pendentes: fundos do SA, plugin de
    OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
    (layer-shell) no futuro.

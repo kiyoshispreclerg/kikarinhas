@@ -51,4 +51,9 @@ void kk_sheet_draw(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
 void kk_sheet_draw_zoom(const kk_sheet *s, cairo_t *cr, int row, int col, bool left,
                         double x, double y, double zoom);
 
+/* Whether the pixel at (x, y) of cell (row, col), in on-screen cell
+ * coordinates (cell_w x cell_h, mirrored when left), is not transparent. */
+bool kk_sheet_opaque(const kk_sheet *s, int row, int col, bool left, double x,
+                     double y);
+
 #endif

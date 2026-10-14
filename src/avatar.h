@@ -32,6 +32,7 @@ typedef enum {
     KK_ST_EMOTE, /* playing a custom animation (dance, ...) */
     KK_ST_APPROACH, /* walking up to another avatar to hug/attack it */
     KK_ST_FLY,      /* thrown (slingshot, a bomb): moving on both axes */
+    KK_ST_HELD,     /* picked up with the mouse: hangs where it is put */
 } kk_state;
 
 typedef enum {
@@ -105,11 +106,12 @@ typedef struct {
     double vx;     /* px/s while flying */
     double angle;  /* radians, while flying (tumbling); 0 otherwise */
     double spin;   /* radians/s */
-    double target; /* walk destination x */
+    double target; /* walk destination x; while held, x on the last update */
     double speed;  /* walk speed, px/s, at size 1 */
     double size;   /* 1 = the stage's scale; see kk_avatar_set_size */
     bool left;     /* facing left (sheets face right) */
     bool frozen;   /* stays where it is: no wandering, no walking */
+    unsigned id;   /* set by the stage, unique while it lives */
 
     kk_state state;
     double timer; /* seconds left in the current state, where timed */
@@ -146,6 +148,20 @@ void kk_avatar_jump(kk_avatar *a);
  * radians/s. It bounces off the sides and the ground until it settles. */
 void kk_avatar_launch(kk_avatar *a, double vx, double vy, double spin);
 bool kk_avatar_flying(const kk_avatar *a);
+
+/* Picked up with the mouse: it stops whatever it was doing and hangs,
+ * swinging as it is carried, until thrown. Meanwhile nothing else moves
+ * it (jumps, emotes, walks, bombs). */
+void kk_avatar_hold(kk_avatar *a);
+bool kk_avatar_held(const kk_avatar *a);
+/* Puts the held avatar at x (centre) and lift, kept inside the window. */
+void kk_avatar_hold_at(kk_avatar *a, double x, double lift, const kk_view *v);
+/* Lets go: it flies off at vx, vy px/s (vy positive is up) and lands. */
+void kk_avatar_throw(kk_avatar *a, double vx, double vy);
+
+/* Whether (x, y) is on the sprite: a non-transparent pixel within a few
+ * pixels of it, so thin avatars can be grabbed too. */
+bool kk_avatar_hit(const kk_avatar *a, const kk_view *v, int x, int y);
 
 /* Walks to x (kept inside [0, width)). False if it can't now: frozen, in
  * the air, or already there. */
