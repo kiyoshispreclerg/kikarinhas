@@ -1658,6 +1658,7 @@ int main(int argc, char **argv)
     kk_emotewall_free(a.wall);
     kk_props_free(a.props);
     kk_overlay_free(a.overlay);
+    kk_overlay_free(a.backdrop);
     kk_danmaku_free(a.danmaku);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
