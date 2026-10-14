@@ -710,6 +710,21 @@ data/         avatar padrão original, exemplo de .ini
      chega (o `stage` resolve no `update`); se falhar fica o vazio. Só
      emotes de imagem com `start`/`len` entram no balão; o emoji Unicode
      segue como texto, pela fonte.
+   - **Mouse na janela** (`src/pointer.c`), só no modo OBS (o desktop
+     continua com o clique atravessando): `window.c` passa a pedir
+     `ButtonRelease` e `Button1Motion` (movimento só com o botão esquerdo
+     apertado, nada de tráfego parado) e entrega pressionar/mover/soltar
+     em `kk_window_events.pointer`, com movimentos seguidos fundidos e o
+     horário do servidor X. `kk_pointer` vira isso em gestos para
+     *alvos* registrados em ordem (o de cima primeiro): `hit` diz o que
+     está no ponto, soltar parado é `click`, passar de 4 px vira `grab`
+     (com o ponto onde apertou, para manter o deslocamento) + `move` e, ao
+     soltar, `drop` com a velocidade dos últimos 100 ms (zero se parou
+     antes de soltar): a base para arremessar avatares. `kk_pointer_cancel`
+     larga o que está seguro (avatar que saiu). O clique direito continua
+     abrindo o configurador e não passa por aqui. Ainda sem alvos:
+     próximos são os avatares (estado pendurado e arremesso), a camada de
+     imagens e os blocos HTML. Conferido no Xephyr com `xdotool`.
    Pendentes: fundos do SA, plugin de
    OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
    (layer-shell) no futuro.

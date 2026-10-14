@@ -7,6 +7,7 @@ MAIN = src/main.c
 LIB_SRC = src/log.c \
       src/util.c \
       src/window.c \
+      src/pointer.c \
       src/sa.c \
       src/library.c \
       src/sprite.c \

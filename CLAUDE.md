@@ -37,9 +37,11 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
   (`device = null` ou `kk_audio_new("null", ...)`). Fora disso, o teste
   toca de verdade nas caixas do usuário: volume baixo.
 - Captura de tela da janela: num X à parte, sem mexer no desktop do
-  usuário: `Xvfb :77 -screen 0 1400x800x24 &`, rode com `DISPLAY=:77` e
+  usuário: `Xephyr :78 -screen 1200x700 &` (o usuário prefere o Xephyr,
+  para ver também; o `Xvfb :77` serve quando não há o que olhar), rode
+  com `DISPLAY=:78`, mouse com `xdotool` nesse display, e
   capture com `python3 -c "from PIL import ImageGrab;
-  ImageGrab.grab(xdisplay=':77').save('x.png')"`. No X do usuário, `xwd
+  ImageGrab.grab(xdisplay=':78').save('x.png')"`. No X do usuário, `xwd
   -root` passou a dar segfault, e a janela costuma ficar atrás do editor
   (`xwd -id`, `import` e `scrot` também falham).
 - Lives para teste: o Kick lista as que estão no ar em
@@ -66,6 +68,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 |---|---|
 | `src/main.c` | opções, laço principal (`kk_http_wait` = poll + libcurl), ligação de tudo |
 | `src/window.c` | janela ARGB, buffer MIT-SHM, envio só das regiões alteradas |
+| `src/pointer.c` | mouse na janela (só modo OBS): clique, arrasto e arremesso, entregues aos alvos registrados |
 | `src/stage.c` | avatares na tela, caches de folhas (paleta, gear), dano, nomes, balões, interações |
 | `src/avatar.c` | máquina de estados, animação, geometria (sprite, gear, nome, balão) |
 | `src/sprite.c` | folhas: recorte, recolor, escala (pixel art fica 1x e amplia com nearest) |

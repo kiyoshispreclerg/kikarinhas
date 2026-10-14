@@ -26,6 +26,7 @@
 #include "log.h"
 #include "mpris.h"
 #include "overlay.h"
+#include "pointer.h"
 #include "points.h"
 #include "timers.h"
 #include "sa.h"
@@ -712,6 +713,7 @@ typedef struct {
     kk_emotewall *wall;
     kk_overlay *overlay;  /* pictures shown by commands */
     kk_props *props;      /* bombs and collectibles */
+    kk_pointer *pointer;  /* clicks and drags on the window (OBS mode) */
     kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
     kk_points *points;    /* NULL without a people file */
     kk_timers *timers;
@@ -1213,6 +1215,8 @@ static void run(app *a)
             return;
         if (ev.open_config)
             open_config(a);
+        for (int i = 0; i < ev.n_pointer; i++)
+            kk_pointer_feed(a->pointer, &ev.pointer[i]);
         if (ev.resized) {
             kk_stage_resize(a->stage, a->win->width, a->win->height);
             kk_emotewall_resize(a->wall, a->win->width, a->win->height);
@@ -1517,6 +1521,11 @@ int main(int argc, char **argv)
         kk_log_error("sem memória");
         return 1;
     }
+    a.pointer = kk_pointer_new();
+    if (!a.pointer) {
+        kk_log_error("sem memória");
+        return 1;
+    }
     /* Pictures under the bombs and stars, the emote wall over all. */
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));
@@ -1572,6 +1581,7 @@ int main(int argc, char **argv)
     kk_emotewall_free(a.wall);
     kk_props_free(a.props);
     kk_overlay_free(a.overlay);
+    kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */
     kk_actions_refund(&actions);

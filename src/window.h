@@ -8,6 +8,7 @@
 #include <X11/extensions/XShm.h>
 #include <cairo.h>
 
+#include "pointer.h"
 #include "util.h"
 
 typedef enum {
@@ -40,11 +41,17 @@ typedef struct {
     XShmSegmentInfo shm;
 } kk_window;
 
+#define KK_WINDOW_MAX_POINTER 32
+
 typedef struct {
     bool quit;    /* window closed by the user or the WM */
     bool redraw;  /* exposed or resized: everything must be repainted */
     bool resized; /* width/height changed (buffer already recreated) */
     bool open_config; /* right click on the window */
+    /* Left button, OBS mode only, in order; moves in a row are merged into
+     * the last one. Events past the end are dropped. */
+    kk_pointer_event pointer[KK_WINDOW_MAX_POINTER];
+    int n_pointer;
 } kk_window_events;
 
 int kk_window_open(kk_window *w, kk_mode mode, int width, int height);

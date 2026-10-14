@@ -219,11 +219,14 @@ int kk_window_open(kk_window *w, kk_mode mode, int width, int height)
     w->width = width;
     w->height = height;
 
+    long events = ExposureMask | StructureNotifyMask | ButtonPressMask;
+    if (mode == KK_MODE_OBS) /* motion only while a button is held */
+        events |= ButtonReleaseMask | Button1MotionMask;
     XSetWindowAttributes attr = {
         .colormap = w->cmap,
         .background_pixel = 0, /* fully transparent */
         .border_pixel = 0,     /* required with a non-default visual */
-        .event_mask = ExposureMask | StructureNotifyMask | ButtonPressMask,
+        .event_mask = events,
         .override_redirect = mode == KK_MODE_DESKTOP,
     };
     w->win = XCreateWindow(w->dpy, root, x, y, (unsigned)width,
@@ -285,6 +288,19 @@ static void handle_configure(kk_window *w, const XConfigureEvent *ce,
     ev->redraw = true;
 }
 
+static void queue_pointer(const kk_window *w, kk_window_events *ev,
+                          kk_pointer_kind kind, int x, int y, Time time)
+{
+    if (w->mode != KK_MODE_OBS)
+        return;
+    kk_pointer_event pe = {kind, x, y, (double)time / 1000.0};
+    if (kind == KK_POINTER_MOVE && ev->n_pointer > 0 &&
+        ev->pointer[ev->n_pointer - 1].kind == KK_POINTER_MOVE)
+        ev->pointer[ev->n_pointer - 1] = pe;
+    else if (ev->n_pointer < KK_WINDOW_MAX_POINTER)
+        ev->pointer[ev->n_pointer++] = pe;
+}
+
 void kk_window_dispatch(kk_window *w, kk_window_events *ev)
 {
     while (XPending(w->dpy)) {
@@ -316,6 +332,18 @@ void kk_window_dispatch(kk_window *w, kk_window_events *ev)
         case ButtonPress:
             if (e.xbutton.button == Button3)
                 ev->open_config = true;
+            else if (e.xbutton.button == Button1)
+                queue_pointer(w, ev, KK_POINTER_PRESS, e.xbutton.x,
+                              e.xbutton.y, e.xbutton.time);
+            break;
+        case ButtonRelease:
+            if (e.xbutton.button == Button1)
+                queue_pointer(w, ev, KK_POINTER_RELEASE, e.xbutton.x,
+                              e.xbutton.y, e.xbutton.time);
+            break;
+        case MotionNotify:
+            queue_pointer(w, ev, KK_POINTER_MOVE, e.xmotion.x, e.xmotion.y,
+                          e.xmotion.time);
             break;
         case DestroyNotify:
             ev->quit = true;
