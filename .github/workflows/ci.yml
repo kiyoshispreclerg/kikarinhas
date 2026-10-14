@@ -35,3 +35,20 @@ jobs:
       - run: make ${{ matrix.target }}
         env:
           LSAN_OPTIONS: suppressions=${{ github.workspace }}/tools/lsan.supp
+      # The whole program, not only the unit tests: the fake chat for a few
+      # seconds on a virtual X screen under ASan/UBSan (which abort on the
+      # first error), then SIGTERM, which has to end in a clean exit and no
+      # leaks (fontconfig's are suppressed).
+      - name: Run the fake chat under ASan
+        if: matrix.target == 'asan'
+        env:
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/tools/lsan.supp
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb xauth fonts-dejavu-core
+          : > "$RUNNER_TEMP/users.tsv"
+          : > "$RUNNER_TEMP/kikarinhas.ini"
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            timeout --preserve-status -s TERM 15 \
+            build/asan/kikarinhas --demo-chat --avatar-dir docs/avatares/kit-exemplo \
+            --sa-dir off -c "$RUNNER_TEMP/kikarinhas.ini" --users "$RUNNER_TEMP/users.tsv" \
+            --socket "$RUNNER_TEMP/kk.sock" -v

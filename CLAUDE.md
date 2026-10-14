@@ -21,6 +21,10 @@ make asan       # os testes com ASan/UBSan
 make asan-run ARGS="--demo-chat"   # o programa com ASan
 make pot                           # recria po/kikarinhas.pot e mescla nos .po
 build/kikarinhas --check           # valida todas as folhas do SA instalado
+tools/smoke-test.sh [--valgrind]   # confere um kikarinhas instalado (no PATH): versões,
+                                   # libs, chat falso num Xvfb, configurador; a release roda
+                                   # isto em cada .deb numa imagem limpa. Local:
+                                   # make install PREFIX=/tmp/x && PATH=/tmp/x/bin:$PATH sh tools/smoke-test.sh
 build/kikarinhas --demo-chat -v    # chat de mentira, sem rede
 build/kikarinhas -y <link-da-live> -v
 build/kikarinhas -k <canal-do-kick> -o @canal-do-odysee -v
@@ -28,6 +32,10 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ```
 
 - Os vazamentos do fontconfig são esperados e estão em `tools/lsan.supp`.
+- A CI (`ci.yml`) também roda o programa inteiro com o chat falso sob ASan
+  por 15 s; `make asan` + `build/asan/kikarinhas --demo-chat --avatar-dir
+  docs/avatares/kit-exemplo --sa-dir off ...` num Xvfb reproduz isso (já
+  achou um vazamento ao sair que os testes de unidade não veem).
 - `make lint` roda o cppcheck (instalado aqui) e procura funções proibidas:
   strcpy, strcat, sprintf, vsprintf, gets.
 - Testes com arquivos de usuário: use `--users` apontando para um arquivo

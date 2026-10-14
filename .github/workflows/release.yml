@@ -2,7 +2,9 @@ name: Release
 
 # Source zip + .deb for Ubuntu 22.04 and 24.04, Devuan daedalus (Debian 12
 # "bookworm" base) and Devuan excalibur+ (Debian 13 "trixie" base) on every
-# v* tag, or on demand from the Actions tab.
+# v* tag, or on demand from the Actions tab. Each .deb is then installed on
+# a clean system of its own target and the program is run before anything
+# is published.
 on:
   push:
     tags: ['v*']
@@ -76,9 +78,62 @@ jobs:
           name: deb-${{ matrix.name }}
           path: dist/*.deb
 
+  # Installs each .deb on a bare image of the system it was built for (so
+  # only its Depends come along: a missing one fails here, not on a
+  # user's machine), then runs tools/smoke-test.sh: versions, libraries,
+  # the fake chat for a few seconds on a virtual X screen with a clean exit
+  # on SIGTERM, and the configurator opening.
+  smoke:
+    name: smoke (${{ matrix.name }})
+    needs: deb
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu22.04
+            image: ubuntu:22.04
+          - name: ubuntu24.04
+            image: ubuntu:24.04
+          - name: devuan-daedalus
+            image: debian:bookworm
+          - name: devuan-excalibur
+            image: debian:trixie
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      # Checkout first: it empties the workspace.
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-${{ matrix.name }}
+          path: dist
+      - name: Install the .deb alone
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ./dist/*.deb
+          for b in /usr/bin/kikarinhas /usr/bin/kikarinhas-config; do
+            if ldd "$b" | grep "not found"; then
+              echo "::error::$b needs libraries its package does not depend on"
+              exit 1
+            fi
+          done
+      - name: Install what the test needs
+        run: apt-get install -y --no-install-recommends xvfb xauth fonts-dejavu-core valgrind
+      - name: Run it
+        run: sh tools/smoke-test.sh
+      # The .deb is a stripped release build: valgrind has no function names
+      # to show, but still catches invalid accesses and use of uninitialised
+      # memory. Informative for now (a distro's cairo or pixman may trip
+      # it); make it blocking once it has proved quiet on every target.
+      - name: Run it under valgrind
+        continue-on-error: true
+        run: sh tools/smoke-test.sh --valgrind
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [source, deb]
+    needs: [source, deb, smoke]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
