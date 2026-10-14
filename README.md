@@ -18,6 +18,16 @@ native to Linux (X11) and light on resources: C, Cairo and Pango.
 > or in `kikarinhas-config`, which also lists the viewers. Other programs
 > send messages through a unix socket. See [PLANO.md](PLANO.md) (in Portuguese).
 
+![Avatars with speech bubbles and emotes flying over the stage](docs/screenshots/chat.png)
+
+The same chat as **danmaku**, flying right to left (see [Danmaku](#danmaku)):
+
+![Chat messages flying across the screen as danmaku](docs/screenshots/danmaku.png)
+
+*The avatars are the default pack that comes with kikarinhas, over a
+backdrop made with the scenery feature; the people and lines are made up
+(`tools/screenshots.py` takes these pictures).*
+
 ## Building
 
 Dependencies (Debian/Ubuntu):
@@ -76,6 +86,14 @@ Each folder may hold a data folder (`streamavatars_json.txt`), a pack
 (`data.txt`, the format of SA's `.zip` files, unzipped) or subfolders with
 those. Without Stream Avatars, kikarinhas runs with whatever the other
 folders have.
+
+**On a fresh install, with none of that found, a small default pack is
+used:** five characters (cat, slime, robot, ghost and mushroom) with three
+colours each, hats, glasses and armchairs to wear (`!gear crown`...), all
+drawn for the project (`data/default-avatars`, installed in
+`/usr/share/kikarinhas/default-avatars`; `tools/gen_default_avatars.py`
+draws them). It is only used when nothing else is found, so it never changes
+the avatar anyone gets by default once you have your own or Stream Avatars.
 
 Want to **make your own avatars, gear and palettes**? The format is the Stream
 Avatars one and is explained in [docs/avatares](docs/avatares/README.md) (in

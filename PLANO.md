@@ -770,6 +770,24 @@ data/         avatar padrão original, exemplo de .ini
      `kk_stage_add_back_layer`, que o palco pinta depois de limpar a área
      de dano e antes dos avatares. O `reload` limpa as duas e fixa de novo
      (`pin_scenery`). Máximo de 16 (`KK_CONFIG_MAX_SCENERY`).
+   - **Pacote de avatares padrão** (`data/default-avatars`, gerado por
+     `tools/gen_default_avatars.py`): gato, slime, robô, fantasma e
+     cogumelo, células de 32×32, as 8 animações de sempre (idle, walk, sit,
+     stand, jump, dance, attack, hurt), 3 paletas cada, chapéus (coroa,
+     festa, bruxo, boné), óculos e cadeiras (poltrona, almofada). O script
+     desenha por formas com contorno próprio por peça (de trás para a
+     frente) e tira os pivôs de chapéu e óculos dos mesmos números que
+     posicionam o corpo; a saída é determinística. `kk_library_load` cai
+     nele só quando nada mais foi achado (nem pasta própria, nem `paths`,
+     nem SA), para não mudar o avatar por hash de ninguém; a pasta é achada
+     ao lado do executável (`../share/kikarinhas/default-avatars`,
+     `../data/…`, `../../data/…` para `build/asan`) e, por último, em
+     `KK_DATADIR` (do `make`). O `make install` instala (e o .deb leva); o
+     `smoke-test.sh` roda como instalação nova e confere o pacote.
+     `tools/screenshots.py` monta a cena no Xephyr (HOME vazio, cenário
+     desenhado ali, elenco por comandos: `!avatar`, `!color`, `!gear`,
+     `!move`, `!freeze`) e grava `docs/screenshots/chat.png` e
+     `danmaku.png`, as imagens dos READMEs.
    Decidido não fazer: plugin de OBS lendo a memória compartilhada (a
    captura Xcomposite já serve) e Wayland nativo (o código é Xlib; no
    Wayland roda pelo XWayland, que o OBS já captura; nativo exigiria

@@ -20,6 +20,17 @@ Linux (X11) e leve: C, Cairo e Pango.
 > os espectadores. Outros programas mandam mensagens por um socket unix. Veja o
 > [PLANO.md](PLANO.md).
 
+![Avatares com balões de fala e emotes voando pelo palco](docs/screenshots/chat.png)
+
+O mesmo chat como **danmaku**, voando da direita para a esquerda (veja
+[Danmaku](#danmaku)):
+
+![Mensagens do chat atravessando a tela como danmaku](docs/screenshots/danmaku.png)
+
+*Os avatares são o pacote padrão que vem com o kikarinhas, sobre um cenário
+feito com o recurso de cenário; as pessoas e as falas são inventadas
+(`tools/screenshots.py` tira estas imagens).*
+
 ## Compilar
 
 Dependências (Debian/Ubuntu):
@@ -74,6 +85,15 @@ a primeira, então um avatar seu pode substituir um do Stream Avatars):
 Cada pasta pode ter uma pasta de dados (`streamavatars_json.txt`), um pacote
 (`data.txt`, o formato dos `.zip` do SA, já descompactado) ou subpastas com
 eles. Sem o Stream Avatars, o kikarinhas roda com o que houver nas outras.
+
+**Numa instalação nova, sem nada disso, entra um pacote padrão pequeno:**
+cinco personagens (gato, slime, robô, fantasma e cogumelo) com três cores
+cada, chapéus, óculos e poltronas para vestir (`!gear coroa`...), todos
+desenhados para o projeto (`data/default-avatars`, instalado em
+`/usr/share/kikarinhas/default-avatars`; o `tools/gen_default_avatars.py`
+desenha). Só entra quando nada mais é achado, então nunca muda o avatar que
+cada pessoa recebe por padrão depois que você tem os seus ou o do Stream
+Avatars.
 
 Quer **criar os seus próprios avatares, acessórios e paletas**? O formato é o
 do Stream Avatars e está explicado em [docs/avatares](docs/avatares/README.md)
