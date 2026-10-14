@@ -1,0 +1,3027 @@
+{
+ "avatarData": {
+  "gato": {
+   "name": "Gato",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "bilinearFilter": false,
+   "moveSpeed": 1.0,
+   "CanUseGear": [
+    "hats",
+    "glasses",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 0.149019608,
+      "g": 0.109803922,
+      "b": 0.180392157,
+      "a": 1.0
+     },
+     {
+      "r": 0.941176471,
+      "g": 0.576470588,
+      "b": 0.168627451,
+      "a": 1.0
+     },
+     {
+      "r": 0.784313725,
+      "g": 0.392156863,
+      "b": 0.101960784,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 0.909803922,
+      "b": 0.745098039,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 0.560784314,
+      "b": 0.639215686,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "cinza": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.603921569,
+       "g": 0.647058824,
+       "b": 0.694117647,
+       "a": 1.0
+      },
+      {
+       "r": 0.419607843,
+       "g": 0.462745098,
+       "b": 0.517647059,
+       "a": 1.0
+      },
+      {
+       "r": 0.909803922,
+       "g": 0.929411765,
+       "b": 0.949019608,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.560784314,
+       "b": 0.639215686,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      }
+     ]
+    },
+    "preto": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.329411765,
+       "g": 0.329411765,
+       "b": 0.407843137,
+       "a": 1.0
+      },
+      {
+       "r": 0.22745098,
+       "g": 0.22745098,
+       "b": 0.298039216,
+       "a": 1.0
+      },
+      {
+       "r": 0.588235294,
+       "g": 0.588235294,
+       "b": 0.666666667,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.560784314,
+       "b": 0.639215686,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "animationName": "idle",
+     "framesPerSecond": 3.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 26.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 15.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "walk": {
+     "animationName": "walk",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "sit": {
+     "animationName": "sit",
+     "framesPerSecond": 4.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 24.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 13.0
+        },
+        "chairs": {
+         "x": 1.0,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 22.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 11.0
+        },
+        "chairs": {
+         "x": 1.0,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "stand": {
+     "animationName": "stand",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 25.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 14.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "jump": {
+     "animationName": "jump",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 29.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 18.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "custom1": {
+     "animationName": "custom1",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 29.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 18.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 7.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 29.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 18.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 29.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 18.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 3,
+     "targetDistance": 16,
+     "customName": "dance",
+     "isCustomAnimation": true,
+     "animationLoops": true
+    },
+    "custom2": {
+     "animationName": "custom2",
+     "framesPerSecond": 9.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 3.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 8.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 5.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 10.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 24,
+     "customName": "attack",
+     "isCustomAnimation": true,
+     "targetsUser": true
+    },
+    "custom3": {
+     "animationName": "custom3",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.5,
+         "y": 27.0
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 16.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -0.5,
+         "y": 26.0
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 15.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16,
+     "customName": "hurt",
+     "isCustomAnimation": true
+    }
+   }
+  },
+  "slime": {
+   "name": "Slime",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "bilinearFilter": false,
+   "moveSpeed": 1.0,
+   "CanUseGear": [
+    "hats",
+    "glasses",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 0.149019608,
+      "g": 0.109803922,
+      "b": 0.180392157,
+      "a": 1.0
+     },
+     {
+      "r": 0.376470588,
+      "g": 0.815686275,
+      "b": 0.376470588,
+      "a": 1.0
+     },
+     {
+      "r": 0.203921569,
+      "g": 0.62745098,
+      "b": 0.31372549,
+      "a": 1.0
+     },
+     {
+      "r": 0.745098039,
+      "g": 0.960784314,
+      "b": 0.666666667,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 0.588235294,
+      "b": 0.666666667,
+      "a": 1.0
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "azul": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.329411765,
+       "g": 0.62745098,
+       "b": 0.941176471,
+       "a": 1.0
+      },
+      {
+       "r": 0.188235294,
+       "g": 0.392156863,
+       "b": 0.784313725,
+       "a": 1.0
+      },
+      {
+       "r": 0.705882353,
+       "g": 0.862745098,
+       "b": 1.0,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.588235294,
+       "b": 0.666666667,
+       "a": 1.0
+      }
+     ]
+    },
+    "rosa": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.941176471,
+       "g": 0.470588235,
+       "b": 0.705882353,
+       "a": 1.0
+      },
+      {
+       "r": 0.784313725,
+       "g": 0.274509804,
+       "b": 0.549019608,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.745098039,
+       "b": 0.882352941,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.470588235,
+       "b": 0.549019608,
+       "a": 1.0
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "animationName": "idle",
+     "framesPerSecond": 3.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 19.4
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 7.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "walk": {
+     "animationName": "walk",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 18.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 7.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 22.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 9.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "sit": {
+     "animationName": "sit",
+     "framesPerSecond": 4.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 17.2
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 6.5
+        },
+        "chairs": {
+         "x": 1.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 15.0
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 5.5
+        },
+        "chairs": {
+         "x": 1.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "stand": {
+     "animationName": "stand",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 18.3
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 7.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "jump": {
+     "animationName": "jump",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 25.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 12.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "custom1": {
+     "animationName": "custom1",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 22.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 10.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 3.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 22.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 10.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 22.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 10.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 3,
+     "targetDistance": 16,
+     "customName": "dance",
+     "isCustomAnimation": true,
+     "animationLoops": true
+    },
+    "custom2": {
+     "animationName": "custom2",
+     "framesPerSecond": 9.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 4.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 7.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 6.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 9.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 24,
+     "customName": "attack",
+     "isCustomAnimation": true,
+     "targetsUser": true
+    },
+    "custom3": {
+     "animationName": "custom3",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 8.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 19.4
+        },
+        "glasses": {
+         "x": 3.5,
+         "y": 7.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16,
+     "customName": "hurt",
+     "isCustomAnimation": true
+    }
+   }
+  },
+  "robo": {
+   "name": "Robô",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "bilinearFilter": false,
+   "moveSpeed": 1.0,
+   "CanUseGear": [
+    "hats",
+    "glasses",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 0.149019608,
+      "g": 0.109803922,
+      "b": 0.180392157,
+      "a": 1.0
+     },
+     {
+      "r": 0.690196078,
+      "g": 0.737254902,
+      "b": 0.784313725,
+      "a": 1.0
+     },
+     {
+      "r": 0.431372549,
+      "g": 0.48627451,
+      "b": 0.549019608,
+      "a": 1.0
+     },
+     {
+      "r": 0.235294118,
+      "g": 0.745098039,
+      "b": 0.784313725,
+      "a": 1.0
+     },
+     {
+      "r": 0.921568627,
+      "g": 0.980392157,
+      "b": 1.0,
+      "a": 1.0
+     },
+     {
+      "r": 0.941176471,
+      "g": 0.31372549,
+      "b": 0.31372549,
+      "a": 1.0
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "vermelho": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.878431373,
+       "g": 0.392156863,
+       "b": 0.352941176,
+       "a": 1.0
+      },
+      {
+       "r": 0.588235294,
+       "g": 0.219607843,
+       "b": 0.235294118,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.823529412,
+       "b": 0.352941176,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.960784314,
+       "b": 0.862745098,
+       "a": 1.0
+      },
+      {
+       "r": 0.352941176,
+       "g": 0.784313725,
+       "b": 1.0,
+       "a": 1.0
+      }
+     ]
+    },
+    "verde": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.470588235,
+       "g": 0.784313725,
+       "b": 0.509803922,
+       "a": 1.0
+      },
+      {
+       "r": 0.258823529,
+       "g": 0.509803922,
+       "b": 0.352941176,
+       "a": 1.0
+      },
+      {
+       "r": 0.156862745,
+       "g": 0.235294118,
+       "b": 0.274509804,
+       "a": 1.0
+      },
+      {
+       "r": 0.549019608,
+       "g": 1.0,
+       "b": 0.666666667,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.784313725,
+       "b": 0.235294118,
+       "a": 1.0
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "animationName": "idle",
+     "framesPerSecond": 3.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 26
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "walk": {
+     "animationName": "walk",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "sit": {
+     "animationName": "sit",
+     "framesPerSecond": 4.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 23
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 15.5
+        },
+        "chairs": {
+         "x": -0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 20
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 12.5
+        },
+        "chairs": {
+         "x": -0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "stand": {
+     "animationName": "stand",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 24
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 16.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "jump": {
+     "animationName": "jump",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 29
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 21.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "custom1": {
+     "animationName": "custom1",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -1.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 1.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 29
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 21.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 3.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 29
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 21.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -1.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 1.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 29
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 21.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 3,
+     "targetDistance": 16,
+     "customName": "dance",
+     "isCustomAnimation": true,
+     "animationLoops": true
+    },
+    "custom2": {
+     "animationName": "custom2",
+     "framesPerSecond": 9.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 2.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 4.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 4.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 6.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 24,
+     "customName": "attack",
+     "isCustomAnimation": true,
+     "targetsUser": true
+    },
+    "custom3": {
+     "animationName": "custom3",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -1.0,
+         "y": 27
+        },
+        "glasses": {
+         "x": 1.0,
+         "y": 19.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -2.0,
+         "y": 26
+        },
+        "glasses": {
+         "x": 0.0,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16,
+     "customName": "hurt",
+     "isCustomAnimation": true
+    }
+   }
+  },
+  "fantasma": {
+   "name": "Fantasma",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "bilinearFilter": false,
+   "moveSpeed": 1.0,
+   "CanUseGear": [
+    "hats",
+    "glasses",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 0.149019608,
+      "g": 0.109803922,
+      "b": 0.180392157,
+      "a": 1.0
+     },
+     {
+      "r": 0.964705882,
+      "g": 0.964705882,
+      "b": 1.0,
+      "a": 1.0
+     },
+     {
+      "r": 0.768627451,
+      "g": 0.784313725,
+      "b": 0.909803922,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 0.62745098,
+      "b": 0.705882353,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "menta": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.784313725,
+       "g": 0.980392157,
+       "b": 0.882352941,
+       "a": 1.0
+      },
+      {
+       "r": 0.549019608,
+       "g": 0.803921569,
+       "b": 0.705882353,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.666666667,
+       "b": 0.666666667,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      }
+     ]
+    },
+    "lilas": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.870588235,
+       "g": 0.784313725,
+       "b": 0.980392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.666666667,
+       "g": 0.580392157,
+       "b": 0.843137255,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.588235294,
+       "b": 0.784313725,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "animationName": "idle",
+     "framesPerSecond": 3.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 30
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 17.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "walk": {
+     "animationName": "walk",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 30
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 17.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "sit": {
+     "animationName": "sit",
+     "framesPerSecond": 4.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 28
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 15.5
+        },
+        "chairs": {
+         "x": 0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 26
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 13.5
+        },
+        "chairs": {
+         "x": 0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "stand": {
+     "animationName": "stand",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 29
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 16.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "jump": {
+     "animationName": "jump",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 33
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 20.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "custom1": {
+     "animationName": "custom1",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 33
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 20.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 6.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 33
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 20.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 33
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 20.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 3,
+     "targetDistance": 16,
+     "customName": "dance",
+     "isCustomAnimation": true,
+     "animationLoops": true
+    },
+    "custom2": {
+     "animationName": "custom2",
+     "framesPerSecond": 9.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 5.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 3.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 7.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 5.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 9.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 24,
+     "customName": "attack",
+     "isCustomAnimation": true,
+     "targetsUser": true
+    },
+    "custom3": {
+     "animationName": "custom3",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 31
+        },
+        "glasses": {
+         "x": 4.5,
+         "y": 18.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -1.0,
+         "y": 30
+        },
+        "glasses": {
+         "x": 3.5,
+         "y": 17.5
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16,
+     "customName": "hurt",
+     "isCustomAnimation": true
+    }
+   }
+  },
+  "cogumelo": {
+   "name": "Cogumelo",
+   "width": 32,
+   "height": 32,
+   "pixelsPerUnit": 1.0,
+   "bilinearFilter": false,
+   "moveSpeed": 1.0,
+   "CanUseGear": [
+    "hats",
+    "glasses",
+    "chairs"
+   ],
+   "mainPalette": {
+    "colors": [
+     {
+      "r": 0.149019608,
+      "g": 0.109803922,
+      "b": 0.180392157,
+      "a": 1.0
+     },
+     {
+      "r": 0.878431373,
+      "g": 0.235294118,
+      "b": 0.235294118,
+      "a": 1.0
+     },
+     {
+      "r": 0.62745098,
+      "g": 0.141176471,
+      "b": 0.219607843,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     },
+     {
+      "r": 1.0,
+      "g": 0.925490196,
+      "b": 0.803921569,
+      "a": 1.0
+     },
+     {
+      "r": 0.909803922,
+      "g": 0.768627451,
+      "b": 0.62745098,
+      "a": 1.0
+     }
+    ]
+   },
+   "swappablePalettes": {
+    "roxo": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.588235294,
+       "g": 0.352941176,
+       "b": 0.823529412,
+       "a": 1.0
+      },
+      {
+       "r": 0.392156863,
+       "g": 0.219607843,
+       "b": 0.62745098,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.960784314,
+       "b": 0.784313725,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 0.925490196,
+       "b": 0.843137255,
+       "a": 1.0
+      },
+      {
+       "r": 0.882352941,
+       "g": 0.768627451,
+       "b": 0.698039216,
+       "a": 1.0
+      }
+     ]
+    },
+    "azul": {
+     "colors": [
+      {
+       "r": 0.149019608,
+       "g": 0.109803922,
+       "b": 0.180392157,
+       "a": 1.0
+      },
+      {
+       "r": 0.274509804,
+       "g": 0.588235294,
+       "b": 0.901960784,
+       "a": 1.0
+      },
+      {
+       "r": 0.156862745,
+       "g": 0.376470588,
+       "b": 0.705882353,
+       "a": 1.0
+      },
+      {
+       "r": 1.0,
+       "g": 1.0,
+       "b": 1.0,
+       "a": 1.0
+      },
+      {
+       "r": 0.925490196,
+       "g": 0.956862745,
+       "b": 0.921568627,
+       "a": 1.0
+      },
+      {
+       "r": 0.745098039,
+       "g": 0.839215686,
+       "b": 0.8,
+       "a": 1.0
+      }
+     ]
+    }
+   },
+   "animationData": {
+    "idle": {
+     "animationName": "idle",
+     "framesPerSecond": 3.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 26.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 7.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "walk": {
+     "animationName": "walk",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "sit": {
+     "animationName": "sit",
+     "framesPerSecond": 4.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 23.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 5.0
+        },
+        "chairs": {
+         "x": 0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 20.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 3.0
+        },
+        "chairs": {
+         "x": 0.5,
+         "y": 0.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "stand": {
+     "animationName": "stand",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 24.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 6.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "jump": {
+     "animationName": "jump",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 29.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 10.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16
+    },
+    "custom1": {
+     "animationName": "custom1",
+     "framesPerSecond": 8.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 4.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 29.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 10.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 2.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 6.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 29.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 10.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 4.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 29.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 10.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 3,
+     "targetDistance": 16,
+     "customName": "dance",
+     "isCustomAnimation": true,
+     "animationLoops": true
+    },
+    "custom2": {
+     "animationName": "custom2",
+     "framesPerSecond": 9.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 1.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 5.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 3.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 7.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 5.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 9.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 24,
+     "customName": "attack",
+     "isCustomAnimation": true,
+     "targetsUser": true
+    },
+    "custom3": {
+     "animationName": "custom3",
+     "framesPerSecond": 6.0,
+     "frameData": [
+      {
+       "gearPivot": {
+        "hats": {
+         "x": 0.0,
+         "y": 27.5
+        },
+        "glasses": {
+         "x": 4.0,
+         "y": 8.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      },
+      {
+       "gearPivot": {
+        "hats": {
+         "x": -1.0,
+         "y": 26.5
+        },
+        "glasses": {
+         "x": 3.0,
+         "y": 7.0
+        },
+        "chairs": {
+         "y": -1000.0
+        }
+       },
+       "uniquePivot": {}
+      }
+     ],
+     "returnsToIdle": true,
+     "targetInterrupt": true,
+     "loopCount": 1,
+     "targetDistance": 16,
+     "customName": "hurt",
+     "isCustomAnimation": true
+    }
+   }
+  }
+ },
+ "gear": {
+  "hats": {
+   "globalZIndex": 3,
+   "gearPiece": {
+    "coroa": {
+     "pieceName": "coroa",
+     "PPU": 1.0,
+     "width": 16.0,
+     "height": 10.0,
+     "flipsWithAvatarX": true
+    },
+    "festa": {
+     "pieceName": "festa",
+     "PPU": 1.0,
+     "width": 12.0,
+     "height": 16.0,
+     "flipsWithAvatarX": true
+    },
+    "bruxo": {
+     "pieceName": "bruxo",
+     "PPU": 1.0,
+     "width": 22.0,
+     "height": 20.0,
+     "flipsWithAvatarX": true
+    },
+    "bone": {
+     "pieceName": "bone",
+     "PPU": 1.0,
+     "width": 20.0,
+     "height": 10.0,
+     "flipsWithAvatarX": true
+    }
+   }
+  },
+  "glasses": {
+   "globalZIndex": 4,
+   "gearPiece": {
+    "oculos": {
+     "pieceName": "oculos",
+     "PPU": 1.0,
+     "width": 13.0,
+     "height": 4.0,
+     "flipsWithAvatarX": true
+    }
+   }
+  },
+  "chairs": {
+   "globalZIndex": -1,
+   "gearPiece": {
+    "poltrona": {
+     "pieceName": "poltrona",
+     "PPU": 1.0,
+     "width": 28.0,
+     "height": 23.0,
+     "flipsWithAvatarX": false
+    },
+    "almofada": {
+     "pieceName": "almofada",
+     "PPU": 1.0,
+     "width": 26.0,
+     "height": 8.0,
+     "flipsWithAvatarX": false
+    }
+   }
+  }
+ }
+}

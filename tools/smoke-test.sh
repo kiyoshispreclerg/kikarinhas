@@ -2,19 +2,20 @@
 # Checks an installed kikarinhas: the versions match, every library the
 # binaries need is there, the program runs the fake chat for a few seconds
 # on a virtual X screen and quits cleanly on SIGTERM, and the configurator
-# opens. Optionally runs the program under valgrind too.
+# opens. It runs like a new install (no avatars of its own, no Stream
+# Avatars), so what shows is the default pack that comes with the package.
+# Optionally runs the program under valgrind too.
 #
 # Usage: tools/smoke-test.sh [--valgrind]      (from the repository root)
 # Needs xvfb-run and fonts; --valgrind needs valgrind. Touches nothing of
 # the user's: HOME and the sockets live in a temporary folder.
 set -eu
 
-kit=docs/avatares/kit-exemplo
 seconds=${SMOKE_SECONDS:-8}
 use_valgrind=no
 [ "${1:-}" = "--valgrind" ] && use_valgrind=yes
 
-[ -d "$kit" ] || { echo "run it from the repository root ($kit not found)" >&2; exit 2; }
+[ -f config.mk ] || { echo "run it from the repository root" >&2; exit 2; }
 version=$(sed -n 's/^VERSION *= *//p' config.mk)
 
 work=$(mktemp -d /tmp/kk-smoke.XXXXXX)
@@ -45,7 +46,9 @@ echo "== installed files"
 prefix=$(dirname "$(dirname "$(command -v kikarinhas)")")
 for f in "$prefix/share/doc/kikarinhas/kikarinhas.ini" \
 	"$prefix/share/applications/kikarinhas.desktop" \
-	"$prefix/share/applications/kikarinhas-config.desktop"; do
+	"$prefix/share/applications/kikarinhas-config.desktop" \
+	"$prefix/share/kikarinhas/default-avatars/streamavatars_json.txt" \
+	"$prefix/share/kikarinhas/default-avatars/avatars/gato.png"; do
 	[ -f "$f" ] && continue
 	# Minimal container images (Ubuntu's) tell dpkg to skip /usr/share/doc:
 	# then it is enough that the package lists the file.
@@ -64,7 +67,7 @@ demo() {
 	status=0
 	xvfb-run -a -s "-screen 0 1280x720x24" \
 		timeout --preserve-status -s TERM "$secs" \
-		kikarinhas --demo-chat --avatar-dir "$kit" --sa-dir off \
+		kikarinhas --demo-chat \
 		-c "$work/kikarinhas.ini" --users "$work/users.tsv" \
 		--socket "$work/kk.sock" -v > "$log" 2>&1 || status=$?
 	if [ "$status" -ne 0 ]; then
@@ -72,6 +75,7 @@ demo() {
 		fail "kikarinhas exited with status $status"
 	fi
 	grep -q "janela .* no modo obs" "$log" || { cat "$log" >&2; fail "no window was opened"; }
+	grep -q "avatares padrão em" "$log" || { cat "$log" >&2; fail "the default avatars were not used"; }
 	grep -q "^\[demo\]" "$log" || { cat "$log" >&2; fail "the fake chat said nothing"; }
 	if grep -q "erro:" "$log"; then
 		cat "$log" >&2
@@ -99,7 +103,7 @@ if [ "$use_valgrind" = yes ]; then
 	xvfb-run -a -s "-screen 0 1280x720x24" \
 		timeout --preserve-status -s TERM 40 \
 		valgrind --error-exitcode=99 --leak-check=no -q \
-		kikarinhas --demo-chat --avatar-dir "$kit" --sa-dir off \
+		kikarinhas --demo-chat \
 		-c "$work/kikarinhas.ini" --users "$work/users.tsv" \
 		--socket "$work/kk.sock" > "$work/valgrind.log" 2>&1 || status=$?
 	if [ "$status" -ne 0 ]; then

@@ -166,6 +166,50 @@ TEST(library_order)
     CHECK(s2.sa[1]);
 }
 
+#define DEFAULTS KK_FIXTURES_DIR "/../../data/default-avatars"
+
+TEST(default_pack_loads_and_is_valid)
+{
+    kk_sa_library lib;
+    CHECK_INT_EQ(kk_sa_load_dir(&lib, DEFAULTS), 0);
+    CHECK_INT_EQ(lib.count, 5);
+    const char *const names[] = {"gato", "slime", "robo", "fantasma", "cogumelo"};
+    for (int i = 0; i < 5; i++) {
+        const kk_sa_avatar *a = kk_sa_find(&lib, names[i]);
+        CHECK(a != NULL);
+        CHECK(a->n_palettes >= 2);
+        CHECK(a->n_gear_sets == 3);
+        CHECK(a->anims[KK_ANIM_IDLE].frames > 0 && a->anims[KK_ANIM_WALK].frames > 0);
+        CHECK(a->anims[KK_ANIM_SIT].frames > 0 && a->anims[KK_ANIM_JUMP].frames > 0);
+    }
+    kk_sa_free(&lib);
+}
+
+TEST(default_pack_only_when_nothing_else)
+{
+    char used[KK_PATH_MAX];
+    kk_sa_library lib;
+    /* No folder of the user's, no Stream Avatars: the default pack. */
+    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", NULL, DEFAULTS, used, sizeof used, false), 0);
+    CHECK_INT_EQ(lib.count, 5);
+    kk_sa_free(&lib);
+    /* Something found: the pack stays out, so nobody's default avatar moves. */
+    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", KIT, DEFAULTS, used, sizeof used, false), 0);
+    CHECK_INT_EQ(lib.count, 1);
+    CHECK(kk_sa_find(&lib, "bloco") != NULL && kk_sa_find(&lib, "gato") == NULL);
+    kk_sa_free(&lib);
+    /* A folder that holds nothing counts as nothing. */
+    char empty[KK_PATH_MAX];
+    snprintf(empty, sizeof empty, "%s/empty", tmp);
+    mkdir(empty, 0700);
+    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", empty, DEFAULTS, used, sizeof used, false), 0);
+    CHECK_INT_EQ(lib.count, 5);
+    kk_sa_free(&lib);
+    /* No fallback and nothing else: an error, as before. */
+    CHECK_INT_EQ(kk_library_load_with_default(&lib, "", NULL, NULL, used, sizeof used, false), -1);
+    kk_sa_free(&lib);
+}
+
 int main(void)
 {
     snprintf(tmp, sizeof tmp, "/tmp/kk_library_XXXXXX");
@@ -175,6 +219,8 @@ int main(void)
     RUN(library_merge);
     RUN(library_folder_of_packs);
     RUN(library_order);
+    RUN(default_pack_loads_and_is_valid);
+    RUN(default_pack_only_when_nothing_else);
     int failed = harness_report();
     if (!failed) { /* a failing run keeps the files to look at */
         char cmd[128];

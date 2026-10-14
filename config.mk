@@ -25,7 +25,7 @@ PKGS       = x11 xext cairo pangocairo libcurl alsa openssl dbus-1
 PKG_CFLAGS = $(shell $(PKG_CONFIG) --cflags $(PKGS) | sed 's/-I/-isystem /g')
 PKG_LIBS   = $(shell $(PKG_CONFIG) --libs $(PKGS))
 
-CPPFLAGS += -Isrc -Ivendor/cjson -DKK_VERSION='"$(VERSION)"'
+CPPFLAGS += -Isrc -Ivendor/cjson -DKK_VERSION='"$(VERSION)"' -DKK_DATADIR='"$(DATADIR)"'
 LDLIBS   += $(PKG_LIBS) -lm
 
 # `make asan` sets SANITIZE=1.

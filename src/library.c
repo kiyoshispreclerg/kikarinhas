@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "log.h"
 #include "util.h"
@@ -16,6 +17,43 @@ bool kk_library_own_dir(char *out, size_t size)
         return kk_pathf(out, size, "%s/kikarinhas/avatars", xdg);
     const char *home = getenv("HOME");
     return home && kk_pathf(out, size, "%s/.local/share/kikarinhas/avatars", home);
+}
+
+#ifndef KK_DATADIR
+#define KK_DATADIR "/usr/share"
+#endif
+
+/* out is a folder that exists: without "..", for the logs. */
+static bool tidy(char *out, size_t size)
+{
+    char real[KK_PATH_MAX];
+    if (!kk_dir_exists(out))
+        return false;
+    if (realpath(out, real))
+        kk_pathf(out, size, "%s", real);
+    return true;
+}
+
+bool kk_library_default_dir(char *out, size_t size)
+{
+    char exe[KK_PATH_MAX];
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof exe - 1);
+    if (n > 0) {
+        exe[n] = '\0';
+        char *slash = strrchr(exe, '/');
+        if (slash) {
+            *slash = '\0';
+            /* Installed under any prefix, then straight from the build
+             * (build/ and build/asan/). */
+            if ((kk_pathf(out, size, "%s/../share/kikarinhas/default-avatars", exe) &&
+                 tidy(out, size)) ||
+                (kk_pathf(out, size, "%s/../data/default-avatars", exe) && tidy(out, size)) ||
+                (kk_pathf(out, size, "%s/../../data/default-avatars", exe) && tidy(out, size)))
+                return true;
+        }
+    }
+    return kk_pathf(out, size, "%s/kikarinhas/default-avatars", KK_DATADIR) &&
+           tidy(out, size);
 }
 
 static bool expand(char *out, size_t size, const char *path)
@@ -96,13 +134,29 @@ static void load_one(void *ud, const char *dir, bool is_sa)
                     is_sa ? "do Stream Avatars " : "", dir, found - added);
 }
 
-int kk_library_load(kk_sa_library *lib, const char *sa_dir, const char *paths,
-                    char *sa_used, size_t size, bool verbose)
+int kk_library_load_with_default(kk_sa_library *lib, const char *sa_dir,
+                                 const char *paths, const char *fallback,
+                                 char *sa_used, size_t size, bool verbose)
 {
     memset(lib, 0, sizeof *lib);
     sa_used[0] = '\0';
     load_ctx c = {.lib = lib, .sa_used = sa_used, .size = size, .verbose = verbose};
     kk_library_each_dir(sa_dir, paths, load_one, &c);
+    if (lib->count == 0 && fallback) {
+        kk_log_info("nenhum avatar seu por aqui: usando os avatares padrão em %s", fallback);
+        load_one(&c, fallback, false);
+    }
     malloc_trim(0);
     return lib->count > 0 ? 0 : -1;
+}
+
+int kk_library_load(kk_sa_library *lib, const char *sa_dir, const char *paths,
+                    char *sa_used, size_t size, bool verbose)
+{
+    char fallback[KK_PATH_MAX];
+    return kk_library_load_with_default(lib, sa_dir, paths,
+                                        kk_library_default_dir(fallback, sizeof fallback)
+                                            ? fallback
+                                            : NULL,
+                                        sa_used, size, verbose);
 }

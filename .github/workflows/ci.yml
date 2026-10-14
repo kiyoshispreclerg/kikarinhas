@@ -49,6 +49,5 @@ jobs:
           : > "$RUNNER_TEMP/kikarinhas.ini"
           xvfb-run -a -s "-screen 0 1280x720x24" \
             timeout --preserve-status -s TERM 15 \
-            build/asan/kikarinhas --demo-chat --avatar-dir docs/avatares/kit-exemplo \
-            --sa-dir off -c "$RUNNER_TEMP/kikarinhas.ini" --users "$RUNNER_TEMP/users.tsv" \
-            --socket "$RUNNER_TEMP/kk.sock" -v
+            build/asan/kikarinhas --demo-chat -c "$RUNNER_TEMP/kikarinhas.ini" \
+            --users "$RUNNER_TEMP/users.tsv" --socket "$RUNNER_TEMP/kk.sock" -v
