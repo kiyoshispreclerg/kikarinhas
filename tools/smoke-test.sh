@@ -46,7 +46,14 @@ prefix=$(dirname "$(dirname "$(command -v kikarinhas)")")
 for f in "$prefix/share/doc/kikarinhas/kikarinhas.ini" \
 	"$prefix/share/applications/kikarinhas.desktop" \
 	"$prefix/share/applications/kikarinhas-config.desktop"; do
-	[ -f "$f" ] || fail "missing $f"
+	[ -f "$f" ] && continue
+	# Minimal container images (Ubuntu's) tell dpkg to skip /usr/share/doc:
+	# then it is enough that the package lists the file.
+	if command -v dpkg > /dev/null 2>&1 && dpkg -L kikarinhas 2> /dev/null | grep -qx "$f"; then
+		echo "   $f: in the package, skipped by dpkg's path-exclude"
+		continue
+	fi
+	fail "missing $f"
 done
 
 # Runs the program on a virtual screen for $1 seconds, then sends SIGTERM. A
