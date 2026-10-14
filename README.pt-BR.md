@@ -435,6 +435,28 @@ max_on_screen = 100
 
 Tudo isso também está na aba **Danmaku** do `kikarinhas-config`.
 
+### Cenário
+
+Imagens que ficam o tempo todo na janela: um chão ou fundo atrás dos
+avatares, uma moldura ou um logo na frente deles. São arquivos seus (PNG,
+JPEG, BMP ou GIF; os animados se mexem; a transparência é mantida), uma
+seção `[scenery.NOME]` para cada uma, ou a aba **Cenário** do
+`kikarinhas-config`:
+
+```ini
+[scenery.grama]
+file = ~/imagens/grama.png
+x = 50          # centro, em % da largura da janela
+y = 94          # centro, em % da altura da janela
+scale = 100     # % do tamanho do arquivo
+layer = behind  # behind (padrão) atrás ou front, na frente dos avatares
+enabled = yes
+```
+
+Até 16; as últimas ficam por cima das primeiras. As imagens dos comandos
+do chat e o emote wall ficam por cima de tudo. O `reload` aplica as
+mudanças.
+
 ### Socket de controle e bridges
 
 O kikarinhas escuta em `$XDG_RUNTIME_DIR/kikarinhas.sock` (só o seu usuário
@@ -573,9 +595,11 @@ não estiver lá.
 Precisa de um compositor ativo (o do KWin serve) para a janela parecer
 transparente também na tela.
 
+No Wayland, o Kikarinhas roda pelo XWayland (é um programa X11) e o OBS o
+captura do mesmo jeito; não há modo Wayland nativo.
+
 ## Previsto
 
-- Pacotes .zip do Stream Avatars e fundos do Stream Avatars.
 - Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
 
 ## Licença

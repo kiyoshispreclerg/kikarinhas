@@ -44,6 +44,8 @@
  *              cost = N (points; unset: the sound command's)
  *   [timer.NAME] command = !logo, minutes = 10, messages = 0, viewers = 0,
  *              enabled = yes
+ *   [scenery.NAME] file, x = 50, y = 50, scale = 100 (% of the file),
+ *              layer = behind|front, enabled = yes
  *   [points]   enabled, name = pontos, start = 0, message = 1,
  *              message_cooldown = 30, watch = 5, watch_minutes = 5,
  *              arrival = 10, paid = 100, member = 100, catch = 5,
@@ -104,6 +106,18 @@ typedef struct {
     int viewers;
     bool enabled;
 } kk_config_timer;
+
+/* A picture kept on the stage (overlay.c, pinned): a backdrop, a frame, a
+ * logo. Centred on (x%, y%) of the window, scale % of the file's size. */
+typedef struct {
+    char *name; /* lowercase */
+    char *file;
+    double x, y, scale;
+    bool front; /* over the avatars; else under them */
+    bool enabled;
+} kk_config_scenery;
+
+#define KK_CONFIG_MAX_SCENERY 16
 
 typedef enum {
     KK_CONFIG_WALL_RISE,
@@ -191,6 +205,9 @@ typedef struct {
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;
+    /* [scenery.NAME] */
+    kk_config_scenery *scenery;
+    int n_scenery;
     /* [points] (see points.h) */
     bool points_enabled;
     char *points_name;       /* what they are called in bubbles; NULL = "pontos" */

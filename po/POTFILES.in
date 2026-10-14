@@ -8,3 +8,4 @@ config/avatars.c
 config/commands.c
 config/points.c
 config/timers.c
+config/scenery.c

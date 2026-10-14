@@ -6,7 +6,9 @@
 #include <unistd.h>
 
 #include "../harness.h"
+#include "config.h"
 #include "image.h"
+#include "ini.h"
 #include "overlay.h"
 #include "util.h"
 
@@ -141,6 +143,73 @@ TEST(overlay_place_and_life)
     CHECK_INT_EQ(gone.n, 1);
 }
 
+/* Scenery stays, never fades, and a command's pictures can't push it out. */
+TEST(overlay_pinned_stays)
+{
+    kk_overlay *o = kk_overlay_new();
+    kk_overlay_resize(o, 1000, 500);
+    kk_cmd_params p = {.seconds = 1, .x = 50, .y = 50, .scale = 100};
+    bool ok = kk_overlay_pin(o, "scenery.bg", png_path, &p);
+    kk_overlay_update(o, 10.0);
+    rects first = damage(o);
+    kk_overlay_update(o, 10.05); /* a fade would be repainting by now */
+    rects still = damage(o);
+    for (int i = 0; i < 60; i++) {
+        char key[16];
+        snprintf(key, sizeof key, "cmd%d", i);
+        kk_overlay_show(o, key, png_path, &p);
+    }
+    kk_overlay_update(o, 500.0); /* the pictures start... */
+    kk_overlay_update(o, 503.0); /* ...and end; the scenery doesn't */
+    int left = kk_overlay_showing(o);
+    kk_overlay_clear(o);
+    int cleared = kk_overlay_showing(o);
+    kk_overlay_free(o);
+    CHECK(ok);
+    CHECK_INT_EQ(first.n, 1);
+    CHECK_INT_EQ(still.n, 0);
+    CHECK_INT_EQ(left, 1);
+    CHECK_INT_EQ(cleared, 0);
+}
+
+static int warnings;
+
+static void count(void *ud, int line, const char *msg)
+{
+    (void)ud;
+    (void)line;
+    (void)msg;
+    warnings++;
+}
+
+TEST(config_scenery)
+{
+    kk_config c;
+    kk_config_defaults(&c);
+    kk_ini *ini = kk_ini_parse("[scenery.Grama]\nfile = /x/grama.png\ny = 90\nscale = 200\n"
+                               "[scenery.moldura]\nfile = /x/m.png\nlayer = front\nenabled = no\n"
+                               "[scenery.sem]\nx = 10\n"
+                               "[scenery.ruim]\nfile = /x/r.png\nlayer = meio\n",
+                               NULL, NULL);
+    kk_config_apply(&c, ini, count, NULL);
+    kk_ini_free(ini);
+    kk_config copy;
+    bool copied = kk_config_copy(&copy, &c);
+    int n = c.n_scenery;
+    CHECK_INT_EQ(warnings, 2); /* no file; bad layer */
+    CHECK_INT_EQ(n, 3);
+    CHECK_STR_EQ(c.scenery[0].name, "grama");
+    CHECK_STR_EQ(c.scenery[0].file, "/x/grama.png");
+    CHECK(c.scenery[0].y == 90 && c.scenery[0].x == 50 && c.scenery[0].scale == 200);
+    CHECK(!c.scenery[0].front);
+    CHECK(c.scenery[1].front && !c.scenery[1].enabled);
+    CHECK(copied);
+    CHECK_STR_EQ(copy.scenery[0].file, "/x/grama.png");
+    CHECK(copy.scenery[1].front);
+    kk_config_free(&copy);
+    kk_config_free(&c);
+}
+
 int main(void)
 {
     write_png();
@@ -148,6 +217,8 @@ int main(void)
     RUN(image_gif_frames_and_delays);
     RUN(image_jpeg_and_junk);
     RUN(overlay_place_and_life);
+    RUN(overlay_pinned_stays);
+    RUN(config_scenery);
     unlink(png_path);
     return harness_report();
 }

@@ -13,7 +13,7 @@ e leve: C, Xlib, Cairo e Pango, com GTK2 apenas no configurador.
 - Opcional: camadas HTML num processo à parte, para aposentar alguns
   obs-browser.
 
-Fora do escopo por enquanto: Wayland, Windows, edição de avatares.
+Fora do escopo: Wayland nativo (roda pelo XWayland), Windows, edição de avatares.
 
 ## Arquitetura
 
@@ -759,6 +759,20 @@ data/         avatar padrão original, exemplo de .ini
      cor do GTK no configurador, opções acinzentadas enquanto desligado.
      `KK_MAX_LAYERS` foi para 6. Medido no Xephyr com o chat de mentira:
      ~3% de CPU, igual com ele desligado (quem pesa é a emote wall).
-   Pendentes: fundos do SA, plugin de
-   OBS lendo a memória compartilhada direto (sem Xcomposite), Wayland
-   (layer-shell) no futuro.
+   - **Cenário** (`[scenery.NOME]`, aba em `config/scenery.c`): imagens
+     fixas na janela (chão, fundo, moldura, logo) com `file`, `x`/`y`
+     (centro, em % da janela), `scale` (% do arquivo) e `layer =
+     behind|front`. Não vêm do SA: o usuário põe os arquivos. É o
+     `src/overlay.c` com itens *fixados* (`kk_overlay_pin`: sem fim, sem
+     entrada/saída, GIF anima, nunca perdem o lugar para a imagem de um
+     comando). `main.c` tem duas instâncias: `overlay` (frente, junto das
+     imagens dos comandos) e `backdrop`, ligada com
+     `kk_stage_add_back_layer`, que o palco pinta depois de limpar a área
+     de dano e antes dos avatares. O `reload` limpa as duas e fixa de novo
+     (`pin_scenery`). Máximo de 16 (`KK_CONFIG_MAX_SCENERY`).
+   Decidido não fazer: plugin de OBS lendo a memória compartilhada (a
+   captura Xcomposite já serve) e Wayland nativo (o código é Xlib; no
+   Wayland roda pelo XWayland, que o OBS já captura; nativo exigiria
+   reescrever `window.c` e `pointer.c`, sem `override_redirect` nem
+   layer-shell no GNOME). Fundos e pacotes .zip do SA também ficaram de
+   fora. O que sobra em aberto é só a fase 6 (camadas HTML), opcional.

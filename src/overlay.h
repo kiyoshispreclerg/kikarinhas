@@ -24,6 +24,11 @@ void kk_overlay_resize(kk_overlay *o, int width, int height);
  * can't be read. */
 bool kk_overlay_show(kk_overlay *o, const char *key, const char *file,
                      const kk_cmd_params *p);
+/* Like kk_overlay_show but for scenery: it stays (no end, no fades; a GIF keeps
+ * playing) until kk_overlay_clear. It never loses its slot to a command's
+ * picture. */
+bool kk_overlay_pin(kk_overlay *o, const char *key, const char *file,
+                    const kk_cmd_params *p);
 /* Takes everything off the screen and forgets the files (on reload, so a
  * changed file is read again). */
 void kk_overlay_clear(kk_overlay *o);

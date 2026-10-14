@@ -92,7 +92,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `play`, `set_avatar`... |
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
 | `src/mpris.c` | música tocando no desktop (MPRIS na sessão D-Bus, sem bloquear) |
-| `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP) e a camada do `action = image` |
+| `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP) e a camada do `action = image` e do cenário fixo (`[scenery.NOME]`, `kk_overlay_pin`) |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
 | `src/chat.h` | eventos neutros de todas as plataformas: mensagem, emote, reação, `kk_chat_sink` |
@@ -107,6 +107,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
 | `config/timers.c` | aba Timers: lista e diálogo de cada timer |
+| `config/scenery.c` | aba Cenário: imagens fixas atrás ou na frente dos avatares |
 | `config/commands.c` | aba Comandos: lista e diálogo de edição por ação (texto, imagem com prévia, som...) |
 | `config/sources.c`, `config/avatars.c` | lista de lives da aba Chat; pastas de avatares e biblioteca carregada uma vez |
 
@@ -126,7 +127,8 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 
 5. Feita: Twitch, Kick e Odysee.
 6. Camadas HTML (WPE WebKit), opcional.
-7. Extras que faltam: fundos e zips do SA, duelo e minijogos grandes
-   (battle royale, basquete, boss). (Mesa de som, espectadores, emote wall,
-   bomba, estilingue, estrelas, jogos de sorte e emotes animados, na tela e
-   no balão, já feitos.)
+7. Extras que faltam: duelo e minijogos grandes (battle royale, basquete,
+   boss). (Mesa de som, espectadores, emote wall, bomba, estilingue,
+   estrelas, jogos de sorte, emotes animados e cenário fixo já feitos.)
+   Decidido não fazer: plugin de OBS por memória compartilhada, Wayland
+   nativo (roda pelo XWayland) e fundos/zips do SA.

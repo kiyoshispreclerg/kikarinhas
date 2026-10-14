@@ -634,6 +634,21 @@ static kk_wall_config wall_config(const kk_config *c)
     };
 }
 
+/* Pins the [scenery.NAME] pictures: behind the avatars or in front of them. */
+static void pin_scenery(kk_overlay *front, kk_overlay *behind, const kk_config *c)
+{
+    for (int i = 0; i < c->n_scenery; i++) {
+        const kk_config_scenery *s = &c->scenery[i];
+        if (!s->enabled)
+            continue;
+        char key[96];
+        kk_cmd_params p = {.x = s->x, .y = s->y, .scale = s->scale};
+        if (!kk_pathf(key, sizeof key, "scenery.%s", s->name) ||
+            !kk_overlay_pin(s->front ? front : behind, key, s->file, &p))
+            kk_log_warn("[scenery.%s]: não consegui ler \"%s\"", s->name, s->file);
+    }
+}
+
 static kk_danmaku_config danmaku_config(const kk_config *c)
 {
     return (kk_danmaku_config){
@@ -742,7 +757,8 @@ typedef struct {
     kk_emotes *emotes;
     kk_emotewall *wall;
     kk_danmaku *danmaku;  /* chat flying across, when on */
-    kk_overlay *overlay;  /* pictures shown by commands */
+    kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
+    kk_overlay *backdrop; /* scenery under the avatars */
     kk_props *props;      /* bombs and collectibles */
     kk_pointer *pointer;  /* clicks and drags on the window (OBS mode) */
     kk_mpris *mpris;      /* the desktop's music players; NULL without D-Bus */
@@ -1028,6 +1044,8 @@ static bool reload(app *a, cJSON *warnings)
     a->sink.commands = commands;
     kk_timers_configure(a->timers, &cfg, now_seconds());
     kk_overlay_clear(a->overlay); /* a changed picture is read again */
+    kk_overlay_clear(a->backdrop);
+    pin_scenery(a->overlay, a->backdrop, &cfg);
     a->sink.verbose = cfg.verbose;
     kk_soundboard_configure(a->sounds, &cfg);
     a->stage->cfg.max_avatars = cfg.max_avatars;
@@ -1254,6 +1272,7 @@ static void run(app *a)
             kk_stage_resize(a->stage, a->win->width, a->win->height);
             kk_emotewall_resize(a->wall, a->win->width, a->win->height);
             kk_overlay_resize(a->overlay, a->win->width, a->win->height);
+            kk_overlay_resize(a->backdrop, a->win->width, a->win->height);
             kk_danmaku_resize(a->danmaku, a->win->width, a->win->height);
         }
         if (ev.redraw)
@@ -1338,6 +1357,7 @@ static void run(app *a)
                 kk_props_update(a->props, dt > 0.1 ? 0.1 : dt);
                 kk_emotewall_update(a->wall, t);
                 kk_overlay_update(a->overlay, t);
+                kk_overlay_update(a->backdrop, t);
                 kk_danmaku_update(a->danmaku, t);
                 tick = true;
             }
@@ -1551,6 +1571,13 @@ int main(int argc, char **argv)
         return 1;
     }
     kk_overlay_resize(a.overlay, win.width, win.height);
+    a.backdrop = kk_overlay_new();
+    if (!a.backdrop) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_overlay_resize(a.backdrop, win.width, win.height);
+    pin_scenery(a.overlay, a.backdrop, &a.cfg);
     a.props = kk_props_new(&stage, x.seed);
     if (!a.props) {
         kk_log_error("sem memória");
@@ -1573,6 +1600,7 @@ int main(int argc, char **argv)
     kk_danmaku_resize(a.danmaku, win.width, win.height);
     /* Pictures under the bombs and stars, then the danmaku, the emote wall
      * over all. */
+    kk_stage_add_back_layer(&stage, kk_overlay_layer(a.backdrop));
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));
     kk_stage_add_layer(&stage, kk_danmaku_layer(a.danmaku));

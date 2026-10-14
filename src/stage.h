@@ -79,6 +79,8 @@ typedef struct {
 
     const kk_layer *layers[KK_MAX_LAYERS]; /* drawn over the avatars */
     int n_layers;
+    const kk_layer *back_layers[KK_MAX_LAYERS]; /* drawn under the avatars */
+    int n_back_layers;
 
     kk_rect removed; /* area of avatars removed since the last paint */
     kk_rect damage[KK_MAX_DAMAGE];
@@ -147,6 +149,8 @@ bool kk_stage_interact(kk_stage *s, kk_avatar *a, kk_avatar *b, kk_action act);
  * removed first). False if there are KK_MAX_LAYERS already. */
 bool kk_stage_add_layer(kk_stage *s, const kk_layer *l);
 void kk_stage_remove_layer(kk_stage *s, const kk_layer *l);
+/* Same, but painted under the avatars (scenery). */
+bool kk_stage_add_back_layer(kk_stage *s, const kk_layer *l);
 
 void kk_stage_update(kk_stage *s, double dt);
 

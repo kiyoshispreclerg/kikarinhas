@@ -1031,6 +1031,14 @@ void kk_stage_remove_layer(kk_stage *s, const kk_layer *l)
         }
 }
 
+bool kk_stage_add_back_layer(kk_stage *s, const kk_layer *l)
+{
+    if (s->n_back_layers == KK_MAX_LAYERS)
+        return false;
+    s->back_layers[s->n_back_layers++] = l;
+    return true;
+}
+
 int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
                     const kk_rect **rects)
 {
@@ -1048,6 +1056,8 @@ int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
             add_damage(s, a->drawn);
             add_damage(s, kk_avatar_bounds(a, &v));
         }
+        for (int i = 0; i < s->n_back_layers; i++)
+            s->back_layers[i]->damage(s->back_layers[i]->ud, layer_damage, s);
         for (int i = 0; i < s->n_layers; i++)
             s->layers[i]->damage(s->layers[i]->ud, layer_damage, s);
     }
@@ -1061,6 +1071,8 @@ int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
         cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
         cairo_paint(cr);
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+        for (int i = 0; i < s->n_back_layers; i++)
+            s->back_layers[i]->draw(s->back_layers[i]->ud, cr, r);
         for (int pass = 0; pass < 2; pass++)
             for (int i = 0; i < s->count; i++) {
                 const kk_avatar *a = &s->avatars[i];
@@ -1078,6 +1090,8 @@ int kk_stage_render(kk_stage *s, cairo_t *cr, bool full,
 
     for (int i = 0; i < s->count; i++)
         kk_avatar_mark_drawn(&s->avatars[i], &v);
+    for (int i = 0; i < s->n_back_layers; i++)
+        s->back_layers[i]->painted(s->back_layers[i]->ud);
     for (int i = 0; i < s->n_layers; i++)
         s->layers[i]->painted(s->layers[i]->ud);
 

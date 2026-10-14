@@ -440,6 +440,27 @@ max_on_screen = 100
 
 All of it is also in the **Danmaku** tab of `kikarinhas-config`.
 
+### Scenery
+
+Pictures kept on the window all the time: a ground or backdrop behind the
+avatars, a frame or a logo in front of them. They are your own files (PNG,
+JPEG, BMP or GIF; animated ones play; transparency is kept), one
+`[scenery.NAME]` section each, or the **Scenery** tab of `kikarinhas-config`:
+
+```ini
+[scenery.grass]
+file = ~/pictures/grass.png
+x = 50          # centre, in % of the window width
+y = 94          # centre, in % of the window height
+scale = 100     # % of the file's size
+layer = behind  # behind (default) or front of the avatars
+enabled = yes
+```
+
+Up to 16; the later ones are drawn over the earlier ones. Pictures shown
+by chat commands and the emote wall go over everything. `reload` picks up
+changes.
+
 ### Control socket and bridges
 
 kikarinhas listens on `$XDG_RUNTIME_DIR/kikarinhas.sock` (only your user can
@@ -582,9 +603,11 @@ is not there yet.
 A running compositor is needed (KWin's will do) for the window to look
 transparent on screen too.
 
+On Wayland, Kikarinhas runs through XWayland (it is an X11 program) and OBS
+captures it the same way; there is no native Wayland mode.
+
 ## Planned
 
-- Stream Avatars .zip packs and backgrounds.
 - Optional HTML layers (WPE WebKit) to replace some obs-browser sources.
 
 ## License

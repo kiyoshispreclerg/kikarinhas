@@ -10,7 +10,7 @@
 
 #define FADE_S 0.3
 #define DEFAULT_S 5.0
-#define MAX_SHOWN 16
+#define MAX_SHOWN 48
 
 typedef struct {
     char *path;
@@ -25,6 +25,7 @@ typedef struct {
     double start; /* < 0: not started yet */
     double life;
     double alpha;
+    bool pinned; /* scenery: no end, no fades */
     int frame;
     kk_rect cur, drawn;
     bool changed; /* repaint on the next frame */
@@ -124,8 +125,15 @@ bool kk_overlay_show(kk_overlay *o, const char *key, const char *file,
         if (strcmp(o->items[i].key, key) == 0)
             s = &o->items[i];
     if (!s) {
-        if (o->n_items == MAX_SHOWN)
-            drop(o, 0); /* the oldest-placed slot makes room */
+        if (o->n_items == MAX_SHOWN) {
+            /* The oldest-placed slot that isn't scenery makes room. */
+            int v = 0;
+            while (v < o->n_items && o->items[v].pinned)
+                v++;
+            if (v == o->n_items)
+                return false;
+            drop(o, v);
+        }
         s = &o->items[o->n_items];
         *s = (shown){.key = strdup(key)};
         if (!s->key)
@@ -133,12 +141,26 @@ bool kk_overlay_show(kk_overlay *o, const char *key, const char *file,
         o->n_items++;
     }
     bool same = s->pic == pic && s->start >= 0;
+    s->pinned = false;
     s->pic = pic;
     s->p = *p;
     s->life = p->seconds > 0 ? p->seconds : DEFAULT_S;
     /* Again while showing: keep it up (no new fade-in), time starts over. */
     s->start = same ? -2 : -1;
     s->changed = true;
+    return true;
+}
+
+bool kk_overlay_pin(kk_overlay *o, const char *key, const char *file,
+                    const kk_cmd_params *p)
+{
+    if (!kk_overlay_show(o, key, file, p))
+        return false;
+    for (int i = 0; i < o->n_items; i++)
+        if (strcmp(o->items[i].key, key) == 0) {
+            o->items[i].pinned = true;
+            o->items[i].start = -1;
+        }
     return true;
 }
 
@@ -161,12 +183,14 @@ void kk_overlay_update(kk_overlay *o, double now)
         else if (s->start < 0)
             s->start = now;
         double age = now - s->start;
-        if (age >= s->life) {
+        if (!s->pinned && age >= s->life) {
             drop(o, i);
             continue;
         }
         double a = 1.0;
-        if (age < FADE_S)
+        if (s->pinned)
+            a = 1.0;
+        else if (age < FADE_S)
             a = age / FADE_S;
         else if (s->life - age < FADE_S)
             a = (s->life - age) / FADE_S;

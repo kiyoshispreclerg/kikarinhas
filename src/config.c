@@ -15,6 +15,7 @@
 #define CMD_PREFIX "command."
 #define SOUND_PREFIX "sound."
 #define TIMER_PREFIX "timer."
+#define SCENERY_PREFIX "scenery."
 #define MAX_NAME 64
 
 static const char *const ACTIONS[] = {
@@ -276,6 +277,28 @@ static kk_config_timer *add_timer(kk_config *c, const char *name)
     return t;
 }
 
+static void scenery_free(kk_config_scenery *s)
+{
+    free(s->name);
+    free(s->file);
+}
+
+static kk_config_scenery *add_scenery(kk_config *c, const char *name)
+{
+    if (c->n_scenery == KK_CONFIG_MAX_SCENERY)
+        return NULL;
+    kk_config_scenery *ns = realloc(c->scenery, (size_t)(c->n_scenery + 1) * sizeof *ns);
+    if (!ns)
+        return NULL;
+    c->scenery = ns;
+    kk_config_scenery *s = &ns[c->n_scenery];
+    *s = (kk_config_scenery){.x = 50, .y = 50, .scale = 100, .enabled = true};
+    if (!kk_config_set_str(&s->name, name))
+        return NULL;
+    c->n_scenery++;
+    return s;
+}
+
 static kk_config_command *add_command(kk_config *c)
 {
     kk_config_command *nc =
@@ -316,6 +339,9 @@ void kk_config_free(kk_config *c)
     for (int i = 0; i < c->n_timers; i++)
         timer_free(&c->timers[i]);
     free(c->timers);
+    for (int i = 0; i < c->n_scenery; i++)
+        scenery_free(&c->scenery[i]);
+    free(c->scenery);
     memset(c, 0, sizeof *c);
 }
 
@@ -404,6 +430,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->points_name = NULL;
     dst->timers = NULL;
     dst->n_timers = 0;
+    dst->scenery = NULL;
+    dst->n_scenery = 0;
     bool ok = true;
     memset(dst->show, 0, sizeof dst->show);
     for (int i = 0; i < src->n_show; i++)
@@ -430,6 +458,17 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
             t->messages = src->timers[i].messages;
             t->viewers = src->timers[i].viewers;
             t->enabled = src->timers[i].enabled;
+        }
+    }
+    for (int i = 0; i < src->n_scenery && ok; i++) {
+        kk_config_scenery *n = add_scenery(dst, src->scenery[i].name);
+        ok = n && kk_config_set_str(&n->file, src->scenery[i].file);
+        if (n) {
+            n->x = src->scenery[i].x;
+            n->y = src->scenery[i].y;
+            n->scale = src->scenery[i].scale;
+            n->front = src->scenery[i].front;
+            n->enabled = src->scenery[i].enabled;
         }
     }
     for (int i = 0; i < src->n_commands && ok; i++) {
@@ -1019,6 +1058,38 @@ static void apply_timer(kk_config *c, const warner *w, const char *name)
         unknown_key(w);
 }
 
+static void apply_scenery(kk_config *c, const warner *w, const char *name)
+{
+    kk_config_scenery *s = NULL;
+    for (int i = 0; i < c->n_scenery && !s; i++)
+        if (strcmp(c->scenery[i].name, name) == 0)
+            s = &c->scenery[i];
+    if (!s && !(s = add_scenery(c, name))) {
+        warnf(w, "[" SCENERY_PREFIX "%s]: no máximo %d imagens fixas; ignorada",
+              name, KK_CONFIG_MAX_SCENERY);
+        return;
+    }
+    if (key_is(w, "file"))
+        get_path(w, &s->file);
+    else if (key_is(w, "x"))
+        get_double(w, &s->x, -100, 200);
+    else if (key_is(w, "y"))
+        get_double(w, &s->y, -100, 200);
+    else if (key_is(w, "scale"))
+        get_double(w, &s->scale, 1, 2000);
+    else if (key_is(w, "layer")) {
+        if (strcasecmp(w->value, "front") == 0)
+            s->front = true;
+        else if (strcasecmp(w->value, "behind") == 0)
+            s->front = false;
+        else
+            bad_value(w, "behind ou front");
+    } else if (key_is(w, "enabled"))
+        get_bool(w, &s->enabled);
+    else
+        unknown_key(w);
+}
+
 static void apply_points(kk_config *c, const warner *w)
 {
     if (key_is(w, "enabled"))
@@ -1148,6 +1219,12 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
                 apply_timer(c, &w, name);
             else
                 warnf(&w, "[%s]: nome de timer inválido", s);
+        } else if (strncasecmp(s, SCENERY_PREFIX, strlen(SCENERY_PREFIX)) == 0) {
+            char name[MAX_NAME];
+            if (normalize_word(name, sizeof name, s + strlen(SCENERY_PREFIX)))
+                apply_scenery(c, &w, name);
+            else
+                warnf(&w, "[%s]: nome de imagem inválido", s);
         } else if (strncasecmp(s, CMD_PREFIX, strlen(CMD_PREFIX)) == 0) {
             char name[MAX_NAME];
             if (normalize_word(name, sizeof name, s + strlen(CMD_PREFIX)))
@@ -1192,6 +1269,15 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
         memmove(t, t + 1, (size_t)(c->n_timers - i - 1) * sizeof *t);
         c->n_timers--;
     }
+    for (int i = c->n_scenery - 1; i >= 0; i--)
+        if (!c->scenery[i].file) {
+            w.line = 0;
+            warnf(&w, "[" SCENERY_PREFIX "%s]: sem \"file\"; ignorada", c->scenery[i].name);
+            scenery_free(&c->scenery[i]);
+            memmove(&c->scenery[i], &c->scenery[i + 1],
+                    (size_t)(c->n_scenery - i - 1) * sizeof c->scenery[0]);
+            c->n_scenery--;
+        }
     for (int i = c->n_sounds - 1; i >= 0; i--)
         if (!c->sounds[i].file) {
             w.line = 0;

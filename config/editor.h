@@ -23,6 +23,7 @@ typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
 typedef struct points_tab points_tab;
 typedef struct timers_tab timers_tab;
+typedef struct scenery_tab scenery_tab;
 
 typedef struct {
     char path[KK_PATH_MAX];
@@ -55,6 +56,7 @@ typedef struct {
     avatars_tab *avatars;
     points_tab *points;
     timers_tab *timers;
+    scenery_tab *scenery;
 } editor;
 
 /* Labels of the levels (kk_role), to translate with _() where shown. */
@@ -164,6 +166,11 @@ void points_free(editor *e);
 GtkWidget *timers_page(editor *e, const kk_config *cfg);
 void timers_collect(editor *e);
 void timers_free(editor *e);
+
+/* The "Scenery" tab (scenery.c): [scenery.NAME] sections. */
+GtkWidget *scenery_page(editor *e, const kk_config *cfg);
+void scenery_collect(editor *e);
+void scenery_free(editor *e);
 
 /* The list of lives in the Chat tab (sources.c): [chat] youtube and twitch. */
 GtkWidget *sources_widget(editor *e, const kk_config *cfg);
