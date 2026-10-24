@@ -53,19 +53,39 @@ make asan       # tests with AddressSanitizer/UBSan
 make asan-run   # the program with AddressSanitizer/UBSan
 ```
 
-## Installing
+To install what you built (without `PREFIX` it goes to `/usr/local`):
 
 ```sh
-sudo make install PREFIX=/usr   # without PREFIX it goes to /usr/local
+sudo make install PREFIX=/usr
 sudo make uninstall PREFIX=/usr
 ```
 
-This installs `kikarinhas` and `kikarinhas-config` (the latter only if it was
-built, i.e. with GTK2), the example `.ini` in `share/doc/kikarinhas/`, the
-`.desktop` entries and the icon, so both programs show up in application
-menus and launchers (the configurator as "Kikarinhas Settings"). If the menu
-does not pick them up right away, run `update-desktop-database` or log out
-and back in.
+This puts the same files as the `.deb` in place (`kikarinhas-config` only if it
+was built, i.e. with GTK2). `tools/build-deb.sh` builds a `.deb` from the tree.
+
+## Installing
+
+The easiest way is the `.deb` package from the
+[releases page](https://github.com/kiyoshispreclerg/kikarinhas/releases).
+Each release has one for Ubuntu 22.04, Ubuntu 24.04, Devuan 5 "daedalus" (also
+fits Debian 12) and Devuan 6 "excalibur" (also fits Debian 13); pick the one
+that matches your system. They are named
+`kikarinhas_VERSION-1_SYSTEM_ARCH.deb`, and each one was installed and run on
+a clean system of its own kind before being published.
+
+```sh
+sudo apt install ./kikarinhas_0.4.0-1_ubuntu24.04_amd64.deb   # use the file you downloaded
+sudo apt remove kikarinhas
+```
+
+`apt` pulls in the libraries it needs. The package installs `kikarinhas` and
+`kikarinhas-config`, the example `.ini` in `share/doc/kikarinhas/`, the default
+avatar pack, the `.desktop` entries and the icon, so both programs show up in
+application menus and launchers (the configurator as "Kikarinhas Settings").
+If the menu does not pick them up right away, run `update-desktop-database` or
+log out and back in. For colour emoji, also install `fonts-noto-color-emoji`.
+
+To install from source instead, see [Building](#building).
 
 ## Usage
 

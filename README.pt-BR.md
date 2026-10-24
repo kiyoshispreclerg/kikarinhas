@@ -55,19 +55,40 @@ make asan       # testes com AddressSanitizer/UBSan
 make asan-run   # o programa com AddressSanitizer/UBSan
 ```
 
-## Instalar
+Para instalar o que você compilou (sem `PREFIX`, vai para `/usr/local`):
 
 ```sh
-sudo make install PREFIX=/usr   # sem PREFIX, vai para /usr/local
+sudo make install PREFIX=/usr
 sudo make uninstall PREFIX=/usr
 ```
 
-Instala `kikarinhas` e `kikarinhas-config` (este só se foi compilado, com
-GTK2), o `.ini` de exemplo em `share/doc/kikarinhas/`, os atalhos `.desktop`
-e o ícone, então os dois programas aparecem nos menus e buscadores de
-aplicativos (o configurador como "Configurações do Kikarinhas"). Se o menu
-não mostrar na hora, rode `update-desktop-database` ou saia e entre na
-sessão.
+Isso põe no lugar os mesmos arquivos do `.deb` (o `kikarinhas-config` só se foi
+compilado, com GTK2). O `tools/build-deb.sh` gera um `.deb` a partir da árvore.
+
+## Instalar
+
+O jeito mais fácil é o pacote `.deb` da
+[página de releases](https://github.com/kiyoshispreclerg/kikarinhas/releases).
+Cada release tem um para Ubuntu 22.04, Ubuntu 24.04, Devuan 5 "daedalus"
+(serve também no Debian 12) e Devuan 6 "excalibur" (serve também no Debian
+13); escolha o do seu sistema. Os nomes são
+`kikarinhas_VERSÃO-1_SISTEMA_ARQ.deb`, e cada um foi instalado e executado num
+sistema limpo do mesmo tipo antes de ser publicado.
+
+```sh
+sudo apt install ./kikarinhas_0.4.0-1_ubuntu24.04_amd64.deb   # use o arquivo que você baixou
+sudo apt remove kikarinhas
+```
+
+O `apt` traz as bibliotecas necessárias. O pacote instala `kikarinhas` e
+`kikarinhas-config`, o `.ini` de exemplo em `share/doc/kikarinhas/`, o pacote
+padrão de avatares, os atalhos `.desktop` e o ícone, então os dois programas
+aparecem nos menus e buscadores de aplicativos (o configurador como
+"Configurações do Kikarinhas"). Se o menu não mostrar na hora, rode
+`update-desktop-database` ou saia e entre na sessão. Para emojis coloridos,
+instale também `fonts-noto-color-emoji`.
+
+Para instalar a partir do código-fonte, veja [Compilar](#compilar).
 
 ## Usar
 
