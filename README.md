@@ -340,6 +340,13 @@ filter narrow it first). **Remove selected** (or the Delete key) asks for
 confirmation and forgets those people: avatar, points and dates. Whoever
 talks again enters as new.
 
+**Backup.** **Export...** saves the whole list, every field of every person,
+to a `.tsv` file (the same format as the people file). **Import...** adds the
+people of such a file, so a mistaken removal can be undone: you choose between
+**Skip**, which keeps whoever is already in the list as they are and adds only
+the missing ones, and **Overwrite**, which replaces everything about them with
+what the file says. With kikarinhas running, the import goes through it.
+
 **Levels.** Each message stores the level the chat badges give (owner,
 moderator, member/subscriber; no badge is a common viewer), shown in the
 **Level** column. The **Trusted** column marks trusted people by hand. A
@@ -631,7 +638,10 @@ changes someone's avatar (`""` goes back to the random one), marks them as
 trusted and/or sets their points (each field is
 optional; it is what the Viewers tab uses; `set_avatar` is the old name).
 `{"type":"remove_users","users":["youtube:UC...", ...]}` forgets those
-people (`removed` in the reply says how many were there).
+people (`removed` in the reply says how many were there), and
+`{"type":"import_users","path":"/path/backup.tsv","overwrite":false}` adds
+the people of an exported file (`added`, `replaced` and `skipped` in the
+reply).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
 `text`, `kind` (`text`, `paid` or `member`), `amount` and `badges` (`owner`,

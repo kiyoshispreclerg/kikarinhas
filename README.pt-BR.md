@@ -338,6 +338,14 @@ então a busca e o filtro de live restringem antes). **Remover selecionados**
 (ou a tecla Delete) pede confirmação e esquece essas pessoas: avatar,
 pontos e datas. Quem falar de novo entra como novo.
 
+**Backup.** **Exportar...** salva a lista toda, todos os campos de cada
+pessoa, num arquivo `.tsv` (o mesmo formato do arquivo de pessoas).
+**Importar...** acrescenta as pessoas de um arquivo desses, para desfazer uma
+remoção por engano: você escolhe entre **Pular**, que mantém como estão
+quem já está na lista e acrescenta só as que faltam, e **Sobrescrever**, que
+troca tudo sobre elas pelo que o arquivo diz. Com o kikarinhas aberto, a
+importação passa por ele.
+
 **Níveis.** Cada mensagem grava o nível que os selos do chat dão (dono,
 moderador, membro/assinante; sem selo é comum), visto na coluna **Nível**.
 A coluna **Confiável** marca à mão quem é de confiança. Um comando pode
@@ -629,7 +637,10 @@ troca o avatar de alguém (`""` volta ao sorteado), marca como confiável e/ou
 muda o saldo de pontos (cada campo é opcional; é
 o que a aba Espectadores usa; `set_avatar` é o nome antigo).
 `{"type":"remove_users","users":["youtube:UC...", ...]}` esquece essas
-pessoas (`removed` na resposta diz quantas existiam).
+pessoas (`removed` na resposta diz quantas existiam), e
+`{"type":"import_users","path":"/caminho/backup.tsv","overwrite":false}`
+acrescenta as pessoas de um arquivo exportado (`added`, `replaced` e
+`skipped` na resposta).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
 `text`, `kind` (`text`, `paid` ou `member`), `amount` e `badges` (`owner`,

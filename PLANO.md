@@ -486,6 +486,17 @@ data/         avatar padrão original, exemplo de .ini
      (busca, ordenação, troca de avatar pelo socket ou, com o programa
      fechado, direto no arquivo). Separado em `config/main.c`, `sounds.c` e
      `audience.c`.
+   - **Primeira live e limpeza dos espectadores**: `users.tsv` ganhou
+     `live_url` e `live_title`, gravados uma vez, pela primeira mensagem
+     (`source_url`/`source_title` em `kk_chat_msg`; cada conector põe os
+     seus por um relay, como o do YouTube: link do vídeo e título do
+     `og:title` da página do canal, link do canal na Twitch/Kick/Odysee,
+     `session_title` no Kick; live do YouTube aberta por vídeo e Odysee por
+     id de claim ficam sem título/link). A aba filtra por título ou link,
+     aceita várias linhas (Selecionar todos = as visíveis), remove com
+     confirmação (`remove_users` no socket, em lotes por causa do limite de
+     linha) e exporta/importa a lista inteira (`kk_users_export`/`import`,
+     `import_users` no socket; pular ou sobrescrever quem já existe).
    - **Nome e balão opcionais**: `[avatars] show_names`, `name_position`
      (`below`/`above`) e `show_bubbles` no `.ini`, e os mesmos três campos
      na aba Avatares do configurador (a caixa de posição só habilita com

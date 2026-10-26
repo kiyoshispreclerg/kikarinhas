@@ -544,6 +544,148 @@ static void on_remove(GtkWidget *w, gpointer ud)
     g_ptr_array_free(refs, TRUE);
 }
 
+/* ---- export and import --------------------------------------------------- */
+
+static GtkWidget *file_dialog(audience_tab *t, const char *title, GtkFileChooserAction action,
+                              const char *accept_stock)
+{
+    GtkWidget *d = gtk_file_chooser_dialog_new(
+        title, GTK_WINDOW(gtk_widget_get_toplevel(t->tree)), action, GTK_STOCK_CANCEL,
+        GTK_RESPONSE_CANCEL, accept_stock, GTK_RESPONSE_ACCEPT, NULL);
+    GtkFileFilter *f = gtk_file_filter_new();
+    gtk_file_filter_set_name(f, _("People lists (*.tsv)"));
+    gtk_file_filter_add_pattern(f, "*.tsv");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(d), f);
+    GtkFileFilter *all = gtk_file_filter_new();
+    gtk_file_filter_set_name(all, _("All files"));
+    gtk_file_filter_add_pattern(all, "*");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(d), all);
+    return d;
+}
+
+/* Every person with every field, to a file of the user's choice: a backup to
+ * bring them back with Import. */
+static void on_export(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    editor *e = ud;
+    audience_tab *t = e->audience;
+    GtkWidget *d = file_dialog(t, _("Export the people"), GTK_FILE_CHOOSER_ACTION_SAVE,
+                               GTK_STOCK_SAVE);
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d), TRUE);
+    char name[64];
+    time_t now = time(NULL);
+    struct tm tm;
+    if (!localtime_r(&now, &tm) ||
+        !strftime(name, sizeof name, "kikarinhas-viewers-%Y-%m-%d.tsv", &tm))
+        snprintf(name, sizeof name, "kikarinhas-viewers.tsv");
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(d), name);
+    if (gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_ACCEPT) {
+        gchar *file = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+        char reply[256], path[KK_PATH_MAX];
+        editor_request(e, "{\"type\":\"save\"}", reply, sizeof reply); /* its news first */
+        users_path(e, path, sizeof path);
+        kk_users *u = path[0] ? kk_users_open(path) : NULL;
+        if (u && kk_users_export(u, file) == 0)
+            status(e, ngettext("%d person exported to %s.", "%d people exported to %s.",
+                               kk_users_count(u)),
+                   kk_users_count(u), file);
+        else
+            status(e, _("Could not write %s."), file);
+        kk_users_free(u);
+        g_free(file);
+    }
+    gtk_widget_destroy(d);
+}
+
+enum { IMPORT_SKIP = 1, IMPORT_OVERWRITE };
+
+/* Adds the people of an exported file; for the ones already in the list, the
+ * user says whether they stay or are overwritten. */
+static void on_import(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    editor *e = ud;
+    audience_tab *t = e->audience;
+    GtkWidget *d = file_dialog(t, _("Import people"), GTK_FILE_CHOOSER_ACTION_OPEN,
+                               GTK_STOCK_OPEN);
+    gchar *file = gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_ACCEPT
+                      ? gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d))
+                      : NULL;
+    gtk_widget_destroy(d);
+    if (!file)
+        return;
+
+    GtkWidget *q = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(t->tree)),
+                                          GTK_DIALOG_MODAL, GTK_MESSAGE_QUESTION,
+                                          GTK_BUTTONS_NONE, "%s",
+                                          _("What to do with people who are already in the list?"));
+    gtk_message_dialog_format_secondary_text(
+        GTK_MESSAGE_DIALOG(q), "%s",
+        _("Skip: they stay as they are now and only the missing people are added. "
+          "Overwrite: everything about them (avatar, points, dates, first live...) "
+          "becomes what the file says."));
+    gtk_dialog_add_buttons(GTK_DIALOG(q), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, _("_Skip"),
+                           IMPORT_SKIP, _("_Overwrite"), IMPORT_OVERWRITE, NULL);
+    gtk_dialog_set_default_response(GTK_DIALOG(q), IMPORT_SKIP);
+    int choice = gtk_dialog_run(GTK_DIALOG(q));
+    gtk_widget_destroy(q);
+    if (choice != IMPORT_SKIP && choice != IMPORT_OVERWRITE) {
+        g_free(file);
+        return;
+    }
+    bool overwrite = choice == IMPORT_OVERWRITE;
+
+    int added = 0, replaced = 0, skipped = 0;
+    bool done = false;
+    cJSON *req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "type", "import_users");
+    cJSON_AddStringToObject(req, "path", file);
+    cJSON_AddBoolToObject(req, "overwrite", overwrite);
+    char *line = cJSON_PrintUnformatted(req);
+    cJSON_Delete(req);
+    char reply[512];
+    if (line && editor_request(e, line, reply, sizeof reply)) {
+        cJSON *rep = cJSON_Parse(reply);
+        if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(rep, "ok"))) {
+            added = (int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(rep, "added"));
+            replaced = (int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(rep, "replaced"));
+            skipped = (int)cJSON_GetNumberValue(cJSON_GetObjectItemCaseSensitive(rep, "skipped"));
+            done = true;
+        } else {
+            const char *err =
+                cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(rep, "error"));
+            status(e, _("kikarinhas refused: %s"), err ? err : reply);
+        }
+        cJSON_Delete(rep);
+        if (!done) {
+            free(line);
+            g_free(file);
+            return;
+        }
+    } else {
+        char path[KK_PATH_MAX];
+        users_path(e, path, sizeof path);
+        kk_users *u = path[0] ? kk_users_open(path) : NULL;
+        kk_users_import_stats st;
+        if (u && kk_users_import(u, file, overwrite, &st) == 0 && kk_users_save(u) == 0) {
+            added = st.added;
+            replaced = st.replaced;
+            skipped = st.skipped;
+            done = true;
+        }
+        kk_users_free(u);
+    }
+    free(line);
+    if (done) {
+        refresh(e);
+        status(e, _("Imported: %d new, %d overwritten, %d skipped."), added, replaced, skipped);
+    } else {
+        status(e, _("Could not import %s."), file);
+    }
+    g_free(file);
+}
+
 static gboolean on_key(GtkWidget *w, GdkEventKey *ev, gpointer ud)
 {
     if (ev->keyval == GDK_Delete || ev->keyval == GDK_KP_Delete) {
@@ -677,6 +819,15 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_widget_set_tooltip_text(rm, _("Removes the selected people from the list (Delete key)."));
     g_signal_connect(rm, "clicked", G_CALLBACK(on_remove), e);
     gtk_box_pack_start(GTK_BOX(bar), rm, FALSE, FALSE, 0);
+    GtkWidget *imp = gtk_button_new_with_mnemonic(_("_Import..."));
+    gtk_widget_set_tooltip_text(imp, _("Adds the people of a list saved with Export."));
+    g_signal_connect(imp, "clicked", G_CALLBACK(on_import), e);
+    gtk_box_pack_end(GTK_BOX(bar), imp, FALSE, FALSE, 0);
+    GtkWidget *exp = gtk_button_new_with_mnemonic(_("E_xport..."));
+    gtk_widget_set_tooltip_text(exp, _("Saves the whole list, with everything about each person, "
+                                       "to a file: a backup in case you remove the wrong ones."));
+    g_signal_connect(exp, "clicked", G_CALLBACK(on_export), e);
+    gtk_box_pack_end(GTK_BOX(bar), exp, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box), bar, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box),
                        hint_label(_("Double-click someone to pick their avatar by its picture "
@@ -687,8 +838,10 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
                                     "trusted people and up. Points: double-click to change the "
                                     "balance. First live: the first live they were seen in (link and, when "
                                     "known, title; hover for both); the field next to the search "
-                                    "filters by it. People from Stream Avatars without a name or "
-                                    "dates: run kikarinhas --import-sa-users once.")),
+                                    "filters by it. Export saves the whole list, with everything about "
+                                    "each person, to a file; Import brings it back, skipping or "
+                                    "overwriting whoever is already in the list. People from Stream "
+                                    "Avatars without a name or dates: run kikarinhas --import-sa-users once.")),
                        FALSE, FALSE, 0);
 
     return box;
