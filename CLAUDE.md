@@ -136,9 +136,11 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 ## Próximas fases (ver PLANO.md)
 
 5. Feita: Twitch, Kick e Odysee.
-6. Camadas HTML (WPE WebKit), opcional.
-7. Extras que faltam: duelo e minijogos grandes (battle royale, basquete,
-   boss). (Mesa de som, espectadores, emote wall, bomba, estilingue,
-   estrelas, jogos de sorte, emotes animados e cenário fixo já feitos.)
-   Decidido não fazer: plugin de OBS por memória compartilhada, Wayland
-   nativo (roda pelo XWayland) e fundos/zips do SA.
+6. Janela de chat clássico (opcional): para ler e para o OBS capturar;
+   comentário em destaque no palco, fila de perguntas.
+7. Extras feitos: mesa de som, espectadores, emote wall, bomba, estilingue,
+   estrelas, jogos de sorte, emotes animados e cenário fixo.
+   Decidido não fazer: camadas HTML (WPE), plugin de OBS por memória
+   compartilhada, Wayland nativo (roda pelo XWayland) e fundos/zips do SA.
+   Para o futuro (seção no PLANO.md): enquetes com grupinhos de avatares,
+   ler em voz alta, duelo e minijogos grandes, pendências pequenas.

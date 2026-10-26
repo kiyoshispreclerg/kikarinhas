@@ -647,7 +647,9 @@ captura do mesmo jeito; não há modo Wayland nativo.
 
 ## Previsto
 
-- Camadas HTML opcionais (WPE WebKit) para substituir alguns obs-browser.
+- Uma janela opcional de chat clássico, para ler o chat e para o OBS capturar
+  no lugar do chat em browser source, com comentário em destaque no palco.
+- Enquetes que juntam os avatares de quem votou em grupinhos, um por resposta.
 
 ## Licença
 

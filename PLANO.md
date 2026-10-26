@@ -10,8 +10,8 @@ e leve: C, Xlib, Cairo e Pango, com GTK2 apenas no configurador.
 - Um avatar por pessoa do chat, andando à toa, reagindo a mensagens e comandos.
 - Chat: YouTube, Twitch, Kick e Odysee.
 - Ler os avatares do Stream Avatars já instalados pelo usuário.
-- Opcional: camadas HTML num processo à parte, para aposentar alguns
-  obs-browser.
+- Opcional: janela de chat clássico, para o streamer ler e para o OBS
+  capturar no lugar do chat em browser source.
 
 Fora do escopo: Wayland nativo (roda pelo XWayland), Windows, edição de avatares.
 
@@ -24,7 +24,7 @@ kikarinhas          (C11, Xlib + Cairo + Pango; laço único com poll())
  ├─ motor de sprites  (atlas, animação, máquina de estados, pulo/gravidade, chão)
  ├─ chat              (YouTube, Twitch, Kick, Odysee) → eventos internos
  ├─ socket unix       ◄── bridges externas (JSON por linha) e comandos do configurador
- └─ memória compart.  ◄── kikarinhas-web (processo à parte, opcional)
+ └─ janela de chat    (opcional: segunda janela ARGB na mesma conexão X)
 kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 ```
 
@@ -198,17 +198,30 @@ e uma linha na aba Chat do configurador (`config/sources.c`).
 - Persistência própria em `~/.local/share/kikarinhas/users.ini`
   (pessoa → avatar, paleta, gear), com importação do `userData` do SA.
 
-## Camada HTML (opcional)
+## Janela de chat clássico (opcional)
 
-`kikarinhas-web`: processo separado com **WPE WebKit** (libwpe e backend
-fdo/WPEPlatform), renderizando fora da tela com fundo transparente e
-entregando quadros por memória compartilhada; o núcleo os compõe como
-camadas com posição/tamanho no .ini.
+Uma segunda janela, aberta e fechada a qualquer momento (botão no
+configurador, `chat_window` no socket, `--chat-window`, ou `open = yes` em
+`[chat_window]`), com o chat de todas as plataformas numa lista só. Serve a
+dois públicos ao mesmo tempo: o streamer lê, e o OBS captura (Xcomposite,
+com alfa) no lugar do chat em browser source. Por isso tudo o que é só do
+streamer (menu de clique direito, fila de perguntas) fica *fora* dela: num
+menu que é outra janela, ou no configurador.
 
-Não é leve como o Cairo (≈80–150 MB por página), mas troca várias
-instâncias de CEF dentro do OBS por um processo isolado e opcional.
-Alternativas avaliadas: litehtml (sem JS), Servo (ainda imaturo para
-embutir), CEF (é o próprio obs-browser), Ultralight/Sciter (proprietários).
+- Mesma conexão X e mesmo `poll()` da janela principal; os eventos são
+  repartidos pela janela de destino.
+- Fechar pelo X do gerenciador de janelas destrói a janela, as superfícies
+  de cada linha e o buffer, e chama `malloc_trim(0)`. O histórico (só
+  texto, limitado) continua guardado, para reabrir já com as mensagens.
+- Tamanho fixo ou redimensionável; fundo transparente, cor RGBA ou PNG
+  esticado ou repetido; estilo próprio (fonte, cores, contorno) ou o das
+  bolhas; mensagens que somem depois de N segundos (modo overlay); filtros
+  (comandos, bots).
+- Clique numa mensagem: *comentário em destaque* no palco, em lugar
+  configurável, com holofote no avatar de quem escreveu.
+
+A camada HTML (WPE WebKit, ≈80–150 MB por página) que estava prevista aqui
+foi abandonada: o uso principal dela, o chat no OBS, fica com esta janela.
 
 ## Configuração
 
@@ -223,7 +236,6 @@ arquivo e manda `reload` pelo socket; o núcleo funciona sem ele.
 src/          núcleo (main, window, render, sprite, avatar, behavior, chat_*.c)
 src/sa/       importador do Stream Avatars
 config/       kikarinhas-config (GTK2)
-web/          kikarinhas-web (WPE)
 vendor/       cJSON, miniz
 tools/        scripts (validação de spritesheets, gravação de respostas)
 tests/        testes de unidade e respostas gravadas das APIs
@@ -430,7 +442,7 @@ data/         avatar padrão original, exemplo de .ini
    Não verificado ao vivo: Kicks, subs e presentes do Kick (só nos testes:
    em 7 min de 4 canais grandes veio 1 sub e nenhum Kick; o formato dos
    Kicks vem da KickLib) e gorjetas/stickers do Odysee.
-6. **kikarinhas-web** (WPE) como camadas. *Adiada* (opcional).
+6. **Janela de chat clássico** (ver a seção própria). *Em andamento.*
 7. **Extras**. Feitos:
    - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na
      memória (dr_wav, dr_mp3 e stb_vorbis embutidos em `vendor/`, atrás de
@@ -803,4 +815,18 @@ data/         avatar padrão original, exemplo de .ini
    Wayland roda pelo XWayland, que o OBS já captura; nativo exigiria
    reescrever `window.c` e `pointer.c`, sem `override_redirect` nem
    layer-shell no GNOME). Fundos e pacotes .zip do SA também ficaram de
-   fora. O que sobra em aberto é só a fase 6 (camadas HTML), opcional.
+   fora, assim como as camadas HTML (WPE), trocadas pela janela de chat
+   da fase 6.
+
+## Para o futuro
+
+Ideias e pendências pequenas, sem fase:
+
+- **Enquetes**: o chat vota e os avatares de quem votou se juntam em
+  grupinhos, um por resposta, dando para ver de longe qual ganhou.
+- **Ler em voz alta** (TTS) as mensagens destacadas ou pagas, num processo
+  externo (espeak, piper) para não travar o laço.
+- **Duelo e minijogos grandes**: battle royale, basquete, boss.
+- `paletteSwap` das peças de gear (b_heads deveriam herdar a paleta).
+- Plaquinhas de nome que se sobrepõem quando os avatares ficam juntos.
+- Super Chat e membro novo com reação além do balão.

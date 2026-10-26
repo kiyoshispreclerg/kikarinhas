@@ -654,7 +654,9 @@ captures it the same way; there is no native Wayland mode.
 
 ## Planned
 
-- Optional HTML layers (WPE WebKit) to replace some obs-browser sources.
+- An optional classic chat window, to read the chat and to capture in OBS
+  instead of a browser-source chat, with a highlighted comment on the stage.
+- Polls that gather the voters' avatars into groups, one per answer.
 
 ## License
 
