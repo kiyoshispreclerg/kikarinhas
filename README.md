@@ -513,9 +513,10 @@ An optional classic chat window: the messages of every live, from every
 platform, in one list, newest at the bottom (or the top). It is there to
 read the chat and for OBS to capture (the **Kikarinhas — chat** window, with
 **Allow transparency**) instead of a browser-source chat. Open it from the
-**Chat window** tab of `kikarinhas-config`, with `--chat-window`, over the
-socket (`{"type":"chat_window","action":"show"}`; also `hide`, `toggle` and
-`state`) or with `open = yes`; the window manager's X closes it and gives
+**Chat window** tab of `kikarinhas-config`, with Shift+C on the main window
+(OBS mode), with `--chat-window`, over the socket
+(`{"type":"chat_window","action":"show"}`; also `hide`, `toggle` and `state`)
+or with `open = yes`; the window manager's X closes it and gives
 back the memory it used. Messages are kept (`history`) even while it is
 closed, so it opens with the chat so far.
 
@@ -559,7 +560,8 @@ history = 200
 
 Click a message in the chat window and it shows big on the stage, in a card,
 while a spotlight follows its author's avatar (who comes back to the stage if
-they had left); click it again to take it away. In the chat window it only
+they had left); click it again, or press Esc in the chat window, to take
+it away. In the chat window it only
 gets a discreet mark, since that window may be on the stream too. Over the
 socket: `{"type":"highlight","id":N}` (the id of a message in the history)
 and `{"type":"highlight","clear":true}`.

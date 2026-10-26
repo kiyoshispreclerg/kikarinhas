@@ -13,6 +13,7 @@
 
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <X11/extensions/shape.h>
 
 /* ---- X error trap (used around XShmAttach) ------------------------------ */
@@ -212,6 +213,8 @@ static int create_window(kk_window *w, int x, int y, const kk_window_opts *o)
         events |= ButtonReleaseMask | Button1MotionMask;
     if (w->popup)
         events |= PointerMotionMask | LeaveWindowMask;
+    if (!override)
+        events |= KeyPressMask;
     XSetWindowAttributes attr = {
         .colormap = w->cmap,
         .background_pixel = 0, /* fully transparent */
@@ -477,6 +480,10 @@ static void handle_event(kk_window *w, XEvent *e, kk_window_events *ev)
         break;
     case LeaveNotify:
         ev->left = true;
+        break;
+    case KeyPress:
+        ev->key = XLookupKeysym(&e->xkey, 0);
+        ev->key_shift = (e->xkey.state & ShiftMask) != 0;
         break;
     case SelectionRequest:
         answer_selection(w, &e->xselectionrequest);

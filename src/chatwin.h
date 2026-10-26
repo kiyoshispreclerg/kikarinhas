@@ -9,7 +9,8 @@
  * back to the system, keeping only the history.
  *
  * The mouse: the wheel scrolls, a left click on a message and a right
- * click anywhere are handed to the callbacks (highlight, menu). */
+ * click anywhere are handed to the callbacks (highlight, menu), and so is
+ * Esc (takes the highlight away). */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -29,6 +30,8 @@ typedef struct {
     /* Right click on message id (0: between messages), at x, y of the
      * screen. */
     void (*menu)(void *ud, uint64_t id, int x, int y);
+    /* Esc pressed in the window. */
+    void (*escape)(void *ud);
     void *ud;
 } kk_chatwin_handlers;
 
@@ -43,6 +46,7 @@ void kk_chatwin_free(kk_chatwin *c);
  * the window manager hints change. */
 void kk_chatwin_configure(kk_chatwin *c, const kk_chatwin_config *cfg);
 
+/* Opens it, or raises it if already open. */
 bool kk_chatwin_open(kk_chatwin *c);
 void kk_chatwin_close(kk_chatwin *c);
 bool kk_chatwin_is_open(const kk_chatwin *c);

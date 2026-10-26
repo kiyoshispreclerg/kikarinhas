@@ -511,8 +511,9 @@ Uma janela opcional de chat clássico: as mensagens de todas as lives, de
 todas as plataformas, numa lista só, as novas embaixo (ou em cima). Serve
 para ler o chat e para o OBS capturar (a janela **Kikarinhas — chat**, com
 **Permitir transparência**) no lugar do chat em browser source. Abra pela
-aba **Janela de chat** do `kikarinhas-config`, com `--chat-window`, pelo
-socket (`{"type":"chat_window","action":"show"}`; também `hide`, `toggle` e
+aba **Janela de chat** do `kikarinhas-config`, com Shift+C na janela
+principal (modo obs), com `--chat-window`, pelo socket
+(`{"type":"chat_window","action":"show"}`; também `hide`, `toggle` e
 `state`) ou com `open = yes`; o X do gerenciador de janelas fecha e devolve
 a memória que ela usava. As mensagens ficam guardadas (`history`) mesmo com
 ela fechada, então ela abre com o chat até ali.
@@ -557,7 +558,8 @@ history = 200
 
 Clique numa mensagem da janela de chat e ela aparece grande no palco, num
 cartão, enquanto um holofote segue o avatar de quem escreveu (que volta para
-o palco se tinha saído); clique de novo para tirar. Na janela de chat ela só
+o palco se tinha saído); clique de novo, ou aperte Esc na janela de chat,
+para tirar. Na janela de chat ela só
 ganha uma marca discreta, já que essa janela também pode estar na live. Pelo
 socket: `{"type":"highlight","id":N}` (o id de uma mensagem do histórico) e
 `{"type":"highlight","clear":true}`.

@@ -28,6 +28,10 @@ typedef struct {
     int menu_root_x, menu_root_y; /* and on the screen */
     int scroll; /* wheel clicks: < 0 up, > 0 down */
     bool left;  /* the pointer left the window */
+    /* The last key pressed (windows the WM manages, which get the
+     * keyboard): its unshifted keysym (XK_Escape, XK_c...), 0 for none. */
+    unsigned long key;
+    bool key_shift;
     /* Left button, OBS mode only, in order; moves in a row are merged into
      * the last one. Events past the end are dropped. */
     kk_pointer_event pointer[KK_WINDOW_MAX_POINTER];

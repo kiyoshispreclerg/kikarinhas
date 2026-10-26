@@ -8,6 +8,8 @@
 
 #include "log.h"
 
+#include <X11/keysym.h>
+
 /* What one wheel click scrolls, px. */
 #define WHEEL_STEP 48
 
@@ -64,8 +66,11 @@ void kk_chatwin_configure(kk_chatwin *c, const kk_chatwin_config *cfg)
 
 bool kk_chatwin_open(kk_chatwin *c)
 {
-    if (c->open)
+    if (c->open) { /* already: bring it up */
+        XRaiseWindow(c->win.dpy, c->win.win);
+        XFlush(c->win.dpy);
         return true;
+    }
     kk_window_opts o = {.title = "Kikarinhas — chat", .res_name = "kikarinhas-chat",
                         .fixed_size = !c->cfg.resizable, .above = c->cfg.above};
     bool keep = c->cfg.resizable && c->user_w > 0;
@@ -146,6 +151,8 @@ void kk_chatwin_events(kk_chatwin *c, double now)
         kk_chatview_scroll(c->view, -ev.scroll * WHEEL_STEP, now);
     for (int i = 0; i < ev.n_pointer; i++)
         pointer(c, &ev.pointer[i]);
+    if (ev.key == XK_Escape && c->h.escape)
+        c->h.escape(c->h.ud);
     if (ev.open_config && c->h.menu)
         c->h.menu(c->h.ud, kk_chatview_hit(c->view, ev.menu_x, ev.menu_y), ev.menu_root_x,
                   ev.menu_root_y);

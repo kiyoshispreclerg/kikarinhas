@@ -14,6 +14,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <X11/keysym.h>
+
 #include "actions.h"
 #include "chatview.h"
 #include "chatwin.h"
@@ -1365,6 +1367,15 @@ static void on_chat_click(void *ud, uint64_t id)
     highlight(ud, id);
 }
 
+/* Esc in the chat window: the highlight goes, even if its message has
+ * scrolled out of view (or it came from the question queue). */
+static void on_chat_escape(void *ud)
+{
+    app *a = ud;
+    if (kk_highlight_active(a->highlight))
+        highlight(a, 0);
+}
+
 enum {
     MENU_HIGHLIGHT,
     MENU_COPY,
@@ -1608,6 +1619,8 @@ static void run(app *a)
             return;
         if (ev.open_config)
             open_config(a);
+        if (ev.key == XK_c && ev.key_shift) /* Shift+C: the chat window */
+            kk_chatwin_open(a->chatwin);
         for (int i = 0; i < ev.n_pointer; i++)
             kk_pointer_feed(a->pointer, &ev.pointer[i]);
         if (ev.resized) {
@@ -1955,7 +1968,8 @@ int main(int argc, char **argv)
     kk_danmaku_configure(a.danmaku, &dc);
     kk_danmaku_resize(a.danmaku, win.width, win.height);
     a.chatview = kk_chatview_new(a.emotes);
-    kk_chatwin_handlers handlers = {.click = on_chat_click, .menu = on_chat_menu, .ud = &a};
+    kk_chatwin_handlers handlers = {.click = on_chat_click, .menu = on_chat_menu,
+                                    .escape = on_chat_escape, .ud = &a};
     a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, &handlers) : NULL;
     a.highlight = kk_highlight_new(&stage, a.emotes);
     if (!a.chatwin || !a.highlight) {
