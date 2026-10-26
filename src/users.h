@@ -51,6 +51,22 @@ void kk_users_set(kk_users *u, const char *key, kk_user_field f,
 /* Forgets everyone's data for key; false if there was no such person. */
 bool kk_users_remove(kk_users *u, const char *key);
 
+/* Writes everyone, with every field, to another file (a backup) in the
+ * same format. The people file itself is untouched. 0 or -1. */
+int kk_users_export(const kk_users *u, const char *path);
+
+typedef struct {
+    int added;    /* people not in the list yet */
+    int replaced; /* people already there, overwritten */
+    int skipped;  /* people already there, left as they were */
+} kk_users_import_stats;
+
+/* Adds the people of a file written by kk_users_export (or any users.tsv).
+ * Someone already in the list is kept as is unless overwrite, which replaces
+ * their whole record. Marks the list as changed; -1 if the file cannot be
+ * read. st may be NULL. */
+int kk_users_import(kk_users *u, const char *path, bool overwrite, kk_users_import_stats *st);
+
 /* Writes the file if anything changed (atomically: temp file + rename). */
 int kk_users_save(kk_users *u);
 bool kk_users_dirty(const kk_users *u);

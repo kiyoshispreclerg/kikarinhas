@@ -108,19 +108,12 @@ static void parse_line(kk_users *u, char *line)
     }
 }
 
-kk_users *kk_users_open(const char *path)
+/* Adds the people of the file at path; false if it cannot be read. */
+static bool load_file(kk_users *u, const char *path)
 {
-    kk_users *u = calloc(1, sizeof *u);
-    if (!u || !(u->path = strdup(path))) {
-        free(u);
-        return NULL;
-    }
     char *text = kk_read_file(path, NULL);
-    if (!text) {
-        if (errno != ENOENT)
-            kk_log_warn("não consegui ler %s: %s", path, strerror(errno));
-        return u;
-    }
+    if (!text)
+        return false;
     char *save;
     for (char *line = strtok_r(text, "\n", &save); line;
          line = strtok_r(NULL, "\n", &save)) {
@@ -130,6 +123,18 @@ kk_users *kk_users_open(const char *path)
         parse_line(u, line);
     }
     free(text);
+    return true;
+}
+
+kk_users *kk_users_open(const char *path)
+{
+    kk_users *u = calloc(1, sizeof *u);
+    if (!u || !(u->path = strdup(path))) {
+        free(u);
+        return NULL;
+    }
+    if (!load_file(u, path) && errno != ENOENT)
+        kk_log_warn("não consegui ler %s: %s", path, strerror(errno));
     return u;
 }
 
@@ -199,14 +204,13 @@ int kk_users_count(const kk_users *u)
     return u->count;
 }
 
-int kk_users_save(kk_users *u)
+/* Everyone, atomically (temp file + rename) to path. */
+static int write_file(const kk_users *u, const char *path)
 {
-    if (!u->dirty)
-        return 0;
     char tmp[KK_PATH_MAX];
-    if (!kk_pathf(tmp, sizeof tmp, "%s.tmp", u->path))
+    if (!kk_pathf(tmp, sizeof tmp, "%s.tmp", path))
         return -1;
-    kk_make_parent_dirs(u->path);
+    kk_make_parent_dirs(path);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         kk_log_warn("não consegui gravar %s: %s", tmp, strerror(errno));
@@ -231,12 +235,76 @@ int kk_users_save(kk_users *u)
     }
     bool ok = fflush(f) == 0 && !ferror(f);
     ok = fclose(f) == 0 && ok;
-    if (!ok || rename(tmp, u->path) < 0) {
-        kk_log_warn("não consegui gravar %s: %s", u->path, strerror(errno));
+    if (!ok || rename(tmp, path) < 0) {
+        kk_log_warn("não consegui gravar %s: %s", path, strerror(errno));
         remove(tmp);
         return -1;
     }
+    return 0;
+}
+
+int kk_users_save(kk_users *u)
+{
+    if (!u->dirty)
+        return 0;
+    if (write_file(u, u->path) < 0)
+        return -1;
     u->dirty = false;
+    return 0;
+}
+
+int kk_users_export(const kk_users *u, const char *path)
+{
+    return write_file(u, path);
+}
+
+static void clear_record(record *r)
+{
+    for (int f = 0; f < N_FIELDS; f++) {
+        free(r->fields[f]);
+        r->fields[f] = NULL;
+    }
+    free(r->extra);
+    r->extra = NULL;
+}
+
+int kk_users_import(kk_users *u, const char *path, bool overwrite, kk_users_import_stats *st)
+{
+    kk_users_import_stats none;
+    if (!st)
+        st = &none;
+    *st = (kk_users_import_stats){0};
+    kk_users *src = calloc(1, sizeof *src);
+    if (!src)
+        return -1;
+    if (!load_file(src, path)) {
+        kk_users_free(src);
+        return -1;
+    }
+    for (int i = 0; i < src->count; i++) {
+        record *from = &src->recs[i];
+        record *to = find(u, from->key);
+        bool existed = to != NULL;
+        if (existed && !overwrite) {
+            st->skipped++;
+            continue;
+        }
+        if (existed)
+            clear_record(to);
+        else if (!(to = add(u, from->key)))
+            continue;
+        /* the record moves over, unknown fields included */
+        memcpy(to->fields, from->fields, sizeof to->fields);
+        to->extra = from->extra;
+        memset(from->fields, 0, sizeof from->fields);
+        from->extra = NULL;
+        u->dirty = true;
+        if (existed)
+            st->replaced++;
+        else
+            st->added++;
+    }
+    kk_users_free(src);
     return 0;
 }
 

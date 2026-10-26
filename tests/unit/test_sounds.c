@@ -525,6 +525,57 @@ TEST(users_remove)
     rmdir(dir);
 }
 
+TEST(users_export_import)
+{
+    char dir[] = "/tmp/kk-test-XXXXXX";
+    CHECK(mkdtemp(dir));
+    char path[KK_PATH_MAX], backup[KK_PATH_MAX];
+    snprintf(path, sizeof path, "%s/users.tsv", dir);
+    snprintf(backup, sizeof backup, "%s/backup.tsv", dir);
+    kk_users *u = kk_users_open(path);
+    kk_users_seen(u, "a:1", "Ana", 10, "https://x/live", "Titulo");
+    kk_users_set(u, "a:1", KK_USER_POINTS, "50");
+    kk_users_seen(u, "b:2", "Bia", 20, NULL, NULL);
+    CHECK_INT_EQ(kk_users_export(u, backup), 0);
+    CHECK(kk_users_dirty(u)); /* the people file itself was not written */
+    kk_users_free(u);
+
+    /* the "mistake": Ana is removed, Bia changed since the backup */
+    u = kk_users_open(path);
+    CHECK_INT_EQ(kk_users_count(u), 0);
+    kk_users_seen(u, "b:2", "Bia Nova", 99, NULL, NULL);
+    kk_users_seen(u, "c:3", "Caio", 30, NULL, NULL);
+
+    kk_users_import_stats st;
+    CHECK_INT_EQ(kk_users_import(u, backup, false, &st), 0);
+    CHECK_INT_EQ(st.added, 1);
+    CHECK_INT_EQ(st.skipped, 1);
+    CHECK_INT_EQ(st.replaced, 0);
+    CHECK_STR_EQ(kk_users_get(u, "a:1", KK_USER_LIVE_TITLE), "Titulo");
+    CHECK_STR_EQ(kk_users_get(u, "a:1", KK_USER_POINTS), "50");
+    CHECK_STR_EQ(kk_users_get(u, "b:2", KK_USER_NAME), "Bia Nova"); /* kept */
+
+    CHECK_INT_EQ(kk_users_import(u, backup, true, &st), 0);
+    CHECK_INT_EQ(st.added, 0);
+    CHECK_INT_EQ(st.replaced, 2);
+    CHECK_STR_EQ(kk_users_get(u, "b:2", KK_USER_NAME), "Bia"); /* overwritten */
+    CHECK_STR_EQ(kk_users_get(u, "b:2", KK_USER_LAST), "20");
+    CHECK_INT_EQ(kk_users_count(u), 3); /* Caio is not in the backup: stays */
+    CHECK_INT_EQ(kk_users_save(u), 0);
+    kk_users_free(u);
+
+    u = kk_users_open(path);
+    CHECK_INT_EQ(kk_users_count(u), 3);
+    CHECK_STR_EQ(kk_users_get(u, "a:1", KK_USER_LIVE_URL), "https://x/live");
+    kk_users_free(u);
+
+    CHECK_INT_EQ(kk_users_import(u = kk_users_open(path), "/nonexistent/x.tsv", false, &st), -1);
+    kk_users_free(u);
+    remove(path);
+    remove(backup);
+    rmdir(dir);
+}
+
 TEST(iso_times)
 {
     long long t;
@@ -555,6 +606,7 @@ int main(void)
     RUN(users_remember_name_and_dates);
     RUN(users_keep_the_first_live);
     RUN(users_remove);
+    RUN(users_export_import);
     RUN(iso_times);
     return harness_report();
 }

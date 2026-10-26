@@ -1178,6 +1178,36 @@ static void remove_users(app *a, const cJSON *req, cJSON *reply)
     cJSON_AddNumberToObject(reply, "removed", removed);
 }
 
+/* {"type":"import_users","path":"/.../backup.tsv","overwrite":false}: adds
+ * the people of a file made by the Viewers tab's export. People already in
+ * the list stay as they are, or are replaced with overwrite. The reply has
+ * "added", "replaced" and "skipped". */
+static void import_users(app *a, const cJSON *req, cJSON *reply)
+{
+    const char *path = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "path"));
+    const cJSON *overwrite = cJSON_GetObjectItemCaseSensitive(req, "overwrite");
+    if (!a->users) {
+        refuse(reply, "sem arquivo de pessoas");
+        return;
+    }
+    if (!path || !path[0]) {
+        refuse(reply, "faltou \"path\"");
+        return;
+    }
+    if (overwrite && !cJSON_IsBool(overwrite)) {
+        refuse(reply, "\"overwrite\" deve ser true ou false");
+        return;
+    }
+    kk_users_import_stats st;
+    if (kk_users_import(a->users, path, cJSON_IsTrue(overwrite), &st) < 0) {
+        refuse(reply, "não consegui ler o arquivo");
+        return;
+    }
+    cJSON_AddNumberToObject(reply, "added", st.added);
+    cJSON_AddNumberToObject(reply, "replaced", st.replaced);
+    cJSON_AddNumberToObject(reply, "skipped", st.skipped);
+}
+
 /* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,
  *  "points":100} (each field optional; "set_avatar" is the same; avatar ""
  *  goes back to the one picked for them): from kikarinhas-config,
@@ -1441,6 +1471,8 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         set_user(a, req, reply);
     } else if (strcmp(type, "remove_users") == 0) {
         remove_users(a, req, reply);
+    } else if (strcmp(type, "import_users") == 0) {
+        import_users(a, req, reply);
     } else if (strcmp(type, "nowplaying") == 0) {
         /* {"ok":true,"text":"Artist — Title","paused":false}; text null if
          * nothing plays. */
