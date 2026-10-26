@@ -365,6 +365,7 @@ void kk_config_free(kk_config *c)
     free(c->chatwin_font);
     free(c->chatwin_bg_image);
     free(c->chatwin_hide_users);
+    free(c->hl_font);
     free(c->points_name);
     for (int i = 0; i < c->n_timers; i++)
         timer_free(&c->timers[i]);
@@ -436,6 +437,12 @@ void kk_config_defaults(kk_config *c)
         .chatwin_show_platform = true,
         .chatwin_hide_commands = true,
         .chatwin_history = 200,
+        .hl_card = true,
+        .hl_x = 50,
+        .hl_y = 25,
+        .hl_width = 50,
+        .hl_size = 18,
+        .hl_spotlight = true,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -473,6 +480,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->wall_blacklist = NULL;
     dst->danmaku_font = NULL;
     dst->chatwin_font = dst->chatwin_bg_image = dst->chatwin_hide_users = NULL;
+    dst->hl_font = NULL;
     dst->points_name = NULL;
     dst->timers = NULL;
     dst->n_timers = 0;
@@ -498,6 +506,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->chatwin_font, src->chatwin_font) && ok;
     ok = kk_config_set_str(&dst->chatwin_bg_image, src->chatwin_bg_image) && ok;
     ok = kk_config_set_str(&dst->chatwin_hide_users, src->chatwin_hide_users) && ok;
+    ok = kk_config_set_str(&dst->hl_font, src->hl_font) && ok;
     ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
     for (int i = 0; i < src->n_timers && ok; i++) {
         kk_config_timer *t = add_timer(dst, src->timers[i].name);
@@ -1145,6 +1154,28 @@ static void apply_chat_window(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void apply_highlight(kk_config *c, const warner *w)
+{
+    if (key_is(w, "card"))
+        get_bool(w, &c->hl_card);
+    else if (key_is(w, "x"))
+        get_double(w, &c->hl_x, 0, 100);
+    else if (key_is(w, "y"))
+        get_double(w, &c->hl_y, 0, 100);
+    else if (key_is(w, "width"))
+        get_double(w, &c->hl_width, 10, 100);
+    else if (key_is(w, "font"))
+        get_str(w, &c->hl_font);
+    else if (key_is(w, "font_size"))
+        get_double(w, &c->hl_size, 4, 200);
+    else if (key_is(w, "seconds"))
+        get_double(w, &c->hl_seconds, 0, 3600);
+    else if (key_is(w, "spotlight"))
+        get_bool(w, &c->hl_spotlight);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -1334,6 +1365,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_danmaku(c, &w);
         } else if (strcasecmp(s, "chat_window") == 0) {
             apply_chat_window(c, &w);
+        } else if (strcasecmp(s, "highlight") == 0) {
+            apply_highlight(c, &w);
         } else if (strcasecmp(s, "points") == 0) {
             apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {

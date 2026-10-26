@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 15:50-0300\n"
+"POT-Creation-Date: 2026-10-26 15:58-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -120,7 +120,7 @@ msgstr ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 
-#: config/main.c:547 config/wall.c:71 config/chatwin.c:184 config/scenery.c:135
+#: config/main.c:547 config/wall.c:71 config/chatwin.c:188 config/scenery.c:135
 msgid "Size"
 msgstr "Size"
 
@@ -233,7 +233,8 @@ msgid "Above or below the avatar."
 msgstr "Above or below the avatar."
 
 #: config/main.c:588 config/wall.c:69 config/wall.c:80 config/danmaku.c:86
-#: config/chatwin.c:264 config/commands.c:563 config/points.c:78
+#: config/chatwin.c:266 config/chatwin.c:316 config/commands.c:563
+#: config/points.c:78
 msgid "seconds"
 msgstr "seconds"
 
@@ -785,7 +786,7 @@ msgstr "Crosses the screen in"
 msgid "Every message takes this long, so longer ones go faster."
 msgstr "Every message takes this long, so longer ones go faster."
 
-#: config/danmaku.c:95 config/chatwin.c:207
+#: config/danmaku.c:95 config/chatwin.c:207 config/chatwin.c:314
 msgid "Font"
 msgstr "Font"
 
@@ -799,11 +800,11 @@ msgstr ""
 msgid "outline"
 msgstr "outline"
 
-#: config/danmaku.c:104 config/chatwin.c:209
+#: config/danmaku.c:104 config/chatwin.c:210
 msgid "Text color"
 msgstr "Text color"
 
-#: config/danmaku.c:106 config/chatwin.c:226
+#: config/danmaku.c:106 config/chatwin.c:228
 msgid "Paid messages"
 msgstr "Paid messages"
 
@@ -811,7 +812,7 @@ msgstr "Paid messages"
 msgid "Super Chats, bits, Kicks...; the amount goes first."
 msgstr "Super Chats, bits, Kicks...; the amount goes first."
 
-#: config/danmaku.c:108 config/chatwin.c:228
+#: config/danmaku.c:108 config/chatwin.c:231
 msgid "New members"
 msgstr "New members"
 
@@ -835,15 +836,15 @@ msgstr ""
 msgid "Past this, new messages are not shown until there is room."
 msgstr "Past this, new messages are not shown until there is room."
 
-#: config/chatwin.c:91
+#: config/chatwin.c:94
 msgid "Hide the chat window"
 msgstr "Hide the chat window"
 
-#: config/chatwin.c:91 config/chatwin.c:168
+#: config/chatwin.c:94 config/chatwin.c:172
 msgid "Show the chat window"
 msgstr "Show the chat window"
 
-#: config/chatwin.c:114
+#: config/chatwin.c:117
 msgid ""
 "kikarinhas is not running: the chat window opens with it (Open with "
 "kikarinhas, or --chat-window)."
@@ -851,15 +852,15 @@ msgstr ""
 "kikarinhas is not running: the chat window opens with it (Open with "
 "kikarinhas, or --chat-window)."
 
-#: config/chatwin.c:118
+#: config/chatwin.c:121
 msgid "Chat window open. In OBS: Window Capture, \"Kikarinhas — chat\"."
 msgstr "Chat window open. In OBS: Window Capture, \"Kikarinhas — chat\"."
 
-#: config/chatwin.c:119
+#: config/chatwin.c:122
 msgid "Chat window closed."
 msgstr "Chat window closed."
 
-#: config/chatwin.c:162
+#: config/chatwin.c:166
 msgid ""
 "Every live's chat in one list, in a window of its own: to read during the "
 "stream and for OBS to capture (Window Capture, \"Kikarinhas — chat\", with "
@@ -871,15 +872,15 @@ msgstr ""
 "Allow transparency) instead of a browser-source chat. Close it with the "
 "window's X; what it drew is freed, the messages are kept."
 
-#: config/chatwin.c:177
+#: config/chatwin.c:181
 msgid "Open with kikarinhas"
 msgstr "Open with kikarinhas"
 
-#: config/chatwin.c:185
+#: config/chatwin.c:189
 msgid "Resizable"
 msgstr "Resizable"
 
-#: config/chatwin.c:186
+#: config/chatwin.c:190
 msgid ""
 "Off: always this size, which helps keep the OBS capture in place. On: a size "
 "given with the mouse lasts until kikarinhas closes."
@@ -887,23 +888,23 @@ msgstr ""
 "Off: always this size, which helps keep the OBS capture in place. On: a size "
 "given with the mouse lasts until kikarinhas closes."
 
-#: config/chatwin.c:188
+#: config/chatwin.c:192
 msgid "Keep over the other windows"
 msgstr "Keep over the other windows"
 
-#: config/chatwin.c:190
+#: config/chatwin.c:194
 msgid "Own (below)"
 msgstr "Own (below)"
 
-#: config/chatwin.c:190
+#: config/chatwin.c:194
 msgid "Like the speech bubbles"
 msgstr "Like the speech bubbles"
 
-#: config/chatwin.c:192
+#: config/chatwin.c:196
 msgid "Style"
 msgstr "Style"
 
-#: config/chatwin.c:193
+#: config/chatwin.c:197
 msgid ""
 "Like the bubbles: each message in a white balloon, with the bubble font of "
 "the Avatars tab."
@@ -911,23 +912,23 @@ msgstr ""
 "Like the bubbles: each message in a white balloon, with the bubble font of "
 "the Avatars tab."
 
-#: config/chatwin.c:207
+#: config/chatwin.c:208
 msgid "Pango family and style (e.g. Sans) and size; empty: Sans."
 msgstr "Pango family and style (e.g. Sans) and size; empty: Sans."
 
-#: config/chatwin.c:211
+#: config/chatwin.c:212
 msgid "owner, mods and members in the name tags' colours"
 msgstr "owner, mods and members in the name tags' colours"
 
-#: config/chatwin.c:216
+#: config/chatwin.c:217
 msgid "Names"
 msgstr "Names"
 
-#: config/chatwin.c:222
+#: config/chatwin.c:224
 msgid "Outline"
 msgstr "Outline"
 
-#: config/chatwin.c:223
+#: config/chatwin.c:225
 msgid ""
 "Around the letters, so they read over anything on a transparent background; "
 "0: none."
@@ -935,111 +936,160 @@ msgstr ""
 "Around the letters, so they read over anything on a transparent background; "
 "0: none."
 
-#: config/chatwin.c:226
+#: config/chatwin.c:229
 msgid "Super Chats, bits, Kicks...: a tinted box."
 msgstr "Super Chats, bits, Kicks...: a tinted box."
 
-#: config/chatwin.c:231
+#: config/chatwin.c:233
 msgid "Transparent"
 msgstr "Transparent"
 
-#: config/chatwin.c:231
+#: config/chatwin.c:233
 msgid "Color"
 msgstr "Color"
 
-#: config/chatwin.c:231 config/chatwin.c:237 config/commands.c:519
+#: config/chatwin.c:233 config/chatwin.c:239 config/commands.c:519
 #: config/commands.c:533 config/scenery.c:105 config/scenery.c:115
 #: config/scenery.c:338
 msgid "Picture"
 msgstr "Picture"
 
-#: config/chatwin.c:233
+#: config/chatwin.c:235
 msgid "Background"
 msgstr "Background"
 
-#: config/chatwin.c:235
+#: config/chatwin.c:237
 msgid "Background color"
 msgstr "Background color"
 
-#: config/chatwin.c:236
+#: config/chatwin.c:238
 msgid "With transparency: OBS captures it too (Allow transparency)."
 msgstr "With transparency: OBS captures it too (Allow transparency)."
 
-#: config/chatwin.c:239 config/commands.c:521 config/scenery.c:107
+#: config/chatwin.c:241 config/commands.c:521 config/scenery.c:107
 msgid "Pictures (PNG, JPEG, GIF, BMP)"
 msgstr "Pictures (PNG, JPEG, GIF, BMP)"
 
-#: config/chatwin.c:247
+#: config/chatwin.c:249
 msgid "Stretched to the window"
 msgstr "Stretched to the window"
 
-#: config/chatwin.c:247
+#: config/chatwin.c:249
 msgid "Repeated (tiles)"
 msgstr "Repeated (tiles)"
 
-#: config/chatwin.c:252
+#: config/chatwin.c:254
 msgid "Background picture"
 msgstr "Background picture"
 
-#: config/chatwin.c:254
+#: config/chatwin.c:256
 msgid "Show"
 msgstr "Show"
 
-#: config/chatwin.c:255
+#: config/chatwin.c:257
 msgid "the platform's letter (Y, T, K, O)"
 msgstr "the platform's letter (Y, T, K, O)"
 
-#: config/chatwin.c:257
+#: config/chatwin.c:259
 msgid "the time of each message"
 msgstr "the time of each message"
 
-#: config/chatwin.c:258
+#: config/chatwin.c:260
 msgid "Hide"
 msgstr "Hide"
 
-#: config/chatwin.c:258
+#: config/chatwin.c:260
 msgid "chat commands (!dance, !hug...)"
 msgstr "chat commands (!dance, !hug...)"
 
-#: config/chatwin.c:261
+#: config/chatwin.c:263
 msgid "Hide people"
 msgstr "Hide people"
 
-#: config/chatwin.c:262
+#: config/chatwin.c:264
 msgid "Names separated by commas, e.g. bots: Nightbot, StreamElements."
 msgstr "Names separated by commas, e.g. bots: Nightbot, StreamElements."
 
-#: config/chatwin.c:264
+#: config/chatwin.c:266
 msgid "Messages go after"
 msgstr "Messages go after"
 
-#: config/chatwin.c:265
+#: config/chatwin.c:267
 msgid "0: they stay. Scrolling back shows them all again."
 msgstr "0: they stay. Scrolling back shows them all again."
 
-#: config/chatwin.c:266
+#: config/chatwin.c:268
 msgid "At the bottom"
 msgstr "At the bottom"
 
-#: config/chatwin.c:266
+#: config/chatwin.c:268
 msgid "At the top"
 msgstr "At the top"
 
-#: config/chatwin.c:268
+#: config/chatwin.c:270
 msgid "New messages"
 msgstr "New messages"
 
-#: config/chatwin.c:270
+#: config/chatwin.c:272
 msgid "Keeps"
 msgstr "Keeps"
 
-#: config/chatwin.c:270
+#: config/chatwin.c:272
 msgid "messages"
 msgstr "messages"
 
-#: config/chatwin.c:271
+#: config/chatwin.c:273
 msgid "Also while the window is closed, so it opens with the chat so far."
 msgstr "Also while the window is closed, so it opens with the chat so far."
+
+#: config/chatwin.c:279
+msgid "Highlighted comment"
+msgstr "Highlighted comment"
+
+#: config/chatwin.c:285
+msgid ""
+"Click a message in the chat window to show it big on the stage, with a "
+"spotlight on its author's avatar (who comes back if they had left); click it "
+"again to take it away. In the chat window it only gets a discreet mark."
+msgstr ""
+"Click a message in the chat window to show it big on the stage, with a "
+"spotlight on its author's avatar (who comes back if they had left); click it "
+"again to take it away. In the chat window it only gets a discreet mark."
+
+#: config/chatwin.c:293
+msgid "Show the comment in a card on the stage"
+msgstr "Show the comment in a card on the stage"
+
+#: config/chatwin.c:302 config/commands.c:542 config/scenery.c:125
+msgid "Centre at"
+msgstr "Centre at"
+
+#: config/chatwin.c:303
+msgid ""
+"Of the stage window: x 50 and y 25 is the middle, a quarter of the way down."
+msgstr ""
+"Of the stage window: x 50 and y 25 is the middle, a quarter of the way down."
+
+#: config/chatwin.c:305
+msgid "Up to"
+msgstr "Up to"
+
+#: config/chatwin.c:307 config/scenery.c:127
+#, no-c-format
+msgid "% of the window width"
+msgstr "% of the window width"
+
+#: config/chatwin.c:316
+msgid "Goes after"
+msgstr "Goes after"
+
+#: config/chatwin.c:317
+msgid "0: stays until clicked again."
+msgstr "0: stays until clicked again."
+
+#: config/chatwin.c:318
+msgid "Spotlight on the author's avatar"
+msgstr "Spotlight on the author's avatar"
 
 #: config/audience.c:42
 msgid "common"
@@ -1575,10 +1625,6 @@ msgstr "PNG, JPEG, BMP or GIF (animated ones play)."
 msgid "size"
 msgstr "size"
 
-#: config/commands.c:542 config/scenery.c:125
-msgid "Centre at"
-msgstr "Centre at"
-
 #: config/commands.c:544
 #, no-c-format
 msgid ""
@@ -1957,11 +2003,6 @@ msgstr ""
 "Behind: ground, backdrop. In front: frame, logo, watermark. Chat command "
 "pictures and the emote wall go over both."
 
-#: config/scenery.c:127
-#, no-c-format
-msgid "% of the window width"
-msgstr "% of the window width"
-
 #: config/scenery.c:128
 msgid "0 is the left edge, 100 the right one."
 msgstr "0 is the left edge, 100 the right one."
@@ -2034,6 +2075,10 @@ msgstr ""
 "avatars, a frame or logo in front of them. Each one has a place (its centre, "
 "in % of the window) and a size (% of the file). Up to 16; later ones are "
 "drawn over earlier ones."
+
+#, fuzzy, c-format
+#~ msgid "% of the width"
+#~ msgstr "% of the window width"
 
 #, c-format
 #~ msgid "There is no avatar \"%s\" in the avatar folders."

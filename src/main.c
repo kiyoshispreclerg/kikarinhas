@@ -24,6 +24,7 @@
 #include "demochat.h"
 #include "emotes.h"
 #include "emotewall.h"
+#include "highlight.h"
 #include "http.h"
 #include "library.h"
 #include "log.h"
@@ -713,6 +714,13 @@ static kk_chatview_config chatview_config(const kk_config *c)
     };
 }
 
+static kk_highlight_config highlight_config(const kk_config *c)
+{
+    return (kk_highlight_config){.card = c->hl_card, .x = c->hl_x, .y = c->hl_y,
+                                 .width = c->hl_width, .font = c->hl_font, .size = c->hl_size,
+                                 .seconds = c->hl_seconds, .spotlight = c->hl_spotlight};
+}
+
 static kk_chatwin_config chatwin_config(const kk_config *c)
 {
     return (kk_chatwin_config){.width = c->chatwin_width, .height = c->chatwin_height,
@@ -806,6 +814,7 @@ typedef struct {
     kk_danmaku *danmaku;  /* chat flying across, when on */
     kk_chatview *chatview; /* the classic chat: history and drawing */
     kk_chatwin *chatwin;   /* its window, when open */
+    kk_highlight *highlight; /* the comment picked there, on the stage */
     kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
     kk_overlay *backdrop; /* scenery under the avatars */
     kk_props *props;      /* bombs and collectibles */
@@ -1115,6 +1124,8 @@ static bool reload(app *a, cJSON *warnings)
     kk_chatview_configure(a->chatview, &vc);
     kk_chatwin_config wcfg = chatwin_config(&cfg);
     kk_chatwin_configure(a->chatwin, &wcfg);
+    kk_highlight_config hc = highlight_config(&cfg);
+    kk_highlight_configure(a->highlight, &hc);
     if (cfg.chatwin_open && !old->chatwin_open)
         kk_chatwin_open(a->chatwin);
     if (cfg.fps != old->fps)
@@ -1193,6 +1204,33 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
     kk_users_set(a->users, key, KK_USER_PALETTE, NULL);
 }
 
+/* Highlights message id of the chat window's history (0, or the one
+ * already highlighted: takes it away). Its author's avatar comes back to
+ * the stage if it had left, and jumps. False if the message is gone. */
+static bool highlight(app *a, uint64_t id)
+{
+    double now = now_seconds();
+    kk_chat_msg m;
+    if (!id || id == kk_chatview_marked(a->chatview)) {
+        kk_highlight_clear(a->highlight, now);
+        kk_chatview_set_marked(a->chatview, 0);
+        return true;
+    }
+    if (!kk_chatview_get(a->chatview, id, &m))
+        return false;
+    kk_highlight_show(a->highlight, &m, now);
+    kk_chatview_set_marked(a->chatview, id);
+    kk_avatar *av = strcmp(m.platform, "timer") != 0 ? kk_stage_chatter(a->stage, &m) : NULL;
+    if (av)
+        kk_avatar_jump(av);
+    return true;
+}
+
+static void on_chat_click(void *ud, uint64_t id)
+{
+    highlight(ud, id);
+}
+
 static void on_request(void *ud, const char *type, const cJSON *req, cJSON *reply)
 {
     app *a = ud;
@@ -1234,6 +1272,19 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         } else {
             cJSON_AddNullToObject(reply, "text");
         }
+    } else if (strcmp(type, "highlight") == 0) {
+        /* {"type":"highlight","id":N} (a message of the chat window's
+         * history) or {"type":"highlight","clear":true}; the reply has the
+         * id highlighted now (0: none). */
+        const cJSON *id = cJSON_GetObjectItemCaseSensitive(req, "id");
+        if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(req, "clear")))
+            highlight(a, 0);
+        else if (!cJSON_IsNumber(id) || id->valuedouble < 1)
+            refuse(reply, "faltou \"id\" (ou \"clear\": true)");
+        else if ((uint64_t)id->valuedouble != kk_chatview_marked(a->chatview) &&
+                 !highlight(a, (uint64_t)id->valuedouble))
+            refuse(reply, "mensagem fora do histórico");
+        cJSON_AddNumberToObject(reply, "id", (double)kk_chatview_marked(a->chatview));
     } else if (strcmp(type, "chat_window") == 0) {
         /* {"type":"chat_window","action":"show"|"hide"|"toggle"|"state"};
          * the reply says whether it is open. */
@@ -1430,6 +1481,10 @@ static void run(app *a)
                 kk_overlay_update(a->overlay, t);
                 kk_overlay_update(a->backdrop, t);
                 kk_danmaku_update(a->danmaku, t);
+                kk_highlight_update(a->highlight, t);
+                /* Gone by itself (seconds): unmark it in the chat window. */
+                if (!kk_highlight_active(a->highlight) && kk_chatview_marked(a->chatview))
+                    kk_chatview_set_marked(a->chatview, 0);
                 tick = true;
             }
         }
@@ -1672,8 +1727,10 @@ int main(int argc, char **argv)
     kk_danmaku_configure(a.danmaku, &dc);
     kk_danmaku_resize(a.danmaku, win.width, win.height);
     a.chatview = kk_chatview_new(a.emotes);
-    a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, NULL) : NULL;
-    if (!a.chatwin) {
+    kk_chatwin_handlers handlers = {.click = on_chat_click, .ud = &a};
+    a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, &handlers) : NULL;
+    a.highlight = kk_highlight_new(&stage, a.emotes);
+    if (!a.chatwin || !a.highlight) {
         kk_log_error("sem memória");
         return 1;
     }
@@ -1683,13 +1740,18 @@ int main(int argc, char **argv)
     kk_chatwin_configure(a.chatwin, &wcfg);
     if (a.cfg.chatwin_open)
         kk_chatwin_open(a.chatwin);
-    /* Pictures under the bombs and stars, then the danmaku, the emote wall
-     * over all. */
+    kk_highlight_config hc = highlight_config(&a.cfg);
+    kk_highlight_configure(a.highlight, &hc);
+    /* Under the avatars the scenery and the highlight's spotlight; over
+     * them pictures, bombs and stars, the danmaku, the emote wall and the
+     * highlighted comment over all. */
     kk_stage_add_back_layer(&stage, kk_overlay_layer(a.backdrop));
+    kk_stage_add_back_layer(&stage, kk_highlight_spot_layer(a.highlight));
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));
     kk_stage_add_layer(&stage, kk_danmaku_layer(a.danmaku));
     kk_stage_add_layer(&stage, kk_emotewall_layer(a.wall));
+    kk_stage_add_layer(&stage, kk_highlight_layer(a.highlight));
 
     a.mpris = kk_mpris_new();
     a.points = a.users ? kk_points_new(a.users) : NULL;
@@ -1737,6 +1799,7 @@ int main(int argc, char **argv)
     /* The connectors cancel their requests, so they go before the client. */
     for (int i = 0; i < a.n_sources; i++)
         source_free(&a.sources[i]);
+    kk_stage_remove_layer(&stage, kk_highlight_layer(a.highlight));
     kk_stage_remove_layer(&stage, kk_emotewall_layer(a.wall));
     kk_stage_remove_layer(&stage, kk_props_layer(a.props));
     kk_stage_remove_layer(&stage, kk_danmaku_layer(a.danmaku));
@@ -1748,6 +1811,7 @@ int main(int argc, char **argv)
     kk_danmaku_free(a.danmaku);
     kk_chatwin_free(a.chatwin);
     kk_chatview_free(a.chatview);
+    kk_highlight_free(a.highlight);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */

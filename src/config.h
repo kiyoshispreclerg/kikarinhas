@@ -72,6 +72,9 @@
  *              show_time = no, hide_commands = yes,
  *              hide_users = Nightbot, StreamElements, fade = 0 (s),
  *              newest = bottom|top, history = 200
+ *   [highlight] card = yes, x = 50, y = 25 (% of the window), width = 50 (%),
+ *              font = Sans, font_size = 18, seconds = 0 (until cleared),
+ *              spotlight = yes
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -240,6 +243,14 @@ typedef struct {
     double chatwin_fade;     /* seconds until a message goes; 0 = never */
     bool chatwin_newest_top;
     int chatwin_history;     /* messages kept */
+    /* [highlight]: the comment picked in the chat window (highlight.h) */
+    bool hl_card;            /* the card on the stage */
+    double hl_x, hl_y;       /* its centre, % of the window */
+    double hl_width;         /* widest, % of the window width */
+    char *hl_font;           /* NULL = "Sans" */
+    double hl_size;          /* points */
+    double hl_seconds;       /* until it goes by itself; 0 = until cleared */
+    bool hl_spotlight;       /* light on the author's avatar */
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;

@@ -527,6 +527,27 @@ newest = bottom       # ou top
 history = 200
 ```
 
+#### Comentário em destaque
+
+Clique numa mensagem da janela de chat e ela aparece grande no palco, num
+cartão, enquanto um holofote segue o avatar de quem escreveu (que volta para
+o palco se tinha saído); clique de novo para tirar. Na janela de chat ela só
+ganha uma marca discreta, já que essa janela também pode estar na live. Pelo
+socket: `{"type":"highlight","id":N}` (o id de uma mensagem do histórico) e
+`{"type":"highlight","clear":true}`.
+
+```ini
+[highlight]
+card = yes       # no: só o holofote
+x = 50           # centro do cartão, em % da janela
+y = 25
+width = 50       # largura máxima, em % da largura da janela
+font = Sans
+font_size = 18
+seconds = 0      # até sumir sozinho; 0: só clicando de novo
+spotlight = yes
+```
+
 ### Cenário
 
 Imagens que ficam o tempo todo na janela: um chão ou fundo atrás dos

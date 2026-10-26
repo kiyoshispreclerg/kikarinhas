@@ -531,6 +531,27 @@ newest = bottom       # or top
 history = 200
 ```
 
+#### Highlighted comment
+
+Click a message in the chat window and it shows big on the stage, in a card,
+while a spotlight follows its author's avatar (who comes back to the stage if
+they had left); click it again to take it away. In the chat window it only
+gets a discreet mark, since that window may be on the stream too. Over the
+socket: `{"type":"highlight","id":N}` (the id of a message in the history)
+and `{"type":"highlight","clear":true}`.
+
+```ini
+[highlight]
+card = yes       # no: only the spotlight
+x = 50           # centre of the card, % of the window
+y = 25
+width = 50       # widest it gets, % of the window width
+font = Sans
+font_size = 18
+seconds = 0      # until it goes by itself; 0: until clicked again
+spotlight = yes
+```
+
 ### Scenery
 
 Pictures kept on the window all the time: a ground or backdrop behind the

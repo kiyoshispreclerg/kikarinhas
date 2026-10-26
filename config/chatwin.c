@@ -14,7 +14,8 @@ struct chatwin_tab {
     GtkWidget *show, *open, *width, *height, *resizable, *above, *style, *font, *size,
         *text, *name, *badges, *outline, *outline_w, *paid, *member, *background, *bg_color,
         *bg_image, *bg_mode, *platform, *time, *commands, *hide_users, *fade, *newest,
-        *history;
+        *history, *hl_card, *hl_x, *hl_y, *hl_width, *hl_font, *hl_size, *hl_seconds,
+        *hl_spot;
     GtkWidget *own_rows[8]; /* the own style's settings, greyed out together */
     int n_own;
 };
@@ -272,6 +273,52 @@ GtkWidget *chatwin_page(editor *e, const kk_config *cfg)
         _("Also while the window is closed, so it opens with the chat so far."));
 
     gtk_box_pack_start(GTK_BOX(box), t, FALSE, FALSE, 6);
+
+    /* The highlighted comment. */
+    GtkWidget *title = gtk_label_new(NULL);
+    gchar *markup = g_markup_printf_escaped("<b>%s</b>", _("Highlighted comment"));
+    gtk_label_set_markup(GTK_LABEL(title), markup);
+    g_free(markup);
+    gtk_misc_set_alignment(GTK_MISC(title), 0, 0.5);
+    gtk_box_pack_start(GTK_BOX(box), title, FALSE, FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(box),
+                       hint_label(_("Click a message in the chat window to show it big on the "
+                                    "stage, with a spotlight on its author's avatar (who comes "
+                                    "back if they had left); click it again to take it away. "
+                                    "In the chat window it only gets a discreet mark.")),
+                       FALSE, FALSE, 0);
+    GtkWidget *ht = gtk_table_new(1, 2, FALSE);
+    gtk_table_set_row_spacings(GTK_TABLE(ht), 6);
+    gtk_table_set_col_spacings(GTK_TABLE(ht), 12);
+    w->hl_card = row(ht, NULL, check(_("Show the comment in a card on the stage"), cfg->hl_card),
+                     NULL);
+    w->hl_x = spin_at(0, 100, 1, 0, cfg->hl_x);
+    w->hl_y = spin_at(0, 100, 1, 0, cfg->hl_y);
+    GtkWidget *where = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(where), gtk_label_new("x"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(where), with_unit(w->hl_x, "%"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(where), gtk_label_new("y"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(where), with_unit(w->hl_y, "%"), FALSE, FALSE, 0);
+    row(ht, _("Centre at"), where,
+        _("Of the stage window: x 50 and y 25 is the middle, a quarter of the way down."));
+    w->hl_width = spin_at(10, 100, 5, 0, cfg->hl_width);
+    row(ht, _("Up to"),
+        /* xgettext:no-c-format */
+        with_unit(w->hl_width, _("% of the window width")), NULL);
+    w->hl_font = entry(cfg->hl_font);
+    w->hl_size = spin_at(4, 200, 1, 1, cfg->hl_size);
+    GtkWidget *hfont = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(hfont), w->hl_font, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hfont), w->hl_size, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hfont), gtk_label_new("pt"), FALSE, FALSE, 0);
+    row(ht, _("Font"), hfont, NULL);
+    w->hl_seconds = spin_at(0, 3600, 5, 0, cfg->hl_seconds);
+    row(ht, _("Goes after"), with_unit(w->hl_seconds, _("seconds")),
+        _("0: stays until clicked again."));
+    w->hl_spot = row(ht, NULL, check(_("Spotlight on the author's avatar"), cfg->hl_spotlight),
+                     NULL);
+    gtk_box_pack_start(GTK_BOX(box), ht, FALSE, FALSE, 6);
+
     g_signal_connect(w->style, "changed", G_CALLBACK(on_style), w);
     on_style(GTK_COMBO_BOX(w->style), w);
     g_signal_connect(w->background, "changed", G_CALLBACK(on_background), w);
@@ -325,6 +372,17 @@ void chatwin_collect(editor *e)
     put_int(e, s, "fade", spin_int(w->fade), (int)d.chatwin_fade);
     put(e, s, "newest", active(w->newest) == 1 ? "top" : "bottom", "bottom");
     put_int(e, s, "history", spin_int(w->history), d.chatwin_history);
+    s = "highlight";
+    put_bool(e, s, "card", w->hl_card, d.hl_card);
+    put_num(e, s, "x", gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->hl_x)), d.hl_x);
+    put_num(e, s, "y", gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->hl_y)), d.hl_y);
+    put_num(e, s, "width", gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->hl_width)), d.hl_width);
+    put(e, s, "font", text_of(w->hl_font), NULL);
+    put_num(e, s, "font_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->hl_size)),
+            d.hl_size);
+    put_num(e, s, "seconds", gtk_spin_button_get_value(GTK_SPIN_BUTTON(w->hl_seconds)),
+            d.hl_seconds);
+    put_bool(e, s, "spotlight", w->hl_spot, d.hl_spotlight);
     kk_config_free(&d);
 }
 
