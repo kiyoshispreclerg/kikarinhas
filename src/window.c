@@ -145,9 +145,10 @@ static bool compositor_running(kk_window *w)
     return XGetSelectionOwner(w->dpy, sel) != None;
 }
 
-static void set_wm_properties(kk_window *w)
+static void set_wm_properties(kk_window *w, const kk_window_opts *o)
 {
-    static const char title[] = "Kikarinhas";
+    const char *title = o && o->title ? o->title : "Kikarinhas";
+    char *res_name = (char *)(o && o->res_name ? o->res_name : "kikarinhas");
 
     XStoreName(w->dpy, w->win, title);
     XChangeProperty(w->dpy, w->win, XInternAtom(w->dpy, "_NET_WM_NAME", False),
@@ -155,7 +156,7 @@ static void set_wm_properties(kk_window *w)
                     PropModeReplace, (const unsigned char *)title,
                     (int)strlen(title));
 
-    XClassHint class = {.res_name = "kikarinhas", .res_class = "Kikarinhas"};
+    XClassHint class = {.res_name = res_name, .res_class = "Kikarinhas"};
     XSetClassHint(w->dpy, w->win, &class);
 
     long pid = (long)getpid();
@@ -166,6 +167,23 @@ static void set_wm_properties(kk_window *w)
     w->wm_protocols = XInternAtom(w->dpy, "WM_PROTOCOLS", False);
     w->wm_delete = XInternAtom(w->dpy, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(w->dpy, w->win, &w->wm_delete, 1);
+
+    if (o && o->fixed_size) {
+        XSizeHints *hints = XAllocSizeHints();
+        if (hints) {
+            hints->flags = PMinSize | PMaxSize;
+            hints->min_width = hints->max_width = w->width;
+            hints->min_height = hints->max_height = w->height;
+            XSetWMNormalHints(w->dpy, w->win, hints);
+            XFree(hints);
+        }
+    }
+    if (o && o->above) {
+        /* Before mapping, the WM reads it as the initial state. */
+        Atom above = XInternAtom(w->dpy, "_NET_WM_STATE_ABOVE", False);
+        XChangeProperty(w->dpy, w->win, XInternAtom(w->dpy, "_NET_WM_STATE", False),
+                        XA_ATOM, 32, PropModeReplace, (const unsigned char *)&above, 1);
+    }
 }
 
 /* Empty input region: clicks go to whatever is below the overlay. */
@@ -183,6 +201,44 @@ static void make_click_through(kk_window *w)
                             ShapeSet, Unsorted);
 }
 
+/* Creates, sets up and maps the window of w, whose display, visual and
+ * colormap are ready. */
+static int create_window(kk_window *w, int x, int y, const kk_window_opts *o)
+{
+    Window root = RootWindow(w->dpy, w->screen);
+    bool override = w->mode == KK_MODE_DESKTOP || w->popup;
+    long events = ExposureMask | StructureNotifyMask | ButtonPressMask;
+    if (w->mode == KK_MODE_OBS) /* motion only while a button is held */
+        events |= ButtonReleaseMask | Button1MotionMask;
+    if (w->popup)
+        events |= PointerMotionMask | LeaveWindowMask;
+    XSetWindowAttributes attr = {
+        .colormap = w->cmap,
+        .background_pixel = 0, /* fully transparent */
+        .border_pixel = 0,     /* required with a non-default visual */
+        .event_mask = events,
+        .override_redirect = override,
+    };
+    w->win = XCreateWindow(w->dpy, root, x, y, (unsigned)w->width,
+                           (unsigned)w->height, 0, 32, InputOutput, w->visual,
+                           CWColormap | CWBackPixel | CWBorderPixel |
+                               CWEventMask | CWOverrideRedirect,
+                           &attr);
+    set_wm_properties(w, o);
+    if (w->mode == KK_MODE_DESKTOP)
+        make_click_through(w);
+
+    w->gc = XCreateGC(w->dpy, w->win, 0, NULL);
+    if (!buffer_create(w)) {
+        kk_log_error("não consegui criar o buffer de %dx%d", w->width, w->height);
+        return -1;
+    }
+
+    XMapRaised(w->dpy, w->win);
+    XFlush(w->dpy);
+    return 0;
+}
+
 int kk_window_open(kk_window *w, kk_mode mode, int width, int height)
 {
     memset(w, 0, sizeof *w);
@@ -194,6 +250,7 @@ int kk_window_open(kk_window *w, kk_mode mode, int width, int height)
                      getenv("DISPLAY") ? getenv("DISPLAY") : "");
         return -1;
     }
+    w->owns_dpy = true;
     w->screen = DefaultScreen(w->dpy);
     Window root = RootWindow(w->dpy, w->screen);
 
@@ -211,42 +268,42 @@ int kk_window_open(kk_window *w, kk_mode mode, int width, int height)
     if (w->shm_available)
         w->shm_completion = XShmGetEventBase(w->dpy) + ShmCompletion;
 
-    int x = 0, y = 0;
     if (mode == KK_MODE_DESKTOP) {
         width = DisplayWidth(w->dpy, w->screen);
         height = DisplayHeight(w->dpy, w->screen);
     }
     w->width = width;
     w->height = height;
-
-    long events = ExposureMask | StructureNotifyMask | ButtonPressMask;
-    if (mode == KK_MODE_OBS) /* motion only while a button is held */
-        events |= ButtonReleaseMask | Button1MotionMask;
-    XSetWindowAttributes attr = {
-        .colormap = w->cmap,
-        .background_pixel = 0, /* fully transparent */
-        .border_pixel = 0,     /* required with a non-default visual */
-        .event_mask = events,
-        .override_redirect = mode == KK_MODE_DESKTOP,
-    };
-    w->win = XCreateWindow(w->dpy, root, x, y, (unsigned)width,
-                           (unsigned)height, 0, 32, InputOutput, w->visual,
-                           CWColormap | CWBackPixel | CWBorderPixel |
-                               CWEventMask | CWOverrideRedirect,
-                           &attr);
-    set_wm_properties(w);
-    if (mode == KK_MODE_DESKTOP)
-        make_click_through(w);
-
-    w->gc = XCreateGC(w->dpy, w->win, 0, NULL);
-    if (!buffer_create(w)) {
-        kk_log_error("não consegui criar o buffer de %dx%d", width, height);
+    if (create_window(w, 0, 0, NULL) < 0) {
         kk_window_close(w);
         return -1;
     }
+    return 0;
+}
 
-    XMapRaised(w->dpy, w->win);
-    XFlush(w->dpy);
+int kk_window_open_child(kk_window *w, kk_window *parent, const kk_window_opts *o,
+                         int width, int height)
+{
+    memset(w, 0, sizeof *w);
+    if (parent->n_children == KK_WINDOW_MAX_CHILDREN)
+        return -1;
+    w->dpy = parent->dpy;
+    w->screen = parent->screen;
+    w->visual = parent->visual;
+    w->has_compositor = parent->has_compositor;
+    w->shm_available = parent->shm_available;
+    w->shm_completion = parent->shm_completion;
+    w->mode = KK_MODE_OBS;
+    w->popup = o && o->popup;
+    w->width = width > 0 ? width : 1;
+    w->height = height > 0 ? height : 1;
+    w->cmap = XCreateColormap(w->dpy, RootWindow(w->dpy, w->screen), w->visual, AllocNone);
+    w->parent = parent;
+    parent->children[parent->n_children++] = w;
+    if (create_window(w, w->popup ? o->x : 0, w->popup ? o->y : 0, o) < 0) {
+        kk_window_close(w);
+        return -1;
+    }
     return 0;
 }
 
@@ -261,8 +318,31 @@ void kk_window_close(kk_window *w)
         XDestroyWindow(w->dpy, w->win);
     if (w->cmap)
         XFreeColormap(w->dpy, w->cmap);
-    XCloseDisplay(w->dpy);
-    w->dpy = NULL;
+    if (w->owns_dpy) {
+        XCloseDisplay(w->dpy);
+    } else {
+        XFlush(w->dpy);
+        kk_window *p = w->parent;
+        for (int i = 0; p && i < p->n_children; i++)
+            if (p->children[i] == w) {
+                p->children[i] = p->children[--p->n_children];
+                break;
+            }
+    }
+    memset(w, 0, sizeof *w);
+}
+
+void kk_window_take_events(kk_window *w, kk_window_events *ev)
+{
+    *ev = w->pending;
+    memset(&w->pending, 0, sizeof w->pending);
+}
+
+bool kk_window_grab_pointer(kk_window *w)
+{
+    unsigned mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+    return XGrabPointer(w->dpy, w->win, False, mask, GrabModeAsync, GrabModeAsync, None,
+                        None, CurrentTime) == GrabSuccess;
 }
 
 int kk_window_fd(const kk_window *w)
@@ -301,56 +381,86 @@ static void queue_pointer(const kk_window *w, kk_window_events *ev,
         ev->pointer[ev->n_pointer++] = pe;
 }
 
+/* The window of w's connection that e is for, or NULL. */
+static kk_window *target_of(kk_window *w, const XEvent *e)
+{
+    /* XShmCompletionEvent has its drawable where XAnyEvent has window. */
+    if (e->xany.window == w->win)
+        return w;
+    for (int i = 0; i < w->n_children; i++)
+        if (e->xany.window == w->children[i]->win)
+            return w->children[i];
+    return NULL;
+}
+
+static void handle_event(kk_window *w, XEvent *e, kk_window_events *ev)
+{
+    if (w->shm_available && e->type == w->shm_completion) {
+        /* Ignore completions for a segment already replaced by a resize. */
+        const XShmCompletionEvent *ce = (const XShmCompletionEvent *)e;
+        if (w->use_shm && ce->shmseg == w->shm.shmseg)
+            w->shm_pending = false;
+        return;
+    }
+
+    switch (e->type) {
+    case Expose:
+        if (e->xexpose.count == 0)
+            ev->redraw = true;
+        break;
+    case ConfigureNotify:
+        handle_configure(w, &e->xconfigure, ev);
+        break;
+    case ClientMessage:
+        if (e->xclient.message_type == w->wm_protocols &&
+            (Atom)e->xclient.data.l[0] == w->wm_delete)
+            ev->quit = true;
+        break;
+    case ButtonPress:
+        if (e->xbutton.button == Button3) {
+            ev->open_config = true;
+            ev->menu_x = e->xbutton.x;
+            ev->menu_y = e->xbutton.y;
+            ev->menu_root_x = e->xbutton.x_root;
+            ev->menu_root_y = e->xbutton.y_root;
+        } else if (e->xbutton.button == Button4) {
+            ev->scroll--;
+        } else if (e->xbutton.button == Button5) {
+            ev->scroll++;
+        } else if (e->xbutton.button == Button1) {
+            queue_pointer(w, ev, KK_POINTER_PRESS, e->xbutton.x, e->xbutton.y,
+                          e->xbutton.time);
+        }
+        break;
+    case ButtonRelease:
+        if (e->xbutton.button == Button1)
+            queue_pointer(w, ev, KK_POINTER_RELEASE, e->xbutton.x, e->xbutton.y,
+                          e->xbutton.time);
+        break;
+    case MotionNotify:
+        queue_pointer(w, ev, KK_POINTER_MOVE, e->xmotion.x, e->xmotion.y,
+                      e->xmotion.time);
+        break;
+    case LeaveNotify:
+        ev->left = true;
+        break;
+    case DestroyNotify:
+        w->win = None; /* gone already: closing must not destroy it again */
+        ev->quit = true;
+        break;
+    default:
+        break;
+    }
+}
+
 void kk_window_dispatch(kk_window *w, kk_window_events *ev)
 {
     while (XPending(w->dpy)) {
         XEvent e;
         XNextEvent(w->dpy, &e);
-
-        if (w->shm_available && e.type == w->shm_completion) {
-            /* Ignore completions for a segment already replaced by a
-             * resize. */
-            const XShmCompletionEvent *ce = (const XShmCompletionEvent *)&e;
-            if (w->use_shm && ce->shmseg == w->shm.shmseg)
-                w->shm_pending = false;
-            continue;
-        }
-
-        switch (e.type) {
-        case Expose:
-            if (e.xexpose.count == 0)
-                ev->redraw = true;
-            break;
-        case ConfigureNotify:
-            handle_configure(w, &e.xconfigure, ev);
-            break;
-        case ClientMessage:
-            if (e.xclient.message_type == w->wm_protocols &&
-                (Atom)e.xclient.data.l[0] == w->wm_delete)
-                ev->quit = true;
-            break;
-        case ButtonPress:
-            if (e.xbutton.button == Button3)
-                ev->open_config = true;
-            else if (e.xbutton.button == Button1)
-                queue_pointer(w, ev, KK_POINTER_PRESS, e.xbutton.x,
-                              e.xbutton.y, e.xbutton.time);
-            break;
-        case ButtonRelease:
-            if (e.xbutton.button == Button1)
-                queue_pointer(w, ev, KK_POINTER_RELEASE, e.xbutton.x,
-                              e.xbutton.y, e.xbutton.time);
-            break;
-        case MotionNotify:
-            queue_pointer(w, ev, KK_POINTER_MOVE, e.xmotion.x, e.xmotion.y,
-                          e.xmotion.time);
-            break;
-        case DestroyNotify:
-            ev->quit = true;
-            break;
-        default:
-            break;
-        }
+        kk_window *t = target_of(w, &e);
+        if (t)
+            handle_event(t, &e, t == w ? ev : &t->pending);
     }
     XFlush(w->dpy);
 }
