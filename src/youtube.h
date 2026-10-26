@@ -61,6 +61,10 @@ cJSON *kk_yt_initial_data(const char *html);
 bool kk_yt_config_string(const char *html, const char *key, char *out,
                          size_t size);
 
+/* The title of a watch or /live page (its og:title), entities decoded.
+ * False when the page has none. */
+bool kk_yt_page_title(const char *html, char *out, size_t size);
+
 /* Continuation of the "Live chat" view in the pop-out page data; malloc'd. */
 char *kk_yt_live_continuation(const cJSON *initial);
 

@@ -87,6 +87,17 @@ bool kk_kick_parse_channel(const char *json, long long *chatroom, long long *cha
     return true;
 }
 
+bool kk_kick_parse_title(const char *json, char *out, size_t size)
+{
+    cJSON *root = cJSON_Parse(json);
+    const char *t = kk_json_str(root, "livestream.session_title");
+    bool ok = t && t[0] && snprintf(out, size, "%s", t) < (int)size;
+    if (!ok && size)
+        out[0] = '\0';
+    cJSON_Delete(root);
+    return ok;
+}
+
 /* ---- recent chatters ----------------------------------------------------- */
 
 #define NAMES 512
@@ -368,10 +379,14 @@ typedef enum {
     ST_WS,        /* connecting or connected */
 } state;
 
+static void relay_msg(void *ud, const kk_chat_msg *m);
+
 struct kk_kick {
     kk_http *http;
     kk_chat_sink sink;
+    kk_chat_sink relay; /* what the parser gets: adds the live's link and title */
     char slug[72];
+    char url[96], title[160];
     char label[88]; /* "kick.com/slug": the source of its messages */
     long long chatroom, channel, user_id;
     kk_kick_names *names;
@@ -385,6 +400,15 @@ struct kk_kick {
     kk_tw_emotes *extra; /* 7TV; NULL when off */
     unsigned loaded, pending; /* bits by kk_tw_source */
 };
+
+static void relay_msg(void *ud, const kk_chat_msg *m)
+{
+    const kk_kick *k = ud;
+    kk_chat_msg copy = *m;
+    copy.source_url = k->url;
+    copy.source_title = k->title[0] ? k->title : NULL;
+    k->sink.on_msg(k->sink.ud, &copy);
+}
 
 static double backoff(kk_kick *k)
 {
@@ -469,6 +493,8 @@ static void on_channel(void *ud, long status, const char *body, size_t len, cons
         k->next_at = k->now + delay;
         return;
     }
+    if (!kk_kick_parse_title(body, k->title, sizeof k->title))
+        k->title[0] = '\0';
     k->chatroom = room;
     k->channel = chan;
     k->user_id = user;
@@ -526,7 +552,7 @@ static void on_ws_message(void *ud, char *text, size_t len)
         kk_log_warn("Kick %s: Pusher: %s", k->slug, msg ? msg : "erro");
         cJSON_Delete(d);
     } else if (strncmp(event, "pusher", 6) != 0) {
-        kk_kick_emit_event(text, k->label, k->extra, k->names, &k->sink);
+        kk_kick_emit_event(text, k->label, k->extra, k->names, &k->relay);
     }
     cJSON_Delete(frame);
 }
@@ -546,6 +572,8 @@ kk_kick *kk_kick_new(kk_http *http, const char *target, const kk_chat_sink *sink
     snprintf(k->label, sizeof k->label, "kick.com/%s", k->slug);
     k->http = http;
     k->sink = *sink;
+    k->relay = (kk_chat_sink){relay_msg, NULL, k};
+    snprintf(k->url, sizeof k->url, "https://kick.com/%s", k->slug);
     k->ws = kk_ws_new(http, &(kk_ws_cb){NULL, on_ws_message}, k);
     k->names = kk_kick_names_new();
     if (extra_emotes)

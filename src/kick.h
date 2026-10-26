@@ -46,6 +46,9 @@ void kk_kick_tick(kk_kick *k, const struct pollfd *fd, double now);
  * "https://kick.com/popout/name/chat" → "name" (lowercase). */
 bool kk_kick_parse_target(const char *input, char *out, size_t size);
 
+/* The title of the live going on in that same reply; false when offline. */
+bool kk_kick_parse_title(const char *json, char *out, size_t size);
+
 /* From kick.com/api/v2/channels/<slug>: the chatroom, the channel (for
  * "channel.<id>") and the user id (for 7TV). */
 bool kk_kick_parse_channel(const char *json, long long *chatroom, long long *channel,

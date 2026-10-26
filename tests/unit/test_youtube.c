@@ -154,6 +154,20 @@ TEST(canonical_video)
     CHECK(!found_off);
 }
 
+TEST(page_title)
+{
+    char t[64];
+    CHECK(kk_yt_page_title("<head><meta property=\"og:title\" content=\"Jogando &amp; "
+                           "&quot;batendo&quot; papo &#39;hoje&#39;\"><title>x</title>",
+                           t, sizeof t));
+    CHECK_STR_EQ(t, "Jogando & \"batendo\" papo 'hoje'");
+    CHECK(!kk_yt_page_title("<title>x</title>", t, sizeof t));
+    CHECK(kk_yt_page_title("<meta property=\"og:title\" content=\"Muito comprido para caber\">", t, 12));
+    CHECK_STR_EQ(t, "Muito compr");
+    CHECK(kk_yt_page_title("<meta property=\"og:title\" content=\"Ação\">", t, 4));
+    CHECK_STR_EQ(t, "A\xc3\xa7"); /* "Aç"; the "ã" would not fit */
+}
+
 TEST(chat_page)
 {
     char *html = fixture("yt_chat_page.html");
@@ -344,6 +358,7 @@ int main(void)
     RUN(target_channel_forms);
     RUN(target_invalid);
     RUN(canonical_video);
+    RUN(page_title);
     RUN(chat_page);
     RUN(chat_page_without_chat);
     RUN(poll_messages);

@@ -356,6 +356,8 @@ struct kk_odysee {
     kk_ody_target kind;
     char target[512]; /* claim id or lbry:// url */
     char label[80];   /* the source of its messages */
+    kk_chat_sink relay; /* what the parser gets: adds the channel's link */
+    char url[128];      /* empty when started from a claim id */
 
     char channel_id[CLAIM_LEN + 1]; /* kind CHANNEL, once resolved */
     char channel[256];              /* "@name": the socket's category */
@@ -368,6 +370,14 @@ struct kk_odysee {
     bool connected, said_offline, busy_check;
     int failures;
 };
+
+static void relay_msg(void *ud, const kk_chat_msg *m)
+{
+    const kk_odysee *o = ud;
+    kk_chat_msg copy = *m;
+    copy.source_url = o->url[0] ? o->url : NULL;
+    o->sink.on_msg(o->sink.ud, &copy);
+}
 
 static double backoff(kk_odysee *o)
 {
@@ -529,7 +539,7 @@ static void on_ws_message(void *ud, char *text, size_t len)
 {
     (void)len;
     kk_odysee *o = ud;
-    kk_ody_emit_event(text, o->label, &o->sink);
+    kk_ody_emit_event(text, o->label, &o->relay);
 }
 
 kk_odysee *kk_odysee_new(kk_http *http, const char *target, const kk_chat_sink *sink)
@@ -553,6 +563,9 @@ kk_odysee *kk_odysee_new(kk_http *http, const char *target, const kk_chat_sink *
                  o->target + 7);
     o->http = http;
     o->sink = *sink;
+    o->relay = (kk_chat_sink){relay_msg, NULL, o};
+    if (o->kind != KK_ODY_TARGET_CLAIM)
+        snprintf(o->url, sizeof o->url, "https://odysee.com/%s", o->label);
     o->ws = kk_ws_new(http, &(kk_ws_cb){on_ws_open, on_ws_message}, o);
     if (!o->ws) {
         kk_odysee_free(o);

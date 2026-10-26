@@ -101,6 +101,16 @@ TEST(channel_info)
     CHECK(!kk_kick_parse_channel("<html>blocked</html>", &room, &chan, &user));
 }
 
+TEST(live_title)
+{
+    char t[64];
+    CHECK(kk_kick_parse_title("{\"id\":1,\"livestream\":{\"session_title\":\"Bate-papo\"}}", t,
+                              sizeof t));
+    CHECK_STR_EQ(t, "Bate-papo");
+    CHECK(!kk_kick_parse_title("{\"id\":1,\"livestream\":null}", t, sizeof t));
+    CHECK(!kk_kick_parse_title("<html>", t, sizeof t));
+}
+
 TEST(chat_with_emotes)
 {
     n_got = 0;
@@ -219,6 +229,7 @@ int main(void)
 {
     RUN(target_forms);
     RUN(channel_info);
+    RUN(live_title);
     RUN(chat_with_emotes);
     RUN(seventv_words);
     RUN(kicks_and_subs);

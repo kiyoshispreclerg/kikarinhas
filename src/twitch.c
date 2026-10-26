@@ -647,6 +647,8 @@ struct kk_twitch {
     kk_chat_sink sink;
     char channel[32];
     char label[34]; /* "#channel": the source of its messages */
+    kk_chat_sink relay; /* what the parser gets: adds the channel's link */
+    char url[64];
 
     kk_tls *tls;
     char in[16384]; /* plain text not yet split into lines */
@@ -662,6 +664,14 @@ struct kk_twitch {
     char room_id[32];
     unsigned loaded, pending; /* bits by kk_tw_source */
 };
+
+static void relay_msg(void *ud, const kk_chat_msg *m)
+{
+    const kk_twitch *tw = ud;
+    kk_chat_msg copy = *m;
+    copy.source_url = tw->url;
+    tw->sink.on_msg(tw->sink.ud, &copy);
+}
 
 static void retry(kk_twitch *tw, double delay)
 {
@@ -808,7 +818,7 @@ static void handle_line(kk_twitch *tw, char *line)
     else if (strcmp(l.command, "NOTICE") == 0)
         kk_log_warn("Twitch #%s: %s", tw->channel, l.trailing);
     else
-        emit(&l, tw->extra, tw->label, &tw->sink);
+        emit(&l, tw->extra, tw->label, &tw->relay);
 }
 
 /* Splits the plain text into lines and handles the whole ones. */
@@ -875,6 +885,8 @@ kk_twitch *kk_twitch_new(kk_http *http, const char *target,
     snprintf(tw->label, sizeof tw->label, "#%s", tw->channel);
     tw->http = http;
     tw->sink = *sink;
+    tw->relay = (kk_chat_sink){relay_msg, NULL, tw};
+    snprintf(tw->url, sizeof tw->url, "https://www.twitch.tv/%s", tw->channel);
     tw->tls = kk_tls_new(http, &(kk_tls_cb){on_tls_open, on_tls_data}, tw);
     if (extra_emotes)
         tw->extra = kk_tw_emotes_new();

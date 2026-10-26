@@ -153,6 +153,66 @@ bool kk_yt_config_string(const char *html, const char *key, char *out,
     return true;
 }
 
+/* The length of s[0..n) without a trailing character cut in the middle. */
+static size_t utf8_whole(const char *s, size_t n)
+{
+    size_t p = n;
+    while (p > 0 && ((unsigned char)s[p - 1] & 0xC0) == 0x80)
+        p--;
+    if (p == 0)
+        return n;
+    unsigned char lead = (unsigned char)s[p - 1];
+    size_t need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC0 ? 2 : 1;
+    return n - (p - 1) < need ? p - 1 : n;
+}
+
+/* &amp; &lt; &gt; &quot; &#39; and &#NNN; of an HTML attribute. */
+static void unescape_html(const char *s, size_t n, char *out, size_t size)
+{
+    static const struct {
+        const char *ent, *ch;
+    } named[] = {{"&amp;", "&"}, {"&lt;", "<"}, {"&gt;", ">"}, {"&quot;", "\""}, {"&apos;", "'"}};
+    size_t o = 0, i = 0;
+    for (; i < n && o + 1 < size;) {
+        bool done = false;
+        if (s[i] == '&') {
+            for (size_t k = 0; k < sizeof named / sizeof named[0] && !done; k++) {
+                size_t l = strlen(named[k].ent);
+                if (i + l <= n && strncmp(s + i, named[k].ent, l) == 0) {
+                    out[o++] = named[k].ch[0];
+                    i += l;
+                    done = true;
+                }
+            }
+            if (!done && i + 3 < n && s[i + 1] == '#') {
+                char *end;
+                long cp = strtol(s + i + 2, &end, 10);
+                if (*end == ';' && cp > 0 && cp < 128) {
+                    out[o++] = (char)cp;
+                    i = (size_t)(end - s) + 1;
+                    done = true;
+                }
+            }
+        }
+        if (!done)
+            out[o++] = s[i++];
+    }
+    if (i < n)
+        o = utf8_whole(out, o); /* cut: don't leave half a character */
+    out[o] = '\0';
+}
+
+bool kk_yt_page_title(const char *html, char *out, size_t size)
+{
+    const char *p = strstr(html, "<meta property=\"og:title\" content=\"");
+    if (!p || size < 2)
+        return false;
+    p += strlen("<meta property=\"og:title\" content=\"");
+    size_t n = strcspn(p, "\"");
+    unescape_html(p, n, out, size);
+    return out[0] != '\0';
+}
+
 char *kk_yt_live_continuation(const cJSON *initial)
 {
     const cJSON *chat = kk_json_path(initial, "contents.liveChatRenderer");
@@ -442,6 +502,7 @@ struct kk_youtube {
 
     char channel_url[512]; /* empty when started from a video */
     char video[12];
+    char title[160];    /* of the live, when the channel page told it */
     char client_version[64];
     char *continuation;
     bool skip_backlog;
@@ -458,6 +519,11 @@ static void relay_msg(void *ud, const kk_chat_msg *m)
     const kk_youtube *yt = ud;
     kk_chat_msg copy = *m;
     copy.source = yt->label;
+    char url[64];
+    if (yt->video[0] && kk_pathf(url, sizeof url, "https://www.youtube.com/watch?v=%s", yt->video)) {
+        copy.source_url = url;
+        copy.source_title = yt->title[0] ? yt->title : NULL;
+    }
     yt->sink.on_msg(yt->sink.ud, &copy);
 }
 
@@ -574,6 +640,8 @@ static void on_channel(void *ud, long status, const char *body, size_t len,
     }
     yt->said_offline = false;
     memcpy(yt->video, id, sizeof yt->video);
+    if (!kk_yt_page_title(body, yt->title, sizeof yt->title))
+        yt->title[0] = '\0';
     yt->st = ST_CHAT_PAGE;
     schedule(yt, 0);
 }
