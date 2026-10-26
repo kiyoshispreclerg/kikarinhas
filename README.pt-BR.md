@@ -152,6 +152,7 @@ build/kikarinhas --check                # confere todas as spritesheets
 | `-k, --kick CANAL` | canal do Kick: o nome ou o link `kick.com/canal` |
 | `-o, --odysee ALVO` | Odysee: link da live ou do canal, `@canal` ou o id da live (claim id) |
 | `--demo-chat` | chat de mentira com gente inventada |
+| `--chat-window` | abre a janela de chat clássico (veja [Janela de chat](#janela-de-chat)) |
 | `--max N` | avatares do chat ao mesmo tempo (padrão 30); quem está calado há mais tempo sai primeiro |
 | `--despawn S` | segundos em silêncio até o avatar sair (padrão 300) |
 | `-d, --default-avatar NOME` | todos usam este avatar (padrão: um sorteado por pessoa, sempre o mesmo) |
@@ -481,6 +482,50 @@ max_on_screen = 100
 ```
 
 Tudo isso também está na aba **Danmaku** do `kikarinhas-config`.
+
+### Janela de chat
+
+Uma janela opcional de chat clássico: as mensagens de todas as lives, de
+todas as plataformas, numa lista só, as novas embaixo (ou em cima). Serve
+para ler o chat e para o OBS capturar (a janela **Kikarinhas — chat**, com
+**Permitir transparência**) no lugar do chat em browser source. Abra pela
+aba **Janela de chat** do `kikarinhas-config`, com `--chat-window`, pelo
+socket (`{"type":"chat_window","action":"show"}`; também `hide`, `toggle` e
+`state`) ou com `open = yes`; o X do gerenciador de janelas fecha e devolve
+a memória que ela usava. As mensagens ficam guardadas (`history`) mesmo com
+ela fechada, então ela abre com o chat até ali.
+
+A roda do mouse rola para trás; depois de 30 s sem rolar, ela volta sozinha
+para as mais novas, para a live não ficar parada em mensagens velhas.
+
+```ini
+[chat_window]
+open = no
+size = 400x600
+resizable = yes
+above = no            # sempre por cima das outras janelas
+style = own           # ou bubbles: cada mensagem num balão como os dos avatares
+font = Sans
+font_size = 14
+text_color = #ffffff
+name_color = #ffffff
+badge_colors = yes    # dono, moderadores e membros nas cores das plaquinhas
+outline = #000000
+outline_width = 2     # px; 0: sem contorno
+paid_color = #ffd24a
+member_color = #8ef09c
+background = transparent   # color (background_color = #rrggbbaa) ou image
+background_color = #00000080
+background_image = ~/imagens/chat.png
+background_mode = stretch  # ou tile
+show_platform = yes   # Y, T, K, O antes do nome
+show_time = no
+hide_commands = yes
+hide_users = Nightbot, StreamElements
+fade = 0              # segundos até a mensagem sumir; 0: nunca
+newest = bottom       # ou top
+history = 200
+```
 
 ### Cenário
 

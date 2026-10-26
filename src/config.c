@@ -138,6 +138,33 @@ void kk_format_color(char out[8], uint32_t c)
     snprintf(out, 8, "#%06x", (unsigned)(c & 0xffffff));
 }
 
+bool kk_parse_rgba(const char *s, uint32_t *out)
+{
+    const char *h = *s == '#' ? s + 1 : s;
+    if (strlen(h) != 8) {
+        uint32_t rgb;
+        if (!kk_parse_color(s, &rgb))
+            return false;
+        *out = rgb << 8 | 0xff;
+        return true;
+    }
+    char rgb[7], *end;
+    memcpy(rgb, h, 6);
+    rgb[6] = '\0';
+    uint32_t c;
+    if (!kk_parse_color(rgb, &c) || !isxdigit((unsigned char)h[6]) ||
+        !isxdigit((unsigned char)h[7]))
+        return false;
+    unsigned long a = strtoul(h + 6, &end, 16);
+    *out = c << 8 | (uint32_t)a;
+    return true;
+}
+
+void kk_format_rgba(char out[10], uint32_t c)
+{
+    snprintf(out, 10, "#%08x", (unsigned)c);
+}
+
 bool kk_parse_size(const char *s, int *w, int *h)
 {
     int a, b;
@@ -335,6 +362,9 @@ void kk_config_free(kk_config *c)
     free(c->sounds);
     free(c->wall_blacklist);
     free(c->danmaku_font);
+    free(c->chatwin_font);
+    free(c->chatwin_bg_image);
+    free(c->chatwin_hide_users);
     free(c->points_name);
     for (int i = 0; i < c->n_timers; i++)
         timer_free(&c->timers[i]);
@@ -391,6 +421,21 @@ void kk_config_defaults(kk_config *c)
         .danmaku_opacity = 100,
         .danmaku_avoid = true,
         .danmaku_max = 100,
+        .chatwin_width = 400,
+        .chatwin_height = 600,
+        .chatwin_resizable = true,
+        .chatwin_size = 14,
+        .chatwin_text_color = 0xffffff,
+        .chatwin_name_color = 0xffffff,
+        .chatwin_badge_colors = true,
+        .chatwin_outline = 0x000000,
+        .chatwin_outline_width = 2,
+        .chatwin_paid_color = 0xffd24a,
+        .chatwin_member_color = 0x8ef09c,
+        .chatwin_bg_color = 0x00000080,
+        .chatwin_show_platform = true,
+        .chatwin_hide_commands = true,
+        .chatwin_history = 200,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -427,6 +472,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->n_sounds = 0;
     dst->wall_blacklist = NULL;
     dst->danmaku_font = NULL;
+    dst->chatwin_font = dst->chatwin_bg_image = dst->chatwin_hide_users = NULL;
     dst->points_name = NULL;
     dst->timers = NULL;
     dst->n_timers = 0;
@@ -449,6 +495,9 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->socket, src->socket) && ok;
     ok = kk_config_set_str(&dst->wall_blacklist, src->wall_blacklist) && ok;
     ok = kk_config_set_str(&dst->danmaku_font, src->danmaku_font) && ok;
+    ok = kk_config_set_str(&dst->chatwin_font, src->chatwin_font) && ok;
+    ok = kk_config_set_str(&dst->chatwin_bg_image, src->chatwin_bg_image) && ok;
+    ok = kk_config_set_str(&dst->chatwin_hide_users, src->chatwin_hide_users) && ok;
     ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
     for (int i = 0; i < src->n_timers && ok; i++) {
         kk_config_timer *t = add_timer(dst, src->timers[i].name);
@@ -1018,6 +1067,84 @@ static void apply_danmaku(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void get_choice(const warner *w, bool *dst, const char *no, const char *yes)
+{
+    if (strcasecmp(w->value, no) == 0)
+        *dst = false;
+    else if (strcasecmp(w->value, yes) == 0)
+        *dst = true;
+    else {
+        char expected[64];
+        snprintf(expected, sizeof expected, "%s ou %s", no, yes);
+        bad_value(w, expected);
+    }
+}
+
+static void apply_chat_window(kk_config *c, const warner *w)
+{
+    if (key_is(w, "open"))
+        get_bool(w, &c->chatwin_open);
+    else if (key_is(w, "size")) {
+        if (!kk_parse_size(w->value, &c->chatwin_width, &c->chatwin_height))
+            bad_value(w, "LxA, ex.: 400x600");
+    } else if (key_is(w, "resizable"))
+        get_bool(w, &c->chatwin_resizable);
+    else if (key_is(w, "above"))
+        get_bool(w, &c->chatwin_above);
+    else if (key_is(w, "style"))
+        get_choice(w, &c->chatwin_bubbles, "own", "bubbles");
+    else if (key_is(w, "font"))
+        get_str(w, &c->chatwin_font);
+    else if (key_is(w, "font_size"))
+        get_double(w, &c->chatwin_size, 4, 200);
+    else if (key_is(w, "text_color"))
+        get_color(w, &c->chatwin_text_color);
+    else if (key_is(w, "name_color"))
+        get_color(w, &c->chatwin_name_color);
+    else if (key_is(w, "badge_colors"))
+        get_bool(w, &c->chatwin_badge_colors);
+    else if (key_is(w, "outline"))
+        get_color(w, &c->chatwin_outline);
+    else if (key_is(w, "outline_width"))
+        get_int(w, &c->chatwin_outline_width, 0, 20, false);
+    else if (key_is(w, "paid_color"))
+        get_color(w, &c->chatwin_paid_color);
+    else if (key_is(w, "member_color"))
+        get_color(w, &c->chatwin_member_color);
+    else if (key_is(w, "background")) {
+        if (strcasecmp(w->value, "transparent") == 0)
+            c->chatwin_background = KK_CONFIG_BG_TRANSPARENT;
+        else if (strcasecmp(w->value, "color") == 0)
+            c->chatwin_background = KK_CONFIG_BG_COLOR;
+        else if (strcasecmp(w->value, "image") == 0)
+            c->chatwin_background = KK_CONFIG_BG_IMAGE;
+        else
+            bad_value(w, "transparent, color ou image");
+    } else if (key_is(w, "background_color")) {
+        if (!kk_parse_rgba(w->value, &c->chatwin_bg_color))
+            bad_value(w, "uma cor como #000000 ou, com transparência, #00000080");
+    } else if (key_is(w, "background_image"))
+        get_path(w, &c->chatwin_bg_image);
+    else if (key_is(w, "background_mode"))
+        get_choice(w, &c->chatwin_bg_tile, "stretch", "tile");
+    else if (key_is(w, "show_platform"))
+        get_bool(w, &c->chatwin_show_platform);
+    else if (key_is(w, "show_time"))
+        get_bool(w, &c->chatwin_show_time);
+    else if (key_is(w, "hide_commands"))
+        get_bool(w, &c->chatwin_hide_commands);
+    else if (key_is(w, "hide_users"))
+        get_str(w, &c->chatwin_hide_users);
+    else if (key_is(w, "fade"))
+        get_double(w, &c->chatwin_fade, 0, 3600);
+    else if (key_is(w, "newest"))
+        get_choice(w, &c->chatwin_newest_top, "bottom", "top");
+    else if (key_is(w, "history"))
+        get_int(w, &c->chatwin_history, 10, 5000, false);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -1205,6 +1332,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_wall(c, &w);
         } else if (strcasecmp(s, "danmaku") == 0) {
             apply_danmaku(c, &w);
+        } else if (strcasecmp(s, "chat_window") == 0) {
+            apply_chat_window(c, &w);
         } else if (strcasecmp(s, "points") == 0) {
             apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {

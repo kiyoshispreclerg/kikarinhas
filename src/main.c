@@ -15,6 +15,8 @@
 #include <unistd.h>
 
 #include "actions.h"
+#include "chatview.h"
+#include "chatwin.h"
 #include "commands.h"
 #include "config.h"
 #include "control.h"
@@ -71,6 +73,7 @@ static void usage(FILE *out)
             "  -o, --odysee ALVO   link da live ou do canal no Odysee, @canal ou\n"
             "                      id da live; com um canal, espera ele entrar ao vivo\n"
             "      --demo-chat     chat de mentira, para testar sem live\n"
+            "      --chat-window   abre a janela de chat clássico\n"
             "      --max N         avatares do chat ao mesmo tempo (padrão 30)\n"
             "      --despawn S     segundos em silêncio até o avatar sair (padrão 300)\n"
             "  -d, --default-avatar NOME\n"
@@ -131,6 +134,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         OPT_SOCKET,
         OPT_RELOAD,
         OPT_AVATAR_DIR,
+        OPT_CHAT_WINDOW,
     };
     static const struct option longopts[] = {
         {"mode", required_argument, NULL, 'm'},
@@ -150,6 +154,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         {"kick", required_argument, NULL, 'k'},
         {"odysee", required_argument, NULL, 'o'},
         {"demo-chat", no_argument, NULL, OPT_DEMO_CHAT},
+        {"chat-window", no_argument, NULL, OPT_CHAT_WINDOW},
         {"max", required_argument, NULL, OPT_MAX},
         {"despawn", required_argument, NULL, OPT_DESPAWN},
         {"default-avatar", required_argument, NULL, 'd'},
@@ -277,6 +282,9 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
             break;
         case OPT_DEMO_CHAT:
             cfg->demo = true;
+            break;
+        case OPT_CHAT_WINDOW:
+            cfg->chatwin_open = true;
             break;
         case OPT_MAX:
             if (!kk_parse_long(optarg, 1, 1000, &v)) {
@@ -534,6 +542,7 @@ typedef struct {
     kk_emotewall *wall;
     kk_danmaku *danmaku;
     kk_timers *timers;
+    kk_chatview *chatview;
     bool verbose;
 } chat_sink;
 
@@ -575,6 +584,7 @@ static void on_chat(void *ud, const kk_chat_msg *m)
         else if (r == KK_CMD_POOR)
             say_poor(sink, a, key);
     }
+    kk_chatview_add(sink->chatview, m, r != KK_CMD_NONE, now_seconds());
     if (r == KK_CMD_NONE && kk_danmaku_enabled(sink->danmaku)) {
         kk_rect avatars[256];
         int n = kk_stage_avatar_areas(sink->stage, avatars, 256);
@@ -672,6 +682,43 @@ static bool chat_bubbles(const kk_config *c)
     return c->show_bubbles && !c->danmaku_enabled;
 }
 
+static kk_chatview_config chatview_config(const kk_config *c)
+{
+    return (kk_chatview_config){
+        .bubbles = c->chatwin_bubbles,
+        .font = c->chatwin_font,
+        .size = c->chatwin_size,
+        .bubble_font = c->bubble_font,
+        .bubble_size = c->bubble_size,
+        .text_color = c->chatwin_text_color,
+        .name_color = c->chatwin_name_color,
+        .outline = c->chatwin_outline,
+        .paid_color = c->chatwin_paid_color,
+        .member_color = c->chatwin_member_color,
+        .badge_colors = c->chatwin_badge_colors,
+        .outline_width = c->chatwin_outline_width,
+        .background = c->chatwin_background == KK_CONFIG_BG_COLOR   ? KK_CHATVIEW_BG_COLOR
+                      : c->chatwin_background == KK_CONFIG_BG_IMAGE ? KK_CHATVIEW_BG_IMAGE
+                                                                    : KK_CHATVIEW_BG_TRANSPARENT,
+        .bg_color = c->chatwin_bg_color,
+        .bg_image = c->chatwin_bg_image,
+        .bg_tile = c->chatwin_bg_tile,
+        .show_platform = c->chatwin_show_platform,
+        .show_time = c->chatwin_show_time,
+        .hide_commands = c->chatwin_hide_commands,
+        .hide_users = c->chatwin_hide_users,
+        .fade = c->chatwin_fade,
+        .newest_top = c->chatwin_newest_top,
+        .history = c->chatwin_history,
+    };
+}
+
+static kk_chatwin_config chatwin_config(const kk_config *c)
+{
+    return (kk_chatwin_config){.width = c->chatwin_width, .height = c->chatwin_height,
+                               .resizable = c->chatwin_resizable, .above = c->chatwin_above};
+}
+
 static bool on_sound(void *ud, const kk_chat_msg *m, const char *sound)
 {
     (void)m;
@@ -757,6 +804,8 @@ typedef struct {
     kk_emotes *emotes;
     kk_emotewall *wall;
     kk_danmaku *danmaku;  /* chat flying across, when on */
+    kk_chatview *chatview; /* the classic chat: history and drawing */
+    kk_chatwin *chatwin;   /* its window, when open */
     kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
     kk_overlay *backdrop; /* scenery under the avatars */
     kk_props *props;      /* bombs and collectibles */
@@ -1062,6 +1111,12 @@ static bool reload(app *a, cJSON *warnings)
     kk_emotewall_configure(a->wall, &wc);
     kk_danmaku_config dc = danmaku_config(&cfg);
     kk_danmaku_configure(a->danmaku, &dc);
+    kk_chatview_config vc = chatview_config(&cfg);
+    kk_chatview_configure(a->chatview, &vc);
+    kk_chatwin_config wcfg = chatwin_config(&cfg);
+    kk_chatwin_configure(a->chatwin, &wcfg);
+    if (cfg.chatwin_open && !old->chatwin_open)
+        kk_chatwin_open(a->chatwin);
     if (cfg.fps != old->fps)
         set_frame_timer(a->timer_fd, cfg.fps);
 
@@ -1179,6 +1234,21 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         } else {
             cJSON_AddNullToObject(reply, "text");
         }
+    } else if (strcmp(type, "chat_window") == 0) {
+        /* {"type":"chat_window","action":"show"|"hide"|"toggle"|"state"};
+         * the reply says whether it is open. */
+        const char *act =
+            cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "action"));
+        bool open = kk_chatwin_is_open(a->chatwin);
+        if (!act || strcmp(act, "state") == 0)
+            ;
+        else if (strcmp(act, "show") == 0 || (strcmp(act, "toggle") == 0 && !open))
+            kk_chatwin_open(a->chatwin);
+        else if (strcmp(act, "hide") == 0 || strcmp(act, "toggle") == 0)
+            kk_chatwin_close(a->chatwin);
+        else
+            refuse(reply, "\"action\" deve ser show, hide, toggle ou state");
+        cJSON_AddBoolToObject(reply, "open", kk_chatwin_is_open(a->chatwin));
     } else if (strcmp(type, "ping") == 0) {
         cJSON_AddStringToObject(reply, "version", KK_VERSION);
     } else if (strcmp(type, "quit") == 0) {
@@ -1277,6 +1347,7 @@ static void run(app *a)
         }
         if (ev.redraw)
             full = true;
+        kk_chatwin_events(a->chatwin, now_seconds());
 
         fds[FD_X] = (struct pollfd){.fd = kk_window_fd(a->win), .events = POLLIN};
         fds[FD_TIMER] = (struct pollfd){.fd = a->timer_fd, .events = POLLIN};
@@ -1373,6 +1444,8 @@ static void run(app *a)
             kk_window_present(a->win, rects, n);
             full = false;
         }
+        if (tick)
+            kk_chatwin_paint(a->chatwin, t);
     }
 }
 
@@ -1598,6 +1671,18 @@ int main(int argc, char **argv)
     kk_danmaku_config dc = danmaku_config(&a.cfg);
     kk_danmaku_configure(a.danmaku, &dc);
     kk_danmaku_resize(a.danmaku, win.width, win.height);
+    a.chatview = kk_chatview_new(a.emotes);
+    a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, NULL) : NULL;
+    if (!a.chatwin) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_chatview_config vc = chatview_config(&a.cfg);
+    kk_chatview_configure(a.chatview, &vc);
+    kk_chatwin_config wcfg = chatwin_config(&a.cfg);
+    kk_chatwin_configure(a.chatwin, &wcfg);
+    if (a.cfg.chatwin_open)
+        kk_chatwin_open(a.chatwin);
     /* Pictures under the bombs and stars, then the danmaku, the emote wall
      * over all. */
     kk_stage_add_back_layer(&stage, kk_overlay_layer(a.backdrop));
@@ -1624,6 +1709,7 @@ int main(int argc, char **argv)
         .actions = &actions,
         .wall = a.wall,
         .danmaku = a.danmaku,
+        .chatview = a.chatview,
         .verbose = a.cfg.verbose,
         .timers = a.timers,
         .commands = build_commands(&a, &a.cfg, &warn),
@@ -1660,6 +1746,8 @@ int main(int argc, char **argv)
     kk_overlay_free(a.overlay);
     kk_overlay_free(a.backdrop);
     kk_danmaku_free(a.danmaku);
+    kk_chatwin_free(a.chatwin);
+    kk_chatview_free(a.chatview);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */

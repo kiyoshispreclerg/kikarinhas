@@ -37,6 +37,8 @@ LIB_SRC = src/log.c \
       src/emotes.c \
       src/emotewall.c \
       src/danmaku.c \
+      src/chatview.c \
+      src/chatwin.c \
       src/mpris.c \
       src/points.c \
       src/timers.c \

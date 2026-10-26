@@ -61,6 +61,17 @@
  *              color = #ffffff, outline = #000000, paid_color = #ffd24a,
  *              member_color = #8ef09c, opacity = 100 (%),
  *              avoid_avatars = yes, max_on_screen = 100
+ *   [chat_window] open = no, size = 400x600, resizable = yes, above = no,
+ *              style = own|bubbles, font = Sans, font_size = 14,
+ *              text_color = #ffffff, name_color = #ffffff,
+ *              badge_colors = yes, outline = #000000, outline_width = 2,
+ *              paid_color = #ffd24a, member_color = #8ef09c,
+ *              background = transparent|color|image,
+ *              background_color = #00000080 (RGBA), background_image,
+ *              background_mode = stretch|tile, show_platform = yes,
+ *              show_time = no, hide_commands = yes,
+ *              hide_users = Nightbot, StreamElements, fade = 0 (s),
+ *              newest = bottom|top, history = 200
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -124,6 +135,12 @@ typedef enum {
     KK_CONFIG_WALL_BOUNCE,
     KK_CONFIG_WALL_FLY,
 } kk_config_wall_style;
+
+typedef enum {
+    KK_CONFIG_BG_TRANSPARENT,
+    KK_CONFIG_BG_COLOR,
+    KK_CONFIG_BG_IMAGE,
+} kk_config_background;
 
 typedef struct {
     /* [window] */
@@ -202,6 +219,27 @@ typedef struct {
     int danmaku_opacity;     /* percent */
     bool danmaku_avoid;      /* keep off the avatars when it can */
     int danmaku_max;         /* on screen at once */
+    /* [chat_window]: the classic chat window (chatview.h) */
+    bool chatwin_open;       /* opens when kikarinhas starts */
+    int chatwin_width, chatwin_height;
+    bool chatwin_resizable;
+    bool chatwin_above;      /* kept over the other windows */
+    bool chatwin_bubbles;    /* style = bubbles: the speech bubbles' look */
+    char *chatwin_font;      /* NULL = "Sans" */
+    double chatwin_size;     /* points */
+    uint32_t chatwin_text_color, chatwin_name_color, chatwin_outline,
+        chatwin_paid_color, chatwin_member_color; /* 0xRRGGBB */
+    bool chatwin_badge_colors; /* names of owner/mods/members in the tags' colours */
+    int chatwin_outline_width; /* px; 0 = none */
+    kk_config_background chatwin_background;
+    uint32_t chatwin_bg_color; /* 0xRRGGBBAA */
+    char *chatwin_bg_image;
+    bool chatwin_bg_tile;    /* else stretched */
+    bool chatwin_show_platform, chatwin_show_time, chatwin_hide_commands;
+    char *chatwin_hide_users; /* comma-separated names; NULL = none */
+    double chatwin_fade;     /* seconds until a message goes; 0 = never */
+    bool chatwin_newest_top;
+    int chatwin_history;     /* messages kept */
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;
@@ -276,5 +314,9 @@ bool kk_parse_double(const char *s, double lo, double hi, double *out);
 bool kk_parse_color(const char *s, uint32_t *out);
 /* 0xRRGGBB to "#rrggbb" (out has room for 8 bytes). */
 void kk_format_color(char out[8], uint32_t c);
+/* "#rrggbbaa", or a colour as above (opaque), to 0xRRGGBBAA. */
+bool kk_parse_rgba(const char *s, uint32_t *out);
+/* 0xRRGGBBAA to "#rrggbbaa" (10 bytes). */
+void kk_format_rgba(char out[10], uint32_t c);
 
 #endif

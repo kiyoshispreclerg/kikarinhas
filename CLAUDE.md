@@ -108,6 +108,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/emoji.c`, `src/emoji_table.h` | acha emojis Unicode no texto (tabela gerada por `tools/gen_emoji_table.py`) |
 | `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG/GIF baixado (todos os quadros, `kk_emote_anim` com contagem de referências) + cache em `~/.cache/kikarinhas/emotes` |
 | `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
+| `src/chatview.c`, `src/chatwin.c` | janela de chat clássico: histórico e desenho (sem X, testável) e a janela em si (filha da principal na mesma conexão X, `kk_window_open_child`) |
 | `src/danmaku.c` | danmaku: mensagens atravessando a tela no lugar dos balões, faixas sorteadas desviando dos avatares |
 | `docs/screenshots/`, `tools/screenshots.py` | imagens do README, tiradas por um Xephyr com cena montada pelo socket (`python3 tools/screenshots.py`) |
 | `docs/avatares/` | guia para criar avatares, gear e paletas (formato do SA); `kit-exemplo/` é gerado por `tools/gen_kit_exemplo.py`. Mudou o leitor (`sa.c`)? Atualize aqui |
