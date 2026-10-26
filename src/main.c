@@ -28,6 +28,7 @@
 #include "http.h"
 #include "library.h"
 #include "log.h"
+#include "menu.h"
 #include "mpris.h"
 #include "overlay.h"
 #include "pointer.h"
@@ -815,6 +816,8 @@ typedef struct {
     kk_chatview *chatview; /* the classic chat: history and drawing */
     kk_chatwin *chatwin;   /* its window, when open */
     kk_highlight *highlight; /* the comment picked there, on the stage */
+    kk_menu *menu;         /* its right-click menu, while open */
+    uint64_t menu_id;      /* the message it was opened on (0: none) */
     kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
     kk_overlay *backdrop; /* scenery under the avatars */
     kk_props *props;      /* bombs and collectibles */
@@ -1231,6 +1234,79 @@ static void on_chat_click(void *ud, uint64_t id)
     highlight(ud, id);
 }
 
+enum {
+    MENU_HIGHLIGHT,
+    MENU_COPY,
+    MENU_HIDE,
+    MENU_IGNORE,
+    MENU_NEWEST,
+    MENU_CLOSE,
+};
+
+static void on_menu(void *ud, int action)
+{
+    app *a = ud;
+    kk_chat_msg m;
+    bool have = a->menu_id && kk_chatview_get(a->chatview, a->menu_id, &m);
+    char key[256];
+    switch (action) {
+    case MENU_HIGHLIGHT:
+        highlight(a, a->menu_id);
+        break;
+    case MENU_COPY:
+        if (have)
+            kk_window_set_clipboard(a->win, m.text);
+        break;
+    case MENU_HIDE:
+        if (a->menu_id == kk_chatview_marked(a->chatview))
+            highlight(a, 0);
+        kk_chatview_hide(a->chatview, a->menu_id);
+        break;
+    case MENU_IGNORE:
+        if (!have)
+            break;
+        snprintf(key, sizeof key, "%s:%s", m.platform, m.user_id);
+        kk_chatview_ignore(a->chatview, key);
+        kk_log_info("janela de chat: mensagens de %s escondidas até reiniciar", m.name);
+        break;
+    case MENU_NEWEST:
+        kk_chatview_follow(a->chatview);
+        break;
+    case MENU_CLOSE:
+        kk_chatwin_close(a->chatwin);
+        break;
+    }
+}
+
+/* Right click in the chat window: a menu in a window of its own, which the
+ * stream doesn't see. id is the message under the pointer (0: none). */
+static void on_chat_menu(void *ud, uint64_t id, int x, int y)
+{
+    app *a = ud;
+    kk_menu_close(a->menu);
+    a->menu = NULL;
+    kk_chat_msg m;
+    if (id && !kk_chatview_get(a->chatview, id, &m))
+        id = 0;
+    a->menu_id = id;
+    kk_menu_item items[KK_MENU_MAX_ITEMS];
+    int n = 0;
+    char ignore[300];
+    if (id) {
+        bool marked = id == kk_chatview_marked(a->chatview);
+        items[n++] = (kk_menu_item){marked ? "Tirar o destaque" : "Destacar no palco",
+                                    MENU_HIGHLIGHT, true};
+        items[n++] = (kk_menu_item){"Copiar o texto", MENU_COPY, m.text[0] != '\0'};
+        items[n++] = (kk_menu_item){"Esconder esta mensagem", MENU_HIDE, true};
+        snprintf(ignore, sizeof ignore, "Esconder as mensagens de %s", m.name);
+        items[n++] = (kk_menu_item){ignore, MENU_IGNORE, true};
+    }
+    items[n++] = (kk_menu_item){"Voltar para as mais novas", MENU_NEWEST,
+                                kk_chatview_scrolled(a->chatview)};
+    items[n++] = (kk_menu_item){"Fechar a janela de chat", MENU_CLOSE, true};
+    a->menu = kk_menu_open(a->win, x, y, items, n, on_menu, a);
+}
+
 static void on_request(void *ud, const char *type, const cJSON *req, cJSON *reply)
 {
     app *a = ud;
@@ -1399,6 +1475,10 @@ static void run(app *a)
         if (ev.redraw)
             full = true;
         kk_chatwin_events(a->chatwin, now_seconds());
+        if (a->menu && !kk_menu_events(a->menu)) {
+            kk_menu_close(a->menu);
+            a->menu = NULL;
+        }
 
         fds[FD_X] = (struct pollfd){.fd = kk_window_fd(a->win), .events = POLLIN};
         fds[FD_TIMER] = (struct pollfd){.fd = a->timer_fd, .events = POLLIN};
@@ -1727,7 +1807,7 @@ int main(int argc, char **argv)
     kk_danmaku_configure(a.danmaku, &dc);
     kk_danmaku_resize(a.danmaku, win.width, win.height);
     a.chatview = kk_chatview_new(a.emotes);
-    kk_chatwin_handlers handlers = {.click = on_chat_click, .ud = &a};
+    kk_chatwin_handlers handlers = {.click = on_chat_click, .menu = on_chat_menu, .ud = &a};
     a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, &handlers) : NULL;
     a.highlight = kk_highlight_new(&stage, a.emotes);
     if (!a.chatwin || !a.highlight) {
@@ -1809,6 +1889,7 @@ int main(int argc, char **argv)
     kk_overlay_free(a.overlay);
     kk_overlay_free(a.backdrop);
     kk_danmaku_free(a.danmaku);
+    kk_menu_close(a.menu);
     kk_chatwin_free(a.chatwin);
     kk_chatview_free(a.chatview);
     kk_highlight_free(a.highlight);

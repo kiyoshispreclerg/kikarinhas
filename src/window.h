@@ -80,6 +80,8 @@ struct kk_window {
     int n_children;
     kk_window_events pending;
     bool popup;
+
+    char *clipboard; /* what this window offers as CLIPBOARD, while it owns it */
 };
 
 int kk_window_open(kk_window *w, kk_mode mode, int width, int height);
@@ -93,6 +95,11 @@ void kk_window_close(kk_window *w);
 
 /* A child's events since the last call, into ev (which is overwritten). */
 void kk_window_take_events(kk_window *w, kk_window_events *ev);
+
+/* Offers text (copied) as the clipboard's content (CLIPBOARD, the one of
+ * Ctrl+V); the window hands it to whoever pastes until another program
+ * takes the clipboard. */
+void kk_window_set_clipboard(kk_window *w, const char *text);
 
 /* Takes the pointer for a popup, so a click outside it reaches it too (at
  * coordinates outside the window). False if another program holds it. */

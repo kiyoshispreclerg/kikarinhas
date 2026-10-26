@@ -678,6 +678,13 @@ bool kk_chatview_scrolled(const kk_chatview *v)
     return v->scroll > 0;
 }
 
+void kk_chatview_follow(kk_chatview *v)
+{
+    if (v->scroll > 0)
+        v->dirty = true;
+    v->scroll = 0;
+}
+
 uint64_t kk_chatview_hit(const kk_chatview *v, int x, int y)
 {
     for (int i = 0; i < v->n_shown; i++) {

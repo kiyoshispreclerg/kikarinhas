@@ -311,6 +311,7 @@ void kk_window_close(kk_window *w)
 {
     if (!w->dpy)
         return;
+    free(w->clipboard);
     buffer_destroy(w);
     if (w->gc)
         XFreeGC(w->dpy, w->gc);
@@ -336,6 +337,39 @@ void kk_window_take_events(kk_window *w, kk_window_events *ev)
 {
     *ev = w->pending;
     memset(&w->pending, 0, sizeof w->pending);
+}
+
+void kk_window_set_clipboard(kk_window *w, const char *text)
+{
+    char *copy = strdup(text);
+    if (!copy)
+        return;
+    free(w->clipboard);
+    w->clipboard = copy;
+    XSetSelectionOwner(w->dpy, XInternAtom(w->dpy, "CLIPBOARD", False), w->win, CurrentTime);
+    XFlush(w->dpy);
+}
+
+/* Someone pastes: put the text where they asked, or say what we have. */
+static void answer_selection(kk_window *w, const XSelectionRequestEvent *rq)
+{
+    Atom utf8 = XInternAtom(w->dpy, "UTF8_STRING", False);
+    Atom targets = XInternAtom(w->dpy, "TARGETS", False);
+    XSelectionEvent reply = {.type = SelectionNotify, .display = rq->display,
+                             .requestor = rq->requestor, .selection = rq->selection,
+                             .target = rq->target, .time = rq->time, .property = None};
+    Atom property = rq->property != None ? rq->property : rq->target; /* old clients */
+    if (w->clipboard && rq->target == targets) {
+        Atom offered[] = {targets, utf8, XA_STRING};
+        XChangeProperty(w->dpy, rq->requestor, property, XA_ATOM, 32, PropModeReplace,
+                        (const unsigned char *)offered, 3);
+        reply.property = property;
+    } else if (w->clipboard && (rq->target == utf8 || rq->target == XA_STRING)) {
+        XChangeProperty(w->dpy, rq->requestor, property, rq->target, 8, PropModeReplace,
+                        (const unsigned char *)w->clipboard, (int)strlen(w->clipboard));
+        reply.property = property;
+    }
+    XSendEvent(w->dpy, rq->requestor, False, NoEventMask, (XEvent *)&reply);
 }
 
 bool kk_window_grab_pointer(kk_window *w)
@@ -443,6 +477,13 @@ static void handle_event(kk_window *w, XEvent *e, kk_window_events *ev)
         break;
     case LeaveNotify:
         ev->left = true;
+        break;
+    case SelectionRequest:
+        answer_selection(w, &e->xselectionrequest);
+        break;
+    case SelectionClear:
+        free(w->clipboard);
+        w->clipboard = NULL;
         break;
     case DestroyNotify:
         w->win = None; /* gone already: closing must not destroy it again */

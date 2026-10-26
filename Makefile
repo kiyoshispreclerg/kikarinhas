@@ -40,6 +40,7 @@ LIB_SRC = src/log.c \
       src/chatview.c \
       src/chatwin.c \
       src/highlight.c \
+      src/menu.c \
       src/mpris.c \
       src/points.c \
       src/timers.c \

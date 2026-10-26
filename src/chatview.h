@@ -79,6 +79,8 @@ bool kk_chatview_get(const kk_chatview *v, uint64_t id, kk_chat_msg *out);
  * while without scrolling, so the stream doesn't stay stuck on old ones. */
 void kk_chatview_scroll(kk_chatview *v, int px, double now);
 bool kk_chatview_scrolled(const kk_chatview *v);
+/* Back to the newest messages, following the chat again. */
+void kk_chatview_follow(kk_chatview *v);
 
 /* The message drawn at (x, y) in the last draw, or 0. */
 uint64_t kk_chatview_hit(const kk_chatview *v, int x, int y);

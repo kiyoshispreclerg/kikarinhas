@@ -496,7 +496,11 @@ a memória que ela usava. As mensagens ficam guardadas (`history`) mesmo com
 ela fechada, então ela abre com o chat até ali.
 
 A roda do mouse rola para trás; depois de 30 s sem rolar, ela volta sozinha
-para as mais novas, para a live não ficar parada em mensagens velhas.
+para as mais novas, para a live não ficar parada em mensagens velhas. O
+clique direito abre um menu (numa janela própria, que o OBS não captura):
+destacar a mensagem no palco, copiar o texto, escondê-la, esconder tudo
+daquela pessoa até o kikarinhas reiniciar (bots, spam), voltar para as mais
+novas, fechar a janela.
 
 ```ini
 [chat_window]

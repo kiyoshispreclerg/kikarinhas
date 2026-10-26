@@ -501,6 +501,10 @@ closed, so it opens with the chat so far.
 
 The mouse wheel scrolls back; after 30 s without scrolling it goes back to
 the newest messages by itself, so the stream doesn't stay stuck on old ones.
+A right click opens a menu (in a window of its own, which OBS doesn't
+capture): highlight the message on the stage, copy its text, hide it, hide
+everything from that person until kikarinhas restarts (bots, spam), go back
+to the newest messages, close the window.
 
 ```ini
 [chat_window]

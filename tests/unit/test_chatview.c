@@ -203,6 +203,10 @@ TEST(scrolling_back_and_returning)
     CHECK(!kk_chatview_scrolled(v));
     kk_chatview_scroll(v, -50, 80); /* past the newest: stays there */
     CHECK(!kk_chatview_scrolled(v));
+    kk_chatview_scroll(v, 200, 81);
+    CHECK(kk_chatview_scrolled(v));
+    kk_chatview_follow(v);
+    CHECK(!kk_chatview_scrolled(v) && kk_chatview_dirty(v, 81));
     kk_chatview_free(v);
 }
 
