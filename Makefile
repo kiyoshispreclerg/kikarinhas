@@ -86,7 +86,7 @@ pot update-po:
 $(BUILD)/kikarinhas: $(BUILD)/$(MAIN:.c=.o) $(LIBKK)
 	$(CC) $(ALL_LDFLAGS) -o $@ $^ $(LDLIBS)
 
-CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/danmaku.c config/audience.c config/sources.c config/avatars.c config/commands.c config/points.c config/timers.c config/scenery.c
+CONFIG_SRC = config/main.c config/sounds.c config/wall.c config/danmaku.c config/chatwin.c config/audience.c config/sources.c config/avatars.c config/commands.c config/points.c config/timers.c config/scenery.c
 CONFIG_OBJ = $(patsubst %.c,$(BUILD)/%.o,$(CONFIG_SRC))
 
 $(BUILD)/config/%.o: config/%.c

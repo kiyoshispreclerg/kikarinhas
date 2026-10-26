@@ -116,6 +116,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |
+| `config/chatwin.c` | aba Janela de chat: `[chat_window]` e o botão que mostra/esconde a janela pelo socket |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
 | `config/timers.c` | aba Timers: lista e diálogo de cada timer |
 | `config/scenery.c` | aba Cenário: imagens fixas atrás ou na frente dos avatares |
