@@ -3,6 +3,7 @@ config/sounds.c
 config/wall.c
 config/danmaku.c
 config/chatwin.c
+config/questions.c
 config/audience.c
 config/sources.c
 config/avatars.c

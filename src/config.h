@@ -75,6 +75,7 @@
  *   [highlight] card = yes, x = 50, y = 25 (% of the window), width = 50 (%),
  *              font = Sans, font_size = 18, seconds = 0 (until cleared),
  *              spotlight = yes
+ *   [questions] auto = no (messages ending in "?" go in too), max = 50
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -251,6 +252,9 @@ typedef struct {
     double hl_size;          /* points */
     double hl_seconds;       /* until it goes by itself; 0 = until cleared */
     bool hl_spotlight;       /* light on the author's avatar */
+    /* [questions]: the queue of !pergunta (questions.h) */
+    bool questions_auto;     /* messages ending in "?" go in too */
+    int questions_max;
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;

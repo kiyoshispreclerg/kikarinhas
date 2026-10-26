@@ -110,6 +110,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
 | `src/chatview.c`, `src/chatwin.c` | janela de chat clássico: histórico e desenho (sem X, testável) e a janela em si (filha da principal na mesma conexão X, `kk_window_open_child`) |
 | `src/menu.c` | menu de clique direito numa janela popup própria (o OBS não captura), com o ponteiro preso enquanto aberto |
+| `src/questions.c` | fila de perguntas (`!pergunta`, mensagens com "?"), mostrada só no configurador |
 | `src/highlight.c` | comentário em destaque: cartão no palco (camada da frente) e holofote no avatar de quem escreveu (camada de trás) |
 | `src/danmaku.c` | danmaku: mensagens atravessando a tela no lugar dos balões, faixas sorteadas desviando dos avatares |
 | `docs/screenshots/`, `tools/screenshots.py` | imagens do README, tiradas por um Xephyr com cena montada pelo socket (`python3 tools/screenshots.py`) |
@@ -118,6 +119,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |
+| `config/questions.c` | aba Perguntas: a fila do kikarinhas rodando, pedida pelo socket a cada 2 s enquanto visível |
 | `config/chatwin.c` | aba Janela de chat: `[chat_window]` e o botão que mostra/esconde a janela pelo socket |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
 | `config/timers.c` | aba Timers: lista e diálogo de cada timer |

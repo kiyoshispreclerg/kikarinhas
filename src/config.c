@@ -23,7 +23,7 @@ static const char *const ACTIONS[] = {
     "emote", "hug", "attack", "sound", "help", "text", "image", "nowplaying",
     "points", "give", "award", "top", "left", "right", "move", "stand",
     "freeze", "scale", "sling", "bomb", "spawn", "roll", "8ball", "slots",
-    "bet", NULL,
+    "bet", "question", NULL,
 };
 
 /* Cooldowns follow Stream Avatars' defaults where it has one. CMD_AS is a
@@ -68,6 +68,7 @@ static const kk_config_command DEFAULT_COMMANDS[] = {
     CMD_AS("bola8", "8ball", 10, 0, "8ball", "bola"),
     CMD("slots", 30, 0, "cacaniquel", "caçaniquel", "slot"),
     CMD("bet", 4, 0, "aposta", "apostar", "roleta"),
+    CMD("question", 30, 0, "pergunta", "pergunte", "duvida", "dúvida"),
 };
 #undef CMD
 #undef CMD_AS
@@ -443,6 +444,7 @@ void kk_config_defaults(kk_config *c)
         .hl_width = 50,
         .hl_size = 18,
         .hl_spotlight = true,
+        .questions_max = 50,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -1176,6 +1178,16 @@ static void apply_highlight(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void apply_questions(kk_config *c, const warner *w)
+{
+    if (key_is(w, "auto"))
+        get_bool(w, &c->questions_auto);
+    else if (key_is(w, "max"))
+        get_int(w, &c->questions_max, 1, 1000, false);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -1367,6 +1379,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_chat_window(c, &w);
         } else if (strcasecmp(s, "highlight") == 0) {
             apply_highlight(c, &w);
+        } else if (strcasecmp(s, "questions") == 0) {
+            apply_questions(c, &w);
         } else if (strcasecmp(s, "points") == 0) {
             apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {

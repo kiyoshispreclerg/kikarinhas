@@ -20,6 +20,7 @@ typedef struct audience_tab audience_tab;
 typedef struct wall_tab wall_tab;
 typedef struct danmaku_tab danmaku_tab;
 typedef struct chatwin_tab chatwin_tab;
+typedef struct questions_tab questions_tab;
 typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
 typedef struct points_tab points_tab;
@@ -54,6 +55,7 @@ typedef struct {
     wall_tab *wall;
     danmaku_tab *danmaku;
     chatwin_tab *chatwin;
+    questions_tab *questions;
     sources_tab *sources;
     avatars_tab *avatars;
     points_tab *points;
@@ -149,6 +151,12 @@ void danmaku_free(editor *e);
 GtkWidget *chatwin_page(editor *e, const kk_config *cfg);
 void chatwin_collect(editor *e);
 void chatwin_free(editor *e);
+
+/* The "Questions" tab (questions.c): the running kikarinhas' question
+ * queue, refreshed while in view, and [questions]. */
+GtkWidget *questions_page(editor *e, const kk_config *cfg);
+void questions_collect(editor *e);
+void questions_free(editor *e);
 
 /* Avatar folders (avatars.c): the list in the Avatares tab, and every
  * avatar of every folder as the widgets say, loaded once on demand (NULL if

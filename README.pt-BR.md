@@ -552,6 +552,27 @@ seconds = 0      # até sumir sozinho; 0: só clicando de novo
 spotlight = yes
 ```
 
+#### Fila de perguntas
+
+O chat manda perguntas com `!pergunta TEXTO` (ou `!question`, `!pergunte`,
+`!duvida`; o comando fica na aba Comandos como os outros), e com
+`auto = yes` toda mensagem terminada em `?` também entra. A fila é só do
+streamer: aparece na aba **Perguntas** do `kikarinhas-config` (atualizada a
+cada dois segundos), nunca na live. Destaque uma (clique duplo) para mostrá-la
+no palco como um clique na janela de chat, com o holofote em quem perguntou;
+remova, ou esvazie a fila. O menu de clique direito da janela de chat também
+põe qualquer mensagem na fila.
+
+```ini
+[questions]
+auto = no   # mensagens terminadas em "?" também entram
+max = 50    # passando disso, as mais antigas saem
+```
+
+Pelo socket: `{"type":"questions"}` lista, e
+`{"type":"question","action":"highlight"|"remove","id":N}` ou
+`{"type":"question","action":"clear"}` cuidam delas.
+
 ### Cenário
 
 Imagens que ficam o tempo todo na janela: um chão ou fundo atrás dos
@@ -641,6 +662,7 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!bola8 [pergunta]` | `!8ball`, `!bola` | a bola 8 mágica responde | 10 s |
 | `!slots N` | `!cacaniquel`, `!slot` | caça-níquel: aposta N pontos | 30 s |
 | `!bet N TIPO` | `!aposta`, `!roleta` | aposta na roleta (veja abaixo) | 4 s |
+| `!question TEXTO` | `!pergunta`, `!pergunte`, `!duvida` | põe uma pergunta na fila que o streamer vai respondendo (veja [Fila de perguntas](#fila-de-perguntas)) | 30 s |
 | `!freeze [@nome]` | `!congelar` | congela (ou descongela) o avatar no lugar; só moderadores | — |
 | `!scale [@nome] [N]` | `!tamanho`, `!escala` | muda o tamanho (`150`, `150%` ou `1.5`; de 25% a 400%; sem N, volta ao normal); só moderadores | — |
 | `!spawn [N]` | `!estrelas` | solta N estrelas para pegar (padrão 5); só moderadores | 10 s para todos |

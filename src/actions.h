@@ -9,6 +9,7 @@
 #include "overlay.h"
 #include "points.h"
 #include "props.h"
+#include "questions.h"
 #include "stage.h"
 
 /* The built-in chat commands and what they do to the avatars. */
@@ -47,6 +48,7 @@ typedef struct {
     int help_count;
     double help_seconds; /* -1: by the number of lines */
     kk_props *props;     /* bombs and collectibles; may be NULL */
+    kk_questions *questions; /* where !pergunta goes; may be NULL */
     /* Set by kk_actions_register from [points]. */
     long catch_points;   /* each collectible (!spawn) */
     long min_bet, max_bet; /* !slots and !bet */

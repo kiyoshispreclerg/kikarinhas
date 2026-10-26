@@ -594,6 +594,20 @@ static bool cmd_roll(const kk_cmd_call *c)
     return true;
 }
 
+/* !pergunta TEXT: into the question queue, for the streamer to pick. */
+static bool cmd_question(const kk_cmd_call *c)
+{
+    kk_actions *a = ctx(c);
+    if (!a->questions || !kk_questions_add(a->questions, c->msg, arg(c), a->now))
+        return false;
+    if (a->self) {
+        char text[120];
+        snprintf(text, sizeof text, "❓ Pergunta na fila (%d)", kk_questions_count(a->questions));
+        note(a, a->self, text, text_seconds(c, text));
+    }
+    return true;
+}
+
 /* !bola8 [pergunta] */
 static bool cmd_eightball(const kk_cmd_call *c)
 {
@@ -813,7 +827,7 @@ kk_cmd_fn kk_actions_find(const char *action)
         {"stand", cmd_stand},   {"freeze", cmd_freeze}, {"scale", cmd_scale},
         {"sling", cmd_sling},   {"bomb", cmd_bomb},   {"spawn", cmd_spawn},
         {"roll", cmd_roll},     {"8ball", cmd_eightball}, {"slots", cmd_slots},
-        {"bet", cmd_bet},
+        {"bet", cmd_bet},       {"question", cmd_question},
     };
     for (size_t i = 0; i < sizeof table / sizeof table[0]; i++)
         if (strcmp(table[i].name, action) == 0)
@@ -846,7 +860,7 @@ static void set_help(kk_commands *c, const kk_config_command *k)
         {"freeze", "[@nome]"}, {"scale", "[@nome] [N]"},
         {"sling", "[ângulo] [força]"}, {"bomb", "[@nome]"}, {"spawn", "[N]"},
         {"roll", "[N]"},      {"8ball", "[pergunta]"}, {"slots", "N"},
-        {"bet", "N TIPO"},
+        {"bet", "N TIPO"},    {"question", "TEXTO"},
     };
     char base[160], line[200];
     const char *hint = "";

@@ -545,6 +545,8 @@ typedef struct {
     kk_danmaku *danmaku;
     kk_timers *timers;
     kk_chatview *chatview;
+    kk_questions *questions;
+    bool questions_auto; /* messages ending in "?" go in the queue too */
     bool verbose;
 } chat_sink;
 
@@ -587,6 +589,8 @@ static void on_chat(void *ud, const kk_chat_msg *m)
             say_poor(sink, a, key);
     }
     kk_chatview_add(sink->chatview, m, r != KK_CMD_NONE, now_seconds());
+    if (r == KK_CMD_NONE && sink->questions_auto && kk_questions_looks_like(m->text))
+        kk_questions_add(sink->questions, m, NULL, now_seconds());
     if (r == KK_CMD_NONE && kk_danmaku_enabled(sink->danmaku)) {
         kk_rect avatars[256];
         int n = kk_stage_avatar_areas(sink->stage, avatars, 256);
@@ -816,6 +820,8 @@ typedef struct {
     kk_chatview *chatview; /* the classic chat: history and drawing */
     kk_chatwin *chatwin;   /* its window, when open */
     kk_highlight *highlight; /* the comment picked there, on the stage */
+    kk_questions *questions; /* !pergunta, for the streamer to pick */
+    uint64_t hl_question;  /* the question highlighted now (0: none) */
     kk_menu *menu;         /* its right-click menu, while open */
     uint64_t menu_id;      /* the message it was opened on (0: none) */
     kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
@@ -1129,6 +1135,8 @@ static bool reload(app *a, cJSON *warnings)
     kk_chatwin_configure(a->chatwin, &wcfg);
     kk_highlight_config hc = highlight_config(&cfg);
     kk_highlight_configure(a->highlight, &hc);
+    kk_questions_set_max(a->questions, cfg.questions_max);
+    a->sink.questions_auto = cfg.questions_auto;
     if (cfg.chatwin_open && !old->chatwin_open)
         kk_chatwin_open(a->chatwin);
     if (cfg.fps != old->fps)
@@ -1207,26 +1215,95 @@ static void set_user(app *a, const cJSON *req, cJSON *reply)
     kk_users_set(a->users, key, KK_USER_PALETTE, NULL);
 }
 
+/* Shows m on the stage; its author's avatar comes back if it had left, and
+ * jumps. */
+static void show_highlight(app *a, const kk_chat_msg *m)
+{
+    kk_highlight_show(a->highlight, m, now_seconds());
+    kk_avatar *av = kk_stage_chatter(a->stage, m);
+    if (av)
+        kk_avatar_jump(av);
+}
+
 /* Highlights message id of the chat window's history (0, or the one
- * already highlighted: takes it away). Its author's avatar comes back to
- * the stage if it had left, and jumps. False if the message is gone. */
+ * already highlighted: takes it away). False if the message is gone. */
 static bool highlight(app *a, uint64_t id)
 {
-    double now = now_seconds();
     kk_chat_msg m;
     if (!id || id == kk_chatview_marked(a->chatview)) {
-        kk_highlight_clear(a->highlight, now);
+        kk_highlight_clear(a->highlight, now_seconds());
         kk_chatview_set_marked(a->chatview, 0);
+        a->hl_question = 0;
         return true;
     }
     if (!kk_chatview_get(a->chatview, id, &m))
         return false;
-    kk_highlight_show(a->highlight, &m, now);
+    show_highlight(a, &m);
     kk_chatview_set_marked(a->chatview, id);
-    kk_avatar *av = strcmp(m.platform, "timer") != 0 ? kk_stage_chatter(a->stage, &m) : NULL;
-    if (av)
-        kk_avatar_jump(av);
+    a->hl_question = 0;
     return true;
+}
+
+/* The same for question id of the queue (the one shown: takes it away). */
+static bool highlight_question(app *a, uint64_t id)
+{
+    kk_chat_msg m;
+    if (id && id == a->hl_question) {
+        highlight(a, 0);
+        return true;
+    }
+    if (!kk_questions_message(a->questions, id, &m))
+        return false;
+    show_highlight(a, &m);
+    kk_chatview_set_marked(a->chatview, 0);
+    kk_questions_set_shown(a->questions, id);
+    a->hl_question = id;
+    return true;
+}
+
+/* {"type":"questions"}: the queue, oldest first, for the configurator. */
+static void list_questions(app *a, cJSON *reply)
+{
+    cJSON *list = cJSON_AddArrayToObject(reply, "questions");
+    double now = now_seconds();
+    for (int i = 0; i < kk_questions_count(a->questions); i++) {
+        const kk_question *q = kk_questions_at(a->questions, i);
+        cJSON *o = cJSON_CreateObject();
+        cJSON_AddNumberToObject(o, "id", (double)q->id);
+        cJSON_AddStringToObject(o, "platform", q->platform);
+        cJSON_AddStringToObject(o, "name", q->name);
+        cJSON_AddStringToObject(o, "text", q->text);
+        cJSON_AddNumberToObject(o, "age", (double)(long)(now - q->t));
+        cJSON_AddBoolToObject(o, "shown", q->shown);
+        cJSON_AddItemToArray(list, o);
+    }
+    cJSON_AddNumberToObject(reply, "highlighted",
+                            kk_highlight_active(a->highlight) ? (double)a->hl_question : 0);
+}
+
+/* {"type":"question","action":"highlight"|"remove"|"clear","id":N} */
+static void question_request(app *a, const cJSON *req, cJSON *reply)
+{
+    const char *act = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "action"));
+    const cJSON *idj = cJSON_GetObjectItemCaseSensitive(req, "id");
+    uint64_t id = cJSON_IsNumber(idj) && idj->valuedouble >= 1 ? (uint64_t)idj->valuedouble : 0;
+    if (act && strcmp(act, "clear") == 0) {
+        if (a->hl_question)
+            highlight(a, 0);
+        kk_questions_clear(a->questions);
+    } else if (!act || (strcmp(act, "highlight") != 0 && strcmp(act, "remove") != 0)) {
+        refuse(reply, "\"action\" deve ser highlight, remove ou clear");
+    } else if (!kk_questions_find(a->questions, id)) {
+        refuse(reply, "pergunta fora da fila");
+    } else if (strcmp(act, "highlight") == 0) {
+        highlight_question(a, id);
+    } else {
+        if (id == a->hl_question)
+            highlight(a, 0);
+        kk_questions_remove(a->questions, id);
+    }
+    cJSON_AddNumberToObject(reply, "highlighted",
+                            kk_highlight_active(a->highlight) ? (double)a->hl_question : 0);
 }
 
 static void on_chat_click(void *ud, uint64_t id)
@@ -1237,6 +1314,7 @@ static void on_chat_click(void *ud, uint64_t id)
 enum {
     MENU_HIGHLIGHT,
     MENU_COPY,
+    MENU_QUEUE,
     MENU_HIDE,
     MENU_IGNORE,
     MENU_NEWEST,
@@ -1256,6 +1334,10 @@ static void on_menu(void *ud, int action)
     case MENU_COPY:
         if (have)
             kk_window_set_clipboard(a->win, m.text);
+        break;
+    case MENU_QUEUE:
+        if (have)
+            kk_questions_add(a->questions, &m, NULL, now_seconds());
         break;
     case MENU_HIDE:
         if (a->menu_id == kk_chatview_marked(a->chatview))
@@ -1297,6 +1379,7 @@ static void on_chat_menu(void *ud, uint64_t id, int x, int y)
         items[n++] = (kk_menu_item){marked ? "Tirar o destaque" : "Destacar no palco",
                                     MENU_HIGHLIGHT, true};
         items[n++] = (kk_menu_item){"Copiar o texto", MENU_COPY, m.text[0] != '\0'};
+        items[n++] = (kk_menu_item){"Pôr na fila de perguntas", MENU_QUEUE, m.text[0] != '\0'};
         items[n++] = (kk_menu_item){"Esconder esta mensagem", MENU_HIDE, true};
         snprintf(ignore, sizeof ignore, "Esconder as mensagens de %s", m.name);
         items[n++] = (kk_menu_item){ignore, MENU_IGNORE, true};
@@ -1361,6 +1444,10 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
                  !highlight(a, (uint64_t)id->valuedouble))
             refuse(reply, "mensagem fora do histórico");
         cJSON_AddNumberToObject(reply, "id", (double)kk_chatview_marked(a->chatview));
+    } else if (strcmp(type, "questions") == 0) {
+        list_questions(a, reply);
+    } else if (strcmp(type, "question") == 0) {
+        question_request(a, req, reply);
     } else if (strcmp(type, "chat_window") == 0) {
         /* {"type":"chat_window","action":"show"|"hide"|"toggle"|"state"};
          * the reply says whether it is open. */
@@ -1563,8 +1650,11 @@ static void run(app *a)
                 kk_danmaku_update(a->danmaku, t);
                 kk_highlight_update(a->highlight, t);
                 /* Gone by itself (seconds): unmark it in the chat window. */
-                if (!kk_highlight_active(a->highlight) && kk_chatview_marked(a->chatview))
-                    kk_chatview_set_marked(a->chatview, 0);
+                if (!kk_highlight_active(a->highlight)) {
+                    if (kk_chatview_marked(a->chatview))
+                        kk_chatview_set_marked(a->chatview, 0);
+                    a->hl_question = 0;
+                }
                 tick = true;
             }
         }
@@ -1822,6 +1912,12 @@ int main(int argc, char **argv)
         kk_chatwin_open(a.chatwin);
     kk_highlight_config hc = highlight_config(&a.cfg);
     kk_highlight_configure(a.highlight, &hc);
+    a.questions = kk_questions_new();
+    if (!a.questions) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_questions_set_max(a.questions, a.cfg.questions_max);
     /* Under the avatars the scenery and the highlight's spotlight; over
      * them pictures, bombs and stars, the danmaku, the emote wall and the
      * highlighted comment over all. */
@@ -1843,7 +1939,7 @@ int main(int argc, char **argv)
     kk_timers_configure(a.timers, &a.cfg, now_seconds());
     kk_actions actions = {.stage = &stage, .sound = on_sound, .sound_ud = a.sounds,
                           .overlay = a.overlay, .mpris = a.mpris, .points = a.points,
-                          .props = a.props, .now = now_seconds()};
+                          .props = a.props, .questions = a.questions, .now = now_seconds()};
     a.actions = &actions;
     kk_props_set_catch(a.props, kk_actions_catch, &actions);
     a.sink = (chat_sink){
@@ -1852,6 +1948,8 @@ int main(int argc, char **argv)
         .wall = a.wall,
         .danmaku = a.danmaku,
         .chatview = a.chatview,
+        .questions = a.questions,
+        .questions_auto = a.cfg.questions_auto,
         .verbose = a.cfg.verbose,
         .timers = a.timers,
         .commands = build_commands(&a, &a.cfg, &warn),
@@ -1893,6 +1991,7 @@ int main(int argc, char **argv)
     kk_chatwin_free(a.chatwin);
     kk_chatview_free(a.chatview);
     kk_highlight_free(a.highlight);
+    kk_questions_free(a.questions);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */

@@ -70,6 +70,7 @@ static const struct {
     {"8ball", N_("Magic 8-ball")},
     {"slots", N_("Slot machine")},
     {"bet", N_("Roulette bet")},
+    {"question", N_("Send a question to the queue")},
 };
 #define N_ACTIONS (int)(sizeof ACTION_LABELS / sizeof ACTION_LABELS[0])
 

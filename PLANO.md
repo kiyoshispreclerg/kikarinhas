@@ -442,7 +442,28 @@ data/         avatar padrão original, exemplo de .ini
    Não verificado ao vivo: Kicks, subs e presentes do Kick (só nos testes:
    em 7 min de 4 canais grandes veio 1 sub e nenhum Kick; o formato dos
    Kicks vem da KickLib) e gorjetas/stickers do Odysee.
-6. **Janela de chat clássico** (ver a seção própria). *Em andamento.*
+6. **Janela de chat clássico** *(feita)*, no lugar das camadas HTML (ver
+   a seção própria). `window.c` ganhou janelas filhas na mesma conexão X
+   (`kk_window_open_child`; os eventos são repartidos por janela, a filha
+   os guarda até `kk_window_take_events`), popups override-redirect com o
+   ponteiro preso e a área de transferência (`CLIPBOARD`).
+   - `src/chatview.c`: histórico (anel de `history` mensagens, guardado
+     desde o início, também com a janela fechada) e desenho em Cairo, sem
+     X, testado; uma superfície por mensagem na largura atual, refeita sob
+     demanda. Rolagem em px a partir da mais nova; com mensagem nova
+     chegando, a rolagem cresce para não mexer no que se lê; 30 s sem rolar
+     e volta para as novas. `fade` some com as velhas (só sem rolar).
+   - `src/chatwin.c`: a janela; fechar destrói janela e buffer, chama
+     `kk_chatview_release` e `malloc_trim(0)` (≈4 MB devolvidos no teste).
+   - `src/highlight.c`: comentário em destaque (cartão na frente, holofote
+     atrás dos avatares, seguindo o avatar pela chave a cada quadro).
+   - `src/menu.c`: menu de clique direito numa janela popup, que o OBS não
+     captura (a captura de janela pega só a janela escolhida).
+   - `src/questions.c`: fila de perguntas; a lista só aparece no
+     configurador (aba Perguntas, pelo socket), nunca na live.
+   - Testado no Xephyr com openbox (o X do gerenciador manda
+     `WM_DELETE_WINDOW`; `xdotool windowclose` destrói por fora, e a janela
+     não é destruída de novo).
 7. **Extras**. Feitos:
    - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na
      memória (dr_wav, dr_mp3 e stb_vorbis embutidos em `vendor/`, atrás de

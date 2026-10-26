@@ -556,6 +556,27 @@ seconds = 0      # until it goes by itself; 0: until clicked again
 spotlight = yes
 ```
 
+#### Question queue
+
+The chat sends questions with `!pergunta TEXT` (or `!question`, `!pergunte`,
+`!duvida`; the command is in the Commands tab like the others), and with
+`auto = yes` every message ending in `?` goes in too. The queue is for the
+streamer only: it shows in the **Questions** tab of `kikarinhas-config`
+(refreshed every couple of seconds), never on the stream. Highlight one
+(double click) to show it on the stage like a click in the chat window,
+with the spotlight on whoever asked; remove it, or empty the queue. The
+chat window's right-click menu can also put any message in the queue.
+
+```ini
+[questions]
+auto = no   # messages ending in "?" go in too
+max = 50    # past that, the oldest go
+```
+
+Over the socket: `{"type":"questions"}` lists them, and
+`{"type":"question","action":"highlight"|"remove","id":N}` or
+`{"type":"question","action":"clear"}` handle them.
+
 ### Scenery
 
 Pictures kept on the window all the time: a ground or backdrop behind the
@@ -644,6 +665,7 @@ echo '{"type":"reaction","platform":"x","emoji":"❤","count":3}' | socat - UNIX
 | `!bola8 [question]` | `!8ball`, `!bola` | the magic 8-ball answers | 10 s |
 | `!slots N` | `!cacaniquel`, `!slot` | slot machine: bets N points | 30 s |
 | `!bet N TYPE` | `!aposta`, `!roleta` | a roulette bet (see below) | 4 s |
+| `!question TEXT` | `!pergunta`, `!pergunte`, `!duvida` | puts a question in the queue the streamer goes through (see [Question queue](#question-queue)) | 30 s |
 | `!freeze [@name]` | `!congelar` | freezes (or unfreezes) the avatar in place; moderators only | — |
 | `!scale [@name] [N]` | `!tamanho`, `!escala` | changes the size (`150`, `150%` or `1.5`; 25% to 400%; without N, back to normal); moderators only | — |
 | `!spawn [N]` | `!estrelas` | releases N stars to catch (default 5); moderators only | 10 s for everyone |
