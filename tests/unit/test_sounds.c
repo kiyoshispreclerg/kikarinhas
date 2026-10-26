@@ -448,8 +448,8 @@ TEST(users_remember_name_and_dates)
     snprintf(path, sizeof path, "%s/users.tsv", dir);
     kk_users *u = kk_users_open(path);
     kk_users_set(u, "youtube:UCx", KK_USER_AVATAR, "pikachu");
-    kk_users_seen(u, "youtube:UCx", "Fulana", 1000);
-    kk_users_seen(u, "youtube:UCx", "Fulana\tde Tal", 2000);
+    kk_users_seen(u, "youtube:UCx", "Fulana", 1000, NULL, NULL);
+    kk_users_seen(u, "youtube:UCx", "Fulana\tde Tal", 2000, NULL, NULL);
     CHECK_STR_EQ(kk_users_get(u, "youtube:UCx", KK_USER_FIRST), "1000");
     CHECK_STR_EQ(kk_users_get(u, "youtube:UCx", KK_USER_LAST), "2000");
     CHECK_INT_EQ(kk_users_save(u), 0);
@@ -462,6 +462,34 @@ TEST(users_remember_name_and_dates)
     CHECK_STR_EQ(kk_users_get(u, "youtube:UCx", KK_USER_NAME), "Fulana de Tal");
     CHECK_STR_EQ(kk_users_get(u, "youtube:UCx", KK_USER_AVATAR), "pikachu");
     CHECK_STR_EQ(kk_users_get(u, "youtube:UCx", KK_USER_FIRST), "1000");
+    kk_users_free(u);
+    remove(path);
+    rmdir(dir);
+}
+
+TEST(users_keep_the_first_live)
+{
+    char dir[] = "/tmp/kk-test-XXXXXX";
+    CHECK(mkdtemp(dir));
+    char path[KK_PATH_MAX];
+    snprintf(path, sizeof path, "%s/users.tsv", dir);
+    kk_users *u = kk_users_open(path);
+    kk_users_seen(u, "twitch:1", "Ana", 10, NULL, NULL);
+    CHECK(kk_users_get(u, "twitch:1", KK_USER_LIVE_URL) == NULL);
+    kk_users_seen(u, "twitch:1", "Ana", 20, "https://youtu.be/aaa", NULL);
+    CHECK_STR_EQ(kk_users_get(u, "twitch:1", KK_USER_LIVE_URL), "https://youtu.be/aaa");
+    /* another live later: the first stays */
+    kk_users_seen(u, "twitch:1", "Ana", 30, "https://youtu.be/bbb", "Outra live");
+    CHECK_STR_EQ(kk_users_get(u, "twitch:1", KK_USER_LIVE_URL), "https://youtu.be/aaa");
+    CHECK(kk_users_get(u, "twitch:1", KK_USER_LIVE_TITLE) == NULL);
+    /* the same live, now with its title */
+    kk_users_seen(u, "twitch:1", "Ana", 40, "https://youtu.be/aaa", "Live de teste");
+    CHECK_STR_EQ(kk_users_get(u, "twitch:1", KK_USER_LIVE_TITLE), "Live de teste");
+    CHECK_INT_EQ(kk_users_save(u), 0);
+    kk_users_free(u);
+    u = kk_users_open(path);
+    CHECK_STR_EQ(kk_users_get(u, "twitch:1", KK_USER_LIVE_URL), "https://youtu.be/aaa");
+    CHECK_STR_EQ(kk_users_get(u, "twitch:1", KK_USER_LIVE_TITLE), "Live de teste");
     kk_users_free(u);
     remove(path);
     rmdir(dir);
@@ -495,6 +523,7 @@ int main(void)
     RUN(soundboard_plays_by_name_or_alias);
     RUN(imports_stream_avatars_sounds);
     RUN(users_remember_name_and_dates);
+    RUN(users_keep_the_first_live);
     RUN(iso_times);
     return harness_report();
 }

@@ -43,6 +43,8 @@ typedef struct {
     const char *platform; /* "youtube", ... */
     const char *source;   /* which live: "#channel", "@handle"...; may be
                            * NULL. Several can run at once */
+    const char *source_url;   /* link of that live; may be NULL */
+    const char *source_title;  /* its title, when known; may be NULL */
     const char *user_id;  /* stable per person and platform */
     const char *name;     /* display name */
     const char *text;     /* may be empty */

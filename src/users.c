@@ -11,7 +11,8 @@
 #include "util.h"
 
 static const char *const field_names[] = {"avatar", "palette", "gear",    "name",  "first",
-                                          "last",   "role",    "trusted", "points"};
+                                          "last",   "role",    "trusted", "points",
+                                          "live_url", "live_title"};
 #define N_FIELDS KK_USER_N_FIELDS
 _Static_assert(sizeof field_names / sizeof field_names[0] == N_FIELDS,
                "one name per kk_user_field");
@@ -238,7 +239,8 @@ const char *kk_users_key(const kk_users *u, int i)
     return i >= 0 && i < u->count ? u->recs[i].key : NULL;
 }
 
-void kk_users_seen(kk_users *u, const char *key, const char *name, long long now)
+void kk_users_seen(kk_users *u, const char *key, const char *name, long long now,
+                   const char *live_url, const char *live_title)
 {
     char t[32];
     snprintf(t, sizeof t, "%lld", now);
@@ -247,6 +249,15 @@ void kk_users_seen(kk_users *u, const char *key, const char *name, long long now
     if (!kk_users_get(u, key, KK_USER_FIRST))
         kk_users_set(u, key, KK_USER_FIRST, t);
     kk_users_set(u, key, KK_USER_LAST, t);
+    if (live_url && live_url[0] && !kk_users_get(u, key, KK_USER_LIVE_URL)) {
+        kk_users_set(u, key, KK_USER_LIVE_URL, live_url);
+        kk_users_set(u, key, KK_USER_LIVE_TITLE, live_title);
+    } else if (live_title && live_title[0] && !kk_users_get(u, key, KK_USER_LIVE_TITLE) &&
+               kk_users_get(u, key, KK_USER_LIVE_URL) &&
+               live_url && strcmp(live_url, kk_users_get(u, key, KK_USER_LIVE_URL)) == 0) {
+        /* the title can show up after the first message of that same live */
+        kk_users_set(u, key, KK_USER_LIVE_TITLE, live_title);
+    }
 }
 
 bool kk_users_trusted(const kk_users *u, const char *key)
