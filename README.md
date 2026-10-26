@@ -327,6 +327,19 @@ of every avatar and a search box (or **Random**, back to the avatar always
 picked for them). With kikarinhas running the change takes effect at once;
 when it is closed, it is saved for next time.
 
+**First live.** The first time someone is seen, the people file also keeps the
+link of the live they came from and, when the platform tells it, its title
+(YouTube and Kick; Twitch and Odysee give only the link; a YouTube live
+started from a video link has no title). It is never replaced by later lives.
+The **First live** column shows it (hover for title and link), and the field
+next to the search filters by it, by title or link.
+
+**Removing people.** The list accepts several rows (Ctrl+click, Shift+click,
+or **Select all** / Ctrl+A for everyone shown, so the search and the live
+filter narrow it first). **Remove selected** (or the Delete key) asks for
+confirmation and forgets those people: avatar, points and dates. Whoever
+talks again enters as new.
+
 **Levels.** Each message stores the level the chat badges give (owner,
 moderator, member/subscriber; no badge is a common viewer), shown in the
 **Level** column. The **Trusted** column marks trusted people by hand. A
@@ -617,6 +630,8 @@ Other requests: `save` writes the people file now, and
 changes someone's avatar (`""` goes back to the random one), marks them as
 trusted and/or sets their points (each field is
 optional; it is what the Viewers tab uses; `set_avatar` is the old name).
+`{"type":"remove_users","users":["youtube:UC...", ...]}` forgets those
+people (`removed` in the reply says how many were there).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
 `text`, `kind` (`text`, `paid` or `member`), `amount` and `badges` (`owner`,

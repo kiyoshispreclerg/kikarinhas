@@ -1154,6 +1154,30 @@ static void refuse(cJSON *reply, const char *error)
     cJSON_AddStringToObject(reply, "error", error);
 }
 
+/* {"type":"remove_users","users":["youtube:UC...", ...]}: forgets those
+ * people (the reply has "removed", how many were there). */
+static void remove_users(app *a, const cJSON *req, cJSON *reply)
+{
+    const cJSON *list = cJSON_GetObjectItemCaseSensitive(req, "users");
+    if (!a->users) {
+        refuse(reply, "sem arquivo de pessoas");
+        return;
+    }
+    if (!cJSON_IsArray(list)) {
+        refuse(reply, "faltou \"users\" (uma lista)");
+        return;
+    }
+    int removed = 0;
+    const cJSON *k;
+    cJSON_ArrayForEach(k, list)
+    {
+        const char *key = cJSON_GetStringValue(k);
+        if (key && kk_users_remove(a->users, key))
+            removed++;
+    }
+    cJSON_AddNumberToObject(reply, "removed", removed);
+}
+
 /* {"type":"set_user","user":"youtube:UC...","avatar":"pikachu","trusted":true,
  *  "points":100} (each field optional; "set_avatar" is the same; avatar ""
  *  goes back to the one picked for them): from kikarinhas-config,
@@ -1415,6 +1439,8 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         }
     } else if (strcmp(type, "set_user") == 0 || strcmp(type, "set_avatar") == 0) {
         set_user(a, req, reply);
+    } else if (strcmp(type, "remove_users") == 0) {
+        remove_users(a, req, reply);
     } else if (strcmp(type, "nowplaying") == 0) {
         /* {"ok":true,"text":"Artist — Title","paused":false}; text null if
          * nothing plays. */

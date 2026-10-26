@@ -48,6 +48,9 @@ const char *kk_users_get(const kk_users *u, const char *key, kk_user_field f);
 void kk_users_set(kk_users *u, const char *key, kk_user_field f,
                   const char *value);
 
+/* Forgets everyone's data for key; false if there was no such person. */
+bool kk_users_remove(kk_users *u, const char *key);
+
 /* Writes the file if anything changed (atomically: temp file + rename). */
 int kk_users_save(kk_users *u);
 bool kk_users_dirty(const kk_users *u);

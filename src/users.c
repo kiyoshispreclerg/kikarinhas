@@ -174,6 +174,21 @@ void kk_users_set(kk_users *u, const char *key, kk_user_field f,
     u->dirty = true;
 }
 
+bool kk_users_remove(kk_users *u, const char *key)
+{
+    record *r = find(u, key);
+    if (!r)
+        return false;
+    free(r->key);
+    for (int f = 0; f < N_FIELDS; f++)
+        free(r->fields[f]);
+    free(r->extra);
+    memmove(r, r + 1, (size_t)(u->count - 1 - (int)(r - u->recs)) * sizeof *r);
+    u->count--;
+    u->dirty = true;
+    return true;
+}
+
 bool kk_users_dirty(const kk_users *u)
 {
     return u->dirty;

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 16:18-0300\n"
+"POT-Creation-Date: 2026-10-26 16:22-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -33,7 +33,7 @@ msgstr "confiáveis"
 msgid "moderators"
 msgstr "moderadores"
 
-#: config/main.c:47 config/audience.c:46
+#: config/main.c:47 config/audience.c:47
 msgid "owner"
 msgstr "dono"
 
@@ -390,7 +390,7 @@ msgstr "Janela de chat"
 msgid "Questions"
 msgstr "Perguntas"
 
-#: config/main.c:655 config/audience.c:508
+#: config/main.c:655 config/audience.c:636
 msgid "Points"
 msgstr "Pontos"
 
@@ -1182,141 +1182,193 @@ msgstr "perguntas; passando disso, as mais antigas saem"
 msgid "Keeps up to"
 msgstr "Guarda até"
 
-#: config/audience.c:46
+#: config/audience.c:47
 msgid "common"
 msgstr "comum"
 
-#: config/audience.c:46
+#: config/audience.c:47
 msgid "member"
 msgstr "membro"
 
-#: config/audience.c:46
+#: config/audience.c:47
 msgid "trusted person"
 msgstr "confiável"
 
-#: config/audience.c:46
+#: config/audience.c:47
 msgid "moderator"
 msgstr "moderador"
 
-#: config/audience.c:72
+#: config/audience.c:73
 msgid "%Y-%m-%d %H:%M"
 msgstr "%d/%m/%Y %H:%M"
 
-#: config/audience.c:104
+#: config/audience.c:105
 #, c-format
 msgid "%d viewer"
 msgid_plural "%d viewers"
 msgstr[0] "%d espectador"
 msgstr[1] "%d espectadores"
 
-#: config/audience.c:106
+#: config/audience.c:107
 #, c-format
 msgid "%d of %d viewers"
 msgstr "%d de %d espectadores"
 
-#: config/audience.c:121
+#: config/audience.c:122
 #, c-format
 msgid "Could not read the people file %s."
 msgstr "Não consegui ler o arquivo de pessoas %s."
 
-#: config/audience.c:169
+#: config/audience.c:170
 msgid " (just read from the running kikarinhas)"
 msgstr " (lido agora do kikarinhas aberto)"
 
-#: config/audience.c:285
+#: config/audience.c:286
 #, c-format
 msgid "kikarinhas refused: %s"
 msgstr "O kikarinhas recusou: %s"
 
-#: config/audience.c:321
+#: config/audience.c:327
 #, c-format
 msgid "%s is now trusted."
 msgstr "%s agora é confiável."
 
-#: config/audience.c:321
+#: config/audience.c:327
 #, c-format
 msgid "%s is no longer trusted."
 msgstr "%s não é mais confiável."
 
-#: config/audience.c:323 config/audience.c:365 config/audience.c:396
+#: config/audience.c:329 config/audience.c:371 config/audience.c:402
 msgid "Could not write the people file."
 msgstr "Não consegui gravar o arquivo de pessoas."
 
-#: config/audience.c:352
+#: config/audience.c:358
 #, c-format
 msgid "Invalid points: \"%s\" (0 to 1000000000)."
 msgstr "Pontos inválidos: \"%s\" (de 0 a 1000000000)."
 
-#: config/audience.c:363
+#: config/audience.c:369
 #, c-format
 msgid "%s now has %ld points."
 msgstr "%s agora tem %ld pontos."
 
-#: config/audience.c:384
+#: config/audience.c:390
 msgid "random"
 msgstr "sorteado"
 
-#: config/audience.c:387
+#: config/audience.c:393
 #, c-format
 msgid "%s is now %s (already in effect in the running kikarinhas)."
 msgstr "%s agora é %s (já valendo no kikarinhas aberto)."
 
-#: config/audience.c:393
+#: config/audience.c:399
 #, c-format
 msgid "%s is now %s (saved to the file; takes effect next time)."
 msgstr "%s agora é %s (gravado no arquivo; vale na próxima vez)."
 
-#: config/audience.c:422
+#: config/audience.c:428
 #, c-format
 msgid "Avatar of %s"
 msgstr "Avatar de %s"
 
-#: config/audience.c:442 config/avatars.c:473 config/avatars.c:663
+#: config/audience.c:510
+msgid "Select the people to remove first (Select all picks every one shown)."
+msgstr ""
+"Selecione antes as pessoas a remover (Selecionar todos pega todas as que "
+"aparecem)."
+
+#: config/audience.c:514
+#, c-format
+msgid "Remove %u person from the list?"
+msgid_plural "Remove %u people from the list?"
+msgstr[0] "Remover %u pessoa da lista?"
+msgstr[1] "Remover %u pessoas da lista?"
+
+#: config/audience.c:522
+msgid ""
+"Their avatar choice, points and dates are forgotten. Export the list first "
+"if you may want them back."
+msgstr ""
+"A escolha de avatar, os pontos e as datas delas são esquecidos. Exporte a "
+"lista antes, se puder querer essas pessoas de volta."
+
+#: config/audience.c:538
+#, c-format
+msgid "%u person removed."
+msgid_plural "%u people removed."
+msgstr[0] "%u pessoa removida."
+msgstr[1] "%u pessoas removidas."
+
+#: config/audience.c:540
+msgid "Could not remove them from the people file."
+msgstr "Não consegui remover essas pessoas do arquivo de pessoas."
+
+#: config/audience.c:567 config/avatars.c:473 config/avatars.c:663
 msgid "Search"
 msgstr "Procurar"
 
-#: config/audience.c:448 config/audience.c:526
+#: config/audience.c:573 config/audience.c:654
 msgid "First live"
 msgstr "Primeira live"
 
-#: config/audience.c:452
+#: config/audience.c:577
 msgid "Only people whose first live has this in its title or link"
 msgstr "Só quem veio de uma primeira live com isto no título ou no link"
 
-#: config/audience.c:455
+#: config/audience.c:580
 msgid "_Refresh"
 msgstr "A_tualizar"
 
-#: config/audience.c:480 config/avatars.c:505 config/timers.c:111
+#: config/audience.c:608 config/avatars.c:505 config/timers.c:111
 #: config/timers.c:330 config/scenery.c:104 config/scenery.c:337
 msgid "Name"
 msgstr "Nome"
 
-#: config/audience.c:481 config/sources.c:139 config/sources.c:216
+#: config/audience.c:609 config/sources.c:139 config/sources.c:216
 msgid "Platform"
 msgstr "Plataforma"
 
-#: config/audience.c:482
+#: config/audience.c:610
 msgid "First seen"
 msgstr "Primeira vez"
 
-#: config/audience.c:483
+#: config/audience.c:611
 msgid "Latest"
 msgstr "Mais recente"
 
-#: config/audience.c:484
+#: config/audience.c:612
 msgid "Level"
 msgstr "Nível"
 
-#: config/audience.c:501
+#: config/audience.c:629
 msgid "Trusted"
 msgstr "Confiável"
 
-#: config/audience.c:517 config/commands.c:487
+#: config/audience.c:645 config/commands.c:487
 msgid "Avatar"
 msgstr "Avatar"
 
-#: config/audience.c:541
+#: config/audience.c:670
+msgid "Select _all"
+msgstr "Selecionar _todos"
+
+#: config/audience.c:671
+msgid ""
+"Selects everyone shown (the search and the filter apply). Ctrl+A does the "
+"same; Ctrl+click and Shift+click pick some."
+msgstr ""
+"Seleciona todas as pessoas que aparecem (valem a busca e o filtro). Ctrl+A "
+"faz o mesmo; Ctrl+clique e Shift+clique escolhem algumas."
+
+#: config/audience.c:676
+msgid "Re_move selected"
+msgstr "Re_mover selecionados"
+
+#: config/audience.c:677
+msgid "Removes the selected people from the list (Delete key)."
+msgstr "Remove da lista as pessoas selecionadas (tecla Delete)."
+
+#: config/audience.c:682
 msgid ""
 "Double-click someone to pick their avatar by its picture (with a search "
 "box). With kikarinhas running, the change takes effect at once. Empty "

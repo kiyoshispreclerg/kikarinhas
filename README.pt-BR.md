@@ -324,6 +324,20 @@ miniaturas de todos os avatares e uma caixa de busca (ou **Sorteado**, para
 voltar ao avatar sorteado de sempre). Com o kikarinhas aberto, a troca vale
 na hora; fechado, fica gravada para a próxima vez.
 
+**Primeira live.** Na primeira vez que alguém é visto, o arquivo de pessoas
+guarda também o link da live de onde veio e, quando a plataforma diz, o
+título dela (YouTube e Kick; a Twitch e o Odysee dão só o link; uma live do
+YouTube aberta pelo link do vídeo fica sem título). As lives seguintes não
+trocam esse valor. A coluna **Primeira live** mostra (passe o mouse para ver
+título e link), e o campo ao lado da busca filtra por ela, pelo título ou
+pelo link.
+
+**Remover pessoas.** A lista aceita várias linhas (Ctrl+clique,
+Shift+clique, ou **Selecionar todos** / Ctrl+A para todas as que aparecem;
+então a busca e o filtro de live restringem antes). **Remover selecionados**
+(ou a tecla Delete) pede confirmação e esquece essas pessoas: avatar,
+pontos e datas. Quem falar de novo entra como novo.
+
 **Níveis.** Cada mensagem grava o nível que os selos do chat dão (dono,
 moderador, membro/assinante; sem selo é comum), visto na coluna **Nível**.
 A coluna **Confiável** marca à mão quem é de confiança. Um comando pode
@@ -614,6 +628,8 @@ Outros pedidos: `save` grava o arquivo de pessoas agora, e
 troca o avatar de alguém (`""` volta ao sorteado), marca como confiável e/ou
 muda o saldo de pontos (cada campo é opcional; é
 o que a aba Espectadores usa; `set_avatar` é o nome antigo).
+`{"type":"remove_users","users":["youtube:UC...", ...]}` esquece essas
+pessoas (`removed` na resposta diz quantas existiam).
 
 Em `message`: `user_id` é obrigatório; `platform` (padrão `bridge`), `name`,
 `text`, `kind` (`text`, `paid` ou `member`), `amount` e `badges` (`owner`,

@@ -10,6 +10,7 @@
  * the control socket; only when nobody answers does it write the file
  * itself. The avatar list comes from every avatar folder (editor_library),
  * read the first time the tab is shown. */
+#include <gdk/gdkkeysyms.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -266,11 +267,11 @@ static bool write_directly(editor *e, const char *key, const char *avatar, int t
 
 typedef enum { SENT_OK, SENT_REFUSED, NOT_RUNNING } send_result;
 
-/* Sends a set_user request (made by the caller, freed here) to the running
- * kikarinhas. On SENT_REFUSED, the status line already says why. */
-static send_result send_user(editor *e, cJSON *req)
+/* Sends a request of the given type (made by the caller, freed here) to the
+ * running kikarinhas. On SENT_REFUSED, the status line already says why. */
+static send_result send_request(editor *e, cJSON *req, const char *type)
 {
-    cJSON_AddStringToObject(req, "type", "set_user");
+    cJSON_AddStringToObject(req, "type", type);
     char *line = cJSON_PrintUnformatted(req);
     cJSON_Delete(req);
     char reply[512];
@@ -285,6 +286,11 @@ static send_result send_user(editor *e, cJSON *req)
         status(e, _("kikarinhas refused: %s"), err ? err : reply);
     cJSON_Delete(rep);
     return ok ? SENT_OK : SENT_REFUSED;
+}
+
+static send_result send_user(editor *e, cJSON *req)
+{
+    return send_request(e, req, "set_user");
 }
 
 /* The store row under a path of the sorted view. */
@@ -428,6 +434,125 @@ static void on_row_activated(GtkTreeView *v, GtkTreePath *path, GtkTreeViewColum
     g_free(avatar);
 }
 
+/* ---- removing people ----------------------------------------------------- */
+
+/* The keys of the selected rows (g_free'd by the array) and a reference to
+ * each row of the store, in the same order. */
+static GPtrArray *selected_keys(audience_tab *t, GPtrArray **refs)
+{
+    GPtrArray *keys = g_ptr_array_new_with_free_func(g_free);
+    *refs = g_ptr_array_new_with_free_func((GDestroyNotify)gtk_tree_row_reference_free);
+    GtkTreeModel *m;
+    GList *rows = gtk_tree_selection_get_selected_rows(
+        gtk_tree_view_get_selection(GTK_TREE_VIEW(t->tree)), &m);
+    for (GList *l = rows; l; l = l->next) {
+        GtkTreeIter sit, fit, it;
+        if (!gtk_tree_model_get_iter(t->sort, &sit, l->data))
+            continue;
+        gtk_tree_model_sort_convert_iter_to_child_iter(GTK_TREE_MODEL_SORT(t->sort), &fit, &sit);
+        gtk_tree_model_filter_convert_iter_to_child_iter(GTK_TREE_MODEL_FILTER(t->filter), &it,
+                                                         &fit);
+        gchar *key;
+        gtk_tree_model_get(GTK_TREE_MODEL(t->store), &it, A_KEY, &key, -1);
+        g_ptr_array_add(keys, key);
+        GtkTreePath *sp = gtk_tree_model_get_path(GTK_TREE_MODEL(t->store), &it);
+        g_ptr_array_add(*refs, gtk_tree_row_reference_new(GTK_TREE_MODEL(t->store), sp));
+        gtk_tree_path_free(sp);
+    }
+    g_list_free_full(rows, (GDestroyNotify)gtk_tree_path_free);
+    return keys;
+}
+
+/* The running kikarinhas takes them in batches (a request line has a limit);
+ * without it the file is rewritten here. */
+static bool forget_people(editor *e, GPtrArray *keys)
+{
+    enum { BATCH = 400 };
+    for (guint from = 0; from < keys->len; from += BATCH) {
+        cJSON *req = cJSON_CreateObject();
+        cJSON *arr = cJSON_AddArrayToObject(req, "users");
+        for (guint i = from; i < keys->len && i < from + BATCH; i++)
+            cJSON_AddItemToArray(arr, cJSON_CreateString(keys->pdata[i]));
+        send_result sr = send_request(e, req, "remove_users");
+        if (sr == SENT_OK)
+            continue;
+        if (sr == SENT_REFUSED)
+            return false;
+        char path[KK_PATH_MAX];
+        users_path(e, path, sizeof path);
+        kk_users *u = path[0] ? kk_users_open(path) : NULL;
+        if (!u)
+            return false;
+        for (guint i = from; i < keys->len; i++)
+            kk_users_remove(u, keys->pdata[i]);
+        bool ok = kk_users_save(u) == 0;
+        kk_users_free(u);
+        return ok; /* the rest went along in that write */
+    }
+    return true;
+}
+
+static void on_select_all(GtkButton *b, gpointer ud)
+{
+    (void)b;
+    editor *e = ud;
+    gtk_tree_selection_select_all(gtk_tree_view_get_selection(GTK_TREE_VIEW(e->audience->tree)));
+    gtk_widget_grab_focus(e->audience->tree);
+}
+
+static void on_remove(GtkWidget *w, gpointer ud)
+{
+    (void)w;
+    editor *e = ud;
+    audience_tab *t = e->audience;
+    GPtrArray *refs, *keys = selected_keys(t, &refs);
+    if (keys->len == 0) {
+        status(e, _("Select the people to remove first (Select all picks every one shown)."));
+    } else {
+        char q[256];
+        snprintf(q, sizeof q,
+                 ngettext("Remove %u person from the list?", "Remove %u people from the list?",
+                          keys->len),
+                 keys->len);
+        GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(t->tree)),
+                                              GTK_DIALOG_MODAL, GTK_MESSAGE_QUESTION,
+                                              GTK_BUTTONS_NONE, "%s", q);
+        gtk_message_dialog_format_secondary_text(
+            GTK_MESSAGE_DIALOG(d), "%s",
+            _("Their avatar choice, points and dates are forgotten. Export the list first "
+              "if you may want them back."));
+        gtk_dialog_add_buttons(GTK_DIALOG(d), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                               GTK_STOCK_REMOVE, GTK_RESPONSE_OK, NULL);
+        gtk_dialog_set_default_response(GTK_DIALOG(d), GTK_RESPONSE_CANCEL);
+        bool yes = gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_OK;
+        gtk_widget_destroy(d);
+        if (yes && forget_people(e, keys)) {
+            for (guint i = 0; i < refs->len; i++) {
+                GtkTreePath *p = gtk_tree_row_reference_get_path(refs->pdata[i]);
+                GtkTreeIter it;
+                if (p && gtk_tree_model_get_iter(GTK_TREE_MODEL(t->store), &it, p))
+                    gtk_list_store_remove(t->store, &it);
+                gtk_tree_path_free(p);
+            }
+            update_count(e);
+            status(e, ngettext("%u person removed.", "%u people removed.", keys->len), keys->len);
+        } else if (yes) {
+            status(e, _("Could not remove them from the people file."));
+        }
+    }
+    g_ptr_array_free(keys, TRUE);
+    g_ptr_array_free(refs, TRUE);
+}
+
+static gboolean on_key(GtkWidget *w, GdkEventKey *ev, gpointer ud)
+{
+    if (ev->keyval == GDK_Delete || ev->keyval == GDK_KP_Delete) {
+        on_remove(w, ud);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 /* ---- the page ------------------------------------------------------------ */
 
 GtkWidget *audience_page(editor *e, const kk_config *cfg)
@@ -470,6 +595,9 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
                                          GTK_SORT_DESCENDING);
 
     t->tree = gtk_tree_view_new_with_model(t->sort);
+    gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(t->tree)),
+                                GTK_SELECTION_MULTIPLE);
+    g_signal_connect(t->tree, "key-press-event", G_CALLBACK(on_key), e);
     gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(t->tree), TRUE);
     gtk_tree_view_set_search_entry(GTK_TREE_VIEW(t->tree), GTK_ENTRY(t->search));
 
@@ -537,6 +665,19 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll), GTK_SHADOW_IN);
     gtk_container_add(GTK_CONTAINER(scroll), t->tree);
     gtk_box_pack_start(GTK_BOX(box), scroll, TRUE, TRUE, 0);
+
+    GtkWidget *bar = gtk_hbox_new(FALSE, 6);
+    GtkWidget *all = gtk_button_new_with_mnemonic(_("Select _all"));
+    gtk_widget_set_tooltip_text(all, _("Selects everyone shown (the search and the filter apply). "
+                                       "Ctrl+A does the same; Ctrl+click and Shift+click pick "
+                                       "some."));
+    g_signal_connect(all, "clicked", G_CALLBACK(on_select_all), e);
+    gtk_box_pack_start(GTK_BOX(bar), all, FALSE, FALSE, 0);
+    GtkWidget *rm = icon_button(GTK_STOCK_REMOVE, _("Re_move selected"));
+    gtk_widget_set_tooltip_text(rm, _("Removes the selected people from the list (Delete key)."));
+    g_signal_connect(rm, "clicked", G_CALLBACK(on_remove), e);
+    gtk_box_pack_start(GTK_BOX(bar), rm, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), bar, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(box),
                        hint_label(_("Double-click someone to pick their avatar by its picture "
                                     "(with a search box). With kikarinhas running, the change "

@@ -495,6 +495,36 @@ TEST(users_keep_the_first_live)
     rmdir(dir);
 }
 
+TEST(users_remove)
+{
+    char dir[] = "/tmp/kk-test-XXXXXX";
+    CHECK(mkdtemp(dir));
+    char path[KK_PATH_MAX];
+    snprintf(path, sizeof path, "%s/users.tsv", dir);
+    kk_users *u = kk_users_open(path);
+    kk_users_seen(u, "a:1", "Ana", 10, NULL, NULL);
+    kk_users_seen(u, "b:2", "Bia", 10, NULL, NULL);
+    kk_users_seen(u, "c:3", "Caio", 10, NULL, NULL);
+    CHECK(kk_users_remove(u, "b:2"));
+    CHECK(!kk_users_remove(u, "b:2"));
+    CHECK_INT_EQ(kk_users_count(u), 2);
+    CHECK_STR_EQ(kk_users_key(u, 0), "a:1");
+    CHECK_STR_EQ(kk_users_key(u, 1), "c:3");
+    CHECK(!kk_users_exists(u, "b:2"));
+    CHECK(kk_users_remove(u, "c:3")); /* the last one */
+    CHECK(kk_users_remove(u, "a:1")); /* and the only one left */
+    CHECK_INT_EQ(kk_users_count(u), 0);
+    kk_users_seen(u, "b:2", "Bia", 20, NULL, NULL); /* comes back as new */
+    CHECK_STR_EQ(kk_users_get(u, "b:2", KK_USER_FIRST), "20");
+    CHECK_INT_EQ(kk_users_save(u), 0);
+    kk_users_free(u);
+    u = kk_users_open(path);
+    CHECK_INT_EQ(kk_users_count(u), 1);
+    kk_users_free(u);
+    remove(path);
+    rmdir(dir);
+}
+
 TEST(iso_times)
 {
     long long t;
@@ -524,6 +554,7 @@ int main(void)
     RUN(imports_stream_avatars_sounds);
     RUN(users_remember_name_and_dates);
     RUN(users_keep_the_first_live);
+    RUN(users_remove);
     RUN(iso_times);
     return harness_report();
 }
