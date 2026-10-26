@@ -34,6 +34,10 @@ enum {
     A_LEVEL_TEXT,
     A_TRUSTED, /* bool, set by hand */
     A_POINTS,  /* long; -1 = none yet */
+    A_LIVE_URL,   /* link of the first live they came from, or "" */
+    A_LIVE_TITLE, /* its title, or "" */
+    A_LIVE_TEXT,  /* what the column shows: title, else link */
+    A_LIVE_TIP,   /* tooltip markup: title and link */
     N_ACOLS,
 };
 
@@ -45,7 +49,7 @@ static const char *const LEVEL_LABELS[KK_ROLE_COUNT] = {
 struct audience_tab {
     GtkListStore *store;
     GtkTreeModel *filter, *sort;
-    GtkWidget *tree, *search, *count;
+    GtkWidget *tree, *search, *live_search, *count;
     GtkTreeViewColumn *points_col; /* its double-click edits, not picks */
     bool shown; /* the list is read the first time the tab shows */
 };
@@ -134,6 +138,15 @@ static void refresh(editor *e)
         if (role_s)
             kk_parse_role(role_s, &role);
         const char *pts = kk_users_get(u, key, KK_USER_POINTS);
+        const char *live_url = kk_users_get(u, key, KK_USER_LIVE_URL);
+        const char *live_title = kk_users_get(u, key, KK_USER_LIVE_TITLE);
+        live_url = live_url ? live_url : "";
+        live_title = live_title ? live_title : "";
+        gchar *e_url = g_markup_escape_text(live_url, -1);
+        gchar *e_title = g_markup_escape_text(live_title, -1);
+        gchar *tip = !live_url[0]     ? NULL
+                     : live_title[0] ? g_strdup_printf("%s\n%s", e_title, e_url)
+                                     : g_strdup(e_url);
         GtkTreeIter it;
         gtk_list_store_append(t->store, &it);
         gtk_list_store_set(t->store, &it, A_KEY, key, A_NAME,
@@ -143,7 +156,12 @@ static void refresh(editor *e)
                            A_LAST_TEXT, last_s, A_AVATAR, avatar ? avatar : "", A_LEVEL,
                            (int)role, A_LEVEL_TEXT, _(LEVEL_LABELS[role]), A_TRUSTED,
                            kk_users_trusted(u, key), A_POINTS,
-                           (glong)(pts ? strtol(pts, NULL, 10) : -1), -1);
+                           (glong)(pts ? strtol(pts, NULL, 10) : -1), A_LIVE_URL, live_url,
+                           A_LIVE_TITLE, live_title, A_LIVE_TEXT,
+                           live_title[0] ? live_title : live_url, A_LIVE_TIP, tip, -1);
+        g_free(tip);
+        g_free(e_url);
+        g_free(e_title);
     }
     kk_users_free(u);
     update_count(e);
@@ -175,16 +193,27 @@ static gboolean visible(GtkTreeModel *m, GtkTreeIter *it, gpointer ud)
     if (!e->audience || !e->audience->search)
         return TRUE;
     const char *q = gtk_entry_get_text(GTK_ENTRY(e->audience->search));
-    if (!q[0])
-        return TRUE;
-    char *needle = g_utf8_casefold(q, -1);
-    gchar *name, *key, *avatar;
-    gtk_tree_model_get(m, it, A_NAME, &name, A_KEY, &key, A_AVATAR, &avatar, -1);
-    bool yes = has(name, needle) || has(key, needle) || has(avatar, needle);
-    g_free(name);
-    g_free(key);
-    g_free(avatar);
-    g_free(needle);
+    const char *lq = gtk_entry_get_text(GTK_ENTRY(e->audience->live_search));
+    bool yes = true;
+    if (q[0]) {
+        char *needle = g_utf8_casefold(q, -1);
+        gchar *name, *key, *avatar;
+        gtk_tree_model_get(m, it, A_NAME, &name, A_KEY, &key, A_AVATAR, &avatar, -1);
+        yes = has(name, needle) || has(key, needle) || has(avatar, needle);
+        g_free(name);
+        g_free(key);
+        g_free(avatar);
+        g_free(needle);
+    }
+    if (yes && lq[0]) {
+        char *needle = g_utf8_casefold(lq, -1);
+        gchar *title, *url;
+        gtk_tree_model_get(m, it, A_LIVE_TITLE, &title, A_LIVE_URL, &url, -1);
+        yes = has(title, needle) || has(url, needle);
+        g_free(title);
+        g_free(url);
+        g_free(needle);
+    }
     return yes;
 }
 
@@ -416,6 +445,13 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(top), t->search, TRUE, TRUE, 0);
     t->count = gtk_label_new(NULL);
     gtk_box_pack_start(GTK_BOX(top), t->count, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(top), gtk_label_new(_("First live")), FALSE, FALSE, 0);
+    t->live_search = gtk_entry_new();
+    gtk_entry_set_width_chars(GTK_ENTRY(t->live_search), 18);
+    gtk_widget_set_tooltip_text(t->live_search,
+                                _("Only people whose first live has this in its title or link"));
+    g_signal_connect(t->live_search, "changed", G_CALLBACK(on_search), e);
+    gtk_box_pack_start(GTK_BOX(top), t->live_search, FALSE, FALSE, 0);
     GtkWidget *reload = icon_button(GTK_STOCK_REFRESH, _("_Refresh"));
     g_signal_connect(reload, "clicked", G_CALLBACK(on_refresh), e);
     gtk_box_pack_start(GTK_BOX(top), reload, FALSE, FALSE, 0);
@@ -424,7 +460,8 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     t->store = gtk_list_store_new(N_ACOLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
                                   G_TYPE_INT64, G_TYPE_STRING, G_TYPE_INT64,
                                   G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING,
-                                  G_TYPE_BOOLEAN, G_TYPE_LONG);
+                                  G_TYPE_BOOLEAN, G_TYPE_LONG, G_TYPE_STRING, G_TYPE_STRING,
+                                  G_TYPE_STRING, G_TYPE_STRING);
     t->filter = gtk_tree_model_filter_new(GTK_TREE_MODEL(t->store), NULL);
     gtk_tree_model_filter_set_visible_func(GTK_TREE_MODEL_FILTER(t->filter), visible, e,
                                            NULL);
@@ -483,6 +520,17 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
     gtk_tree_view_column_set_min_width(c, 160);
     gtk_tree_view_append_column(GTK_TREE_VIEW(t->tree), c);
 
+    GtkCellRenderer *lr = gtk_cell_renderer_text_new();
+    g_object_set(lr, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
+    GtkTreeViewColumn *lc =
+        gtk_tree_view_column_new_with_attributes(_("First live"), lr, "text", A_LIVE_TEXT, NULL);
+    gtk_tree_view_column_set_resizable(lc, TRUE);
+    gtk_tree_view_column_set_sort_column_id(lc, A_LIVE_TEXT);
+    gtk_tree_view_column_set_min_width(lc, 160);
+    gtk_tree_view_column_set_max_width(lc, 320);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(t->tree), lc);
+    gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(t->tree), A_LIVE_TIP);
+
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
@@ -496,7 +544,9 @@ GtkWidget *audience_page(editor *e, const kk_config *cfg)
                                     "the same. Level: what the chat badges said on the latest "
                                     "message. Trusted: ticked by hand, for commands limited to "
                                     "trusted people and up. Points: double-click to change the "
-                                    "balance. People from Stream Avatars without a name or "
+                                    "balance. First live: the first live they were seen in (link and, when "
+                                    "known, title; hover for both); the field next to the search "
+                                    "filters by it. People from Stream Avatars without a name or "
                                     "dates: run kikarinhas --import-sa-users once.")),
                        FALSE, FALSE, 0);
 
