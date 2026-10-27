@@ -2,6 +2,7 @@
 #include "util.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,29 +133,75 @@ int kk_flush_sync(FILE *f)
     return fsync(fileno(f));
 }
 
-int kk_backup_file(const char *path)
+char *kk_read_file_or_backup(const char *path, kk_text_check ok, size_t *len)
+{
+    size_t n = 0;
+    char *text = kk_read_file(path, &n);
+    int err = errno;
+    if (text && (!ok || ok(text, n))) {
+        if (len)
+            *len = n;
+        return text;
+    }
+    char bak[KK_PATH_MAX];
+    size_t bn = 0;
+    char *copy = NULL;
+    if (kk_pathf(bak, sizeof bak, "%s.backup", path) && (copy = kk_read_file(bak, &bn)) &&
+        (!ok || ok(copy, bn))) {
+        kk_log_warn("%s %s; usando a cópia %s", path, text ? "está corrompido" : "não existe", bak);
+        free(text);
+        if (len)
+            *len = bn;
+        return copy;
+    }
+    free(copy);
+    if (len)
+        *len = n;
+    errno = err;
+    return text;
+}
+
+int kk_backup_file(const char *path, kk_text_check ok)
 {
     char bak[KK_PATH_MAX], tmp[KK_PATH_MAX];
     if (!kk_pathf(bak, sizeof bak, "%s.backup", path) ||
         !kk_pathf(tmp, sizeof tmp, "%s.backup.tmp", path))
         return -1;
-    FILE *in = fopen(path, "rb");
-    if (!in)
+    struct stat st;
+    if (stat(path, &st) < 0)
         return errno == ENOENT ? 0 : -1;
-    FILE *out = fopen(tmp, "wb");
-    bool ok = out != NULL;
-    char buf[8192];
-    size_t n;
-    while (ok && (n = fread(buf, 1, sizeof buf, in)) > 0)
-        ok = fwrite(buf, 1, n, out) == n;
-    ok = ok && !ferror(in);
-    fclose(in);
-    if (out) {
-        ok = kk_flush_sync(out) == 0 && ok;
-        ok = fclose(out) == 0 && ok;
+    if (!S_ISREG(st.st_mode))
+        return 0;
+    size_t len;
+    char *text = kk_read_file(path, &len);
+    if (!text)
+        return -1;
+    if (ok && !ok(text, len)) {
+        kk_log_warn("%s parece corrompido; a cópia %s anterior foi mantida", path, bak);
+        free(text);
+        return 0;
     }
-    if (!ok || rename(tmp, bak) < 0) {
-        kk_log_warn("não consegui fazer a cópia %s: %s", bak, strerror(errno));
+    /* Same mode as the original: it may hold tokens. */
+    int fd = open(tmp, O_WRONLY | O_CREAT | O_TRUNC, st.st_mode & 0777);
+    bool good = fd >= 0 && fchmod(fd, st.st_mode & 0777) == 0;
+    for (size_t off = 0; good && off < len;) {
+        ssize_t w = write(fd, text + off, len - off);
+        if (w < 0 && errno == EINTR)
+            continue;
+        if (w < 0)
+            good = false;
+        else
+            off += (size_t)w;
+    }
+    good = good && fsync(fd) == 0;
+    int e = errno;
+    if (fd >= 0)
+        good = close(fd) == 0 && good;
+    free(text);
+    if (!good || rename(tmp, bak) < 0) {
+        if (good)
+            e = errno;
+        kk_log_warn("não consegui fazer a cópia %s: %s", bak, strerror(e));
         remove(tmp);
         return -1;
     }

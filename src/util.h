@@ -58,11 +58,21 @@ bool kk_parse_iso_time(const char *s, long long *out);
  * then creates the file). */
 void kk_make_parent_dirs(const char *path);
 
+/* Judges a file's contents (NUL-terminated, len bytes). */
+typedef bool (*kk_text_check)(const char *text, size_t len);
+
 /* Before overwriting path: copies the current file to "path.backup" in the
- * same directory (temp file + fsync + rename, so the backup itself is never
- * half-written). No file yet is not an error. -1 (logged) if the backup could
- * not be made. */
-int kk_backup_file(const char *path);
+ * same directory, same mode (temp file + fsync + rename, so the backup itself
+ * is never half-written). Only a file that passes ok (NULL: anything) is
+ * copied, so a corrupt file never replaces a good backup (that is logged and
+ * is not an error). No file yet is not an error either. -1 (logged) if the
+ * backup could not be made. */
+int kk_backup_file(const char *path, kk_text_check ok);
+
+/* kk_read_file, but when path is missing or fails ok and "path.backup"
+ * passes, the backup's contents (logged). With no usable backup it is exactly
+ * kk_read_file. */
+char *kk_read_file_or_backup(const char *path, kk_text_check ok, size_t *len);
 
 /* fflush + fsync: the data is on disk when this returns 0, so a rename of
  * the file right after cannot leave an empty file after a power cut. */

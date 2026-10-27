@@ -737,7 +737,7 @@ int main(int argc, char **argv)
     }
 
     GString *problem = g_string_new(NULL);
-    char *text = kk_read_file(e.path, NULL);
+    char *text = kk_read_file_or_backup(e.path, kk_ini_text_usable, NULL);
     if (!text && errno != ENOENT) {
         fprintf(stderr, _("kikarinhas-config: could not read %s: %s\n"), e.path,
                 g_strerror(errno));

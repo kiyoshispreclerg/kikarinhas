@@ -2,6 +2,7 @@
 #ifndef KK_INI_H
 #define KK_INI_H
 
+#include <stddef.h>
 #include <stdbool.h>
 
 /* A small INI document that can be read and edited in place:
@@ -21,6 +22,12 @@ typedef struct kk_ini kk_ini;
 kk_ini *kk_ini_new(void);
 /* Parses text. Malformed lines are kept (and skipped by the getters); each
  * one is reported to warn with its 1-based line number, if warn is set. */
+/* kk_text_check for a config file: "usable" is anything non-empty without NUL
+ * bytes (what a truncated or zeroed file after a power cut is not); "clean"
+ * also parses without a single warning, the bar for becoming the backup. */
+bool kk_ini_text_usable(const char *text, size_t len);
+bool kk_ini_text_clean(const char *text, size_t len);
+
 kk_ini *kk_ini_parse(const char *text,
                      void (*warn)(void *ud, int line, const char *msg),
                      void *ud);

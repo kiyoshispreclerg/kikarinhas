@@ -1476,7 +1476,7 @@ int kk_config_load(kk_config *c, const char *path, bool *found,
                    kk_config_warn_fn warn, void *ud)
 {
     *found = false;
-    char *text = kk_read_file(path, NULL);
+    char *text = kk_read_file_or_backup(path, kk_ini_text_usable, NULL);
     if (!text)
         return errno == ENOENT ? 0 : -1;
     *found = true;

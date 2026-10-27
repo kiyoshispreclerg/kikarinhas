@@ -108,10 +108,23 @@ static void parse_line(kk_users *u, char *line)
     }
 }
 
-/* Adds the people of the file at path; false if it cannot be read. */
-static bool load_file(kk_users *u, const char *path)
+/* A people file is usable if it is not empty and has no NUL bytes; as a
+ * backup it must also end in a newline, or the write was cut short. */
+static bool users_usable(const char *text, size_t len)
 {
-    char *text = kk_read_file(path, NULL);
+    return len > 0 && strlen(text) == len;
+}
+
+static bool users_clean(const char *text, size_t len)
+{
+    return users_usable(text, len) && text[len - 1] == '\n';
+}
+
+/* Adds the people of the file at path; false if it cannot be read. */
+static bool load_file(kk_users *u, const char *path, bool use_backup)
+{
+    char *text = use_backup ? kk_read_file_or_backup(path, users_usable, NULL)
+                            : kk_read_file(path, NULL);
     if (!text)
         return false;
     char *save;
@@ -133,7 +146,7 @@ kk_users *kk_users_open(const char *path)
         free(u);
         return NULL;
     }
-    if (!load_file(u, path) && errno != ENOENT)
+    if (!load_file(u, path, true) && errno != ENOENT)
         kk_log_warn("não consegui ler %s: %s", path, strerror(errno));
     return u;
 }
@@ -213,7 +226,7 @@ static int write_file(const kk_users *u, const char *path, bool backup)
         return -1;
     kk_make_parent_dirs(path);
     if (backup)
-        kk_backup_file(path);
+        kk_backup_file(path, users_clean);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         kk_log_warn("não consegui gravar %s: %s", tmp, strerror(errno));
@@ -280,7 +293,7 @@ int kk_users_import(kk_users *u, const char *path, bool overwrite, kk_users_impo
     kk_users *src = calloc(1, sizeof *src);
     if (!src)
         return -1;
-    if (!load_file(src, path)) {
+    if (!load_file(src, path, false)) {
         kk_users_free(src);
         return -1;
     }

@@ -135,6 +135,28 @@ static const char *classify(line *l, const char *section)
     return NULL;
 }
 
+bool kk_ini_text_usable(const char *text, size_t len)
+{
+    return len > 0 && strlen(text) == len;
+}
+
+static void count_warn(void *ud, int number, const char *msg)
+{
+    (void)number;
+    (void)msg;
+    (*(int *)ud)++;
+}
+
+bool kk_ini_text_clean(const char *text, size_t len)
+{
+    int warnings = 0;
+    if (!kk_ini_text_usable(text, len))
+        return false;
+    kk_ini *ini = kk_ini_parse(text, count_warn, &warnings);
+    kk_ini_free(ini);
+    return ini && warnings == 0;
+}
+
 kk_ini *kk_ini_parse(const char *text,
                      void (*warn)(void *ud, int line, const char *msg),
                      void *ud)
@@ -387,7 +409,7 @@ int kk_ini_save(const kk_ini *ini, const char *path)
         return -1;
     }
     kk_make_parent_dirs(path);
-    kk_backup_file(path);
+    kk_backup_file(path, kk_ini_text_clean);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         free(text);
