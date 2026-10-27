@@ -165,6 +165,11 @@ static void set_wm_properties(kk_window *w, const kk_window_opts *o)
                     XA_CARDINAL, 32, PropModeReplace,
                     (const unsigned char *)&pid, 1);
 
+    /* Explicit, though it is what a WM assumes when the property is absent. */
+    Atom type = XInternAtom(w->dpy, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+    XChangeProperty(w->dpy, w->win, XInternAtom(w->dpy, "_NET_WM_WINDOW_TYPE", False),
+                    XA_ATOM, 32, PropModeReplace, (const unsigned char *)&type, 1);
+
     w->wm_protocols = XInternAtom(w->dpy, "WM_PROTOCOLS", False);
     w->wm_delete = XInternAtom(w->dpy, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(w->dpy, w->win, &w->wm_delete, 1);
