@@ -5,7 +5,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include "log.h"
 
 kk_rect kk_rect_union(kk_rect a, kk_rect b)
 {
@@ -119,6 +123,42 @@ void kk_make_parent_dirs(const char *path)
             mkdir(buf, 0755);
             *p = '/';
         }
+}
+
+int kk_flush_sync(FILE *f)
+{
+    if (fflush(f) != 0 || ferror(f))
+        return -1;
+    return fsync(fileno(f));
+}
+
+int kk_backup_file(const char *path)
+{
+    char bak[KK_PATH_MAX], tmp[KK_PATH_MAX];
+    if (!kk_pathf(bak, sizeof bak, "%s.backup", path) ||
+        !kk_pathf(tmp, sizeof tmp, "%s.backup.tmp", path))
+        return -1;
+    FILE *in = fopen(path, "rb");
+    if (!in)
+        return errno == ENOENT ? 0 : -1;
+    FILE *out = fopen(tmp, "wb");
+    bool ok = out != NULL;
+    char buf[8192];
+    size_t n;
+    while (ok && (n = fread(buf, 1, sizeof buf, in)) > 0)
+        ok = fwrite(buf, 1, n, out) == n;
+    ok = ok && !ferror(in);
+    fclose(in);
+    if (out) {
+        ok = kk_flush_sync(out) == 0 && ok;
+        ok = fclose(out) == 0 && ok;
+    }
+    if (!ok || rename(tmp, bak) < 0) {
+        kk_log_warn("não consegui fazer a cópia %s: %s", bak, strerror(errno));
+        remove(tmp);
+        return -1;
+    }
+    return 0;
 }
 
 /* Days since 1970-01-01 of a proleptic Gregorian date (Howard Hinnant). */

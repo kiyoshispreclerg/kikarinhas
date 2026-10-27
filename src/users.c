@@ -204,13 +204,16 @@ int kk_users_count(const kk_users *u)
     return u->count;
 }
 
-/* Everyone, atomically (temp file + rename) to path. */
-static int write_file(const kk_users *u, const char *path)
+/* Everyone, atomically (temp file + fsync + rename) to path; with backup, the
+ * previous file is first copied to path.backup. */
+static int write_file(const kk_users *u, const char *path, bool backup)
 {
     char tmp[KK_PATH_MAX];
     if (!kk_pathf(tmp, sizeof tmp, "%s.tmp", path))
         return -1;
     kk_make_parent_dirs(path);
+    if (backup)
+        kk_backup_file(path);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         kk_log_warn("não consegui gravar %s: %s", tmp, strerror(errno));
@@ -233,7 +236,7 @@ static int write_file(const kk_users *u, const char *path)
             fprintf(f, "\t%s", r->extra);
         fputc('\n', f);
     }
-    bool ok = fflush(f) == 0 && !ferror(f);
+    bool ok = kk_flush_sync(f) == 0;
     ok = fclose(f) == 0 && ok;
     if (!ok || rename(tmp, path) < 0) {
         kk_log_warn("não consegui gravar %s: %s", path, strerror(errno));
@@ -247,7 +250,7 @@ int kk_users_save(kk_users *u)
 {
     if (!u->dirty)
         return 0;
-    if (write_file(u, u->path) < 0)
+    if (write_file(u, u->path, true) < 0)
         return -1;
     u->dirty = false;
     return 0;
@@ -255,7 +258,7 @@ int kk_users_save(kk_users *u)
 
 int kk_users_export(const kk_users *u, const char *path)
 {
-    return write_file(u, path);
+    return write_file(u, path, false);
 }
 
 static void clear_record(record *r)

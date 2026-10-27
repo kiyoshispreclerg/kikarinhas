@@ -387,12 +387,13 @@ int kk_ini_save(const kk_ini *ini, const char *path)
         return -1;
     }
     kk_make_parent_dirs(path);
+    kk_backup_file(path);
     FILE *f = fopen(tmp, "w");
     if (!f) {
         free(text);
         return -1;
     }
-    bool ok = fputs(text, f) >= 0 && fflush(f) == 0;
+    bool ok = fputs(text, f) >= 0 && kk_flush_sync(f) == 0;
     ok = fclose(f) == 0 && ok;
     free(text);
     if (!ok || rename(tmp, path) < 0) {

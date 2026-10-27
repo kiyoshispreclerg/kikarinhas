@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define KK_PATH_MAX 4096
 
@@ -56,6 +57,16 @@ bool kk_parse_iso_time(const char *s, long long *out);
 /* mkdir -p for the directory part of path (errors are left to whoever
  * then creates the file). */
 void kk_make_parent_dirs(const char *path);
+
+/* Before overwriting path: copies the current file to "path.backup" in the
+ * same directory (temp file + fsync + rename, so the backup itself is never
+ * half-written). No file yet is not an error. -1 (logged) if the backup could
+ * not be made. */
+int kk_backup_file(const char *path);
+
+/* fflush + fsync: the data is on disk when this returns 0, so a rename of
+ * the file right after cannot leave an empty file after a power cut. */
+int kk_flush_sync(FILE *f);
 
 /* snprintf for paths: false (and an empty string) if it would not fit. */
 bool kk_pathf(char *out, size_t size, const char *fmt, ...)
