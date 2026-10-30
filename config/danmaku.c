@@ -86,7 +86,7 @@ GtkWidget *danmaku_page(editor *e, const kk_config *cfg)
     row(t, _("Crosses the screen in"), with_unit(w->seconds, _("seconds")),
         _("Every message takes this long, so longer ones go faster."));
 
-    w->font = entry(cfg->danmaku_font);
+    w->font = font_entry(cfg->danmaku_font);
     w->size = spin_at(4, 200, 1, 1, cfg->danmaku_size);
     GtkWidget *font = gtk_hbox_new(FALSE, 6);
     gtk_box_pack_start(GTK_BOX(font), w->font, TRUE, TRUE, 0);

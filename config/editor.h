@@ -79,6 +79,11 @@ void dialog_body_fit(GtkWidget *scroll);
 GtkWidget *row(GtkWidget *table, const char *label, GtkWidget *w, const char *hint);
 GtkWidget *spin(double lo, double hi, double step, int digits);
 GtkWidget *entry(const char *text);
+/* entry() for a font family: suggests the installed families that contain
+ * what is typed. The list is read from fontconfig the first time one of
+ * these gets focus (and shared), so opening the window costs nothing even
+ * with thousands of fonts. Anything can still be typed ("Sans Bold"). */
+GtkWidget *font_entry(const char *text);
 GtkWidget *check(const char *label, bool on);
 const char *text_of(GtkWidget *w);
 int spin_int(GtkWidget *w);

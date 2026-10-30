@@ -198,7 +198,7 @@ GtkWidget *chatwin_page(editor *e, const kk_config *cfg)
           "Avatars tab."));
 
     /* The own style: greyed out with the bubbles'. */
-    w->font = entry(cfg->chatwin_font);
+    w->font = font_entry(cfg->chatwin_font);
     w->size = spin_at(4, 200, 1, 1, cfg->chatwin_size);
     GtkWidget *font = gtk_hbox_new(FALSE, 6);
     gtk_box_pack_start(GTK_BOX(font), w->font, TRUE, TRUE, 0);
@@ -308,7 +308,7 @@ GtkWidget *chatwin_page(editor *e, const kk_config *cfg)
     row(ht, _("Up to"),
         /* xgettext:no-c-format */
         with_unit(w->hl_width, _("% of the window width")), NULL);
-    w->hl_font = entry(cfg->hl_font);
+    w->hl_font = font_entry(cfg->hl_font);
     w->hl_size = spin_at(4, 200, 1, 1, cfg->hl_size);
     GtkWidget *hfont = gtk_hbox_new(FALSE, 6);
     gtk_box_pack_start(GTK_BOX(hfont), w->hl_font, TRUE, TRUE, 0);

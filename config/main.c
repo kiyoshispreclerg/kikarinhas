@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include <gtk/gtk.h>
+#include <pango/pangocairo.h>
 
 #include "config.h"
 #include "control.h"
@@ -145,6 +146,73 @@ GtkWidget *entry(const char *text)
 {
     GtkWidget *w = gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(w), text ? text : "");
+    return w;
+}
+
+/* Installed font families for the suggestions: column 0 the name, column 1
+ * its case-folded form, which the matching compares with. */
+static GtkListStore *families;
+
+static int compare_names(const void *a, const void *b)
+{
+    return g_utf8_collate(*(const char *const *)a, *(const char *const *)b);
+}
+
+static void load_families(void)
+{
+    PangoFontFamily **list;
+    int n = 0;
+    pango_font_map_list_families(pango_cairo_font_map_get_default(), &list, &n);
+    const char **names = g_new(const char *, n > 0 ? n : 1);
+    for (int i = 0; i < n; i++)
+        names[i] = pango_font_family_get_name(list[i]);
+    qsort(names, (size_t)n, sizeof *names, compare_names);
+    families = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+    for (int i = 0; i < n; i++) {
+        gchar *folded = g_utf8_casefold(names[i], -1);
+        gtk_list_store_insert_with_values(families, NULL, -1, 0, names[i], 1, folded, -1);
+        g_free(folded);
+    }
+    g_free(names);
+    g_free(list);
+}
+
+static gboolean family_matches(GtkEntryCompletion *c, const gchar *key, GtkTreeIter *it,
+                               gpointer ud)
+{
+    (void)ud;
+    gchar *folded;
+    gtk_tree_model_get(gtk_entry_completion_get_model(c), it, 1, &folded, -1);
+    gboolean ok = folded && strstr(folded, key) != NULL;
+    g_free(folded);
+    return ok;
+}
+
+static gboolean on_font_focus(GtkWidget *w, GdkEventFocus *ev, gpointer ud)
+{
+    (void)ev;
+    (void)ud;
+    GtkEntryCompletion *c = gtk_entry_get_completion(GTK_ENTRY(w));
+    if (c && !gtk_entry_completion_get_model(c)) {
+        if (!families)
+            load_families();
+        gtk_entry_completion_set_model(c, GTK_TREE_MODEL(families));
+    }
+    return FALSE;
+}
+
+GtkWidget *font_entry(const char *text)
+{
+    GtkWidget *w = entry(text);
+    GtkEntryCompletion *c = gtk_entry_completion_new();
+    gtk_entry_completion_set_text_column(c, 0);
+    gtk_entry_completion_set_match_func(c, family_matches, NULL, NULL);
+    gtk_entry_completion_set_minimum_key_length(c, 2);
+    gtk_entry_completion_set_inline_completion(c, FALSE);
+    gtk_entry_completion_set_popup_single_match(c, TRUE);
+    gtk_entry_set_completion(GTK_ENTRY(w), c);
+    g_object_unref(c);
+    g_signal_connect(w, "focus-in-event", G_CALLBACK(on_font_focus), NULL);
     return w;
 }
 
@@ -602,13 +670,13 @@ static void build(editor *e, const kk_config *cfg)
                   cfg->bubble_seconds < 0 ? -1 : (int)(cfg->bubble_seconds + 0.5)),
         _("Seconds on screen; automatic: 4 to 12 s, by the length of the text."));
 
-    e->name_font = entry(cfg->name_font);
+    e->name_font = font_entry(cfg->name_font);
     e->name_size = spin(4, 200, 1, 1);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->name_size), cfg->name_size);
     row(t, _("Name font"), font_row(e->name_font, e->name_size),
         _("Pango family and style (e.g. Sans Bold) and size in points; empty: Sans Bold. "
           "Only changes when kikarinhas restarts."));
-    e->bubble_font = entry(cfg->bubble_font);
+    e->bubble_font = font_entry(cfg->bubble_font);
     e->bubble_size = spin(4, 200, 1, 1);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(e->bubble_size), cfg->bubble_size);
     row(t, _("Bubble font"), font_row(e->bubble_font, e->bubble_size),
