@@ -246,8 +246,9 @@ static kk_emote_anim *one_frame(cairo_surface_t *fitted)
     return a;
 }
 
-/* GIFs: all the frames if they fit the budget, else only the first. */
-static kk_emote_anim *decode_gif(const char *data, size_t len, int px)
+/* GIFs and WebPs (and the still formats): all the frames if they fit the
+ * budget, else only the first. */
+static kk_emote_anim *decode_frames(const char *data, size_t len, int px)
 {
     kk_image img;
     if (!kk_image_decode(&img, data, len))
@@ -281,7 +282,7 @@ static kk_emote_anim *decode_gif(const char *data, size_t len, int px)
 static kk_emote_anim *decode_image(const char *data, size_t len, int px)
 {
     if (!is_png(data, len))
-        return decode_gif(data, len, px);
+        return decode_frames(data, len, px);
     png_reader r = {(const unsigned char *)data, len};
     cairo_surface_t *s = cairo_image_surface_create_from_png_stream(read_png, &r);
     if (cairo_surface_status(s) != CAIRO_STATUS_SUCCESS) {

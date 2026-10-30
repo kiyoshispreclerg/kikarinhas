@@ -47,6 +47,8 @@ typedef struct {
     const char *source_title;  /* its title, when known; may be NULL */
     const char *user_id;  /* stable per person and platform */
     const char *name;     /* display name */
+    const char *photo;    /* profile picture URL, when the message brings
+                           * it (YouTube); else NULL, see photos.h */
     const char *text;     /* may be empty */
     const char *amount;   /* KK_MSG_PAID: e.g. "R$ 10,00"; otherwise NULL */
     const kk_emote *emotes; /* image emotes, in text order */

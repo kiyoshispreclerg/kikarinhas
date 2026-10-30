@@ -25,6 +25,7 @@
 
 #include "chat.h"
 #include "emotes.h"
+#include "photos.h"
 #include "util.h"
 
 typedef enum {
@@ -47,7 +48,9 @@ typedef struct {
     uint32_t bg_color;  /* 0xRRGGBBAA */
     const char *bg_image; /* file; copied, read on the next draw */
     bool bg_tile;       /* repeated; else stretched to the window */
-    bool show_platform, show_time;
+    bool show_platform; /* the platform's icon before the name */
+    bool show_photo;    /* the viewer's profile picture */
+    bool show_time;
     bool hide_commands;
     const char *hide_users; /* "Nightbot, StreamElements"; copied */
     double fade;        /* seconds a message stays; 0: forever */
@@ -57,8 +60,9 @@ typedef struct {
 
 typedef struct kk_chatview kk_chatview;
 
-/* emotes (may be NULL: emotes stay as text) must outlive it. */
-kk_chatview *kk_chatview_new(kk_emotes *emotes);
+/* emotes (may be NULL: emotes stay as text) and photos (may be NULL: a
+ * circle with the initial instead) must outlive it. */
+kk_chatview *kk_chatview_new(kk_emotes *emotes, kk_photos *photos);
 void kk_chatview_free(kk_chatview *v);
 
 /* On start and on reload; everything is drawn again. */
@@ -94,7 +98,7 @@ void kk_chatview_hide(kk_chatview *v, uint64_t id);
 void kk_chatview_ignore(kk_chatview *v, const char *user_key);
 
 /* Whether a draw at now would change anything: a new message, a scroll, a
- * fade, an animated emote... */
+ * fade, an animated emote, a picture that arrived... */
 bool kk_chatview_dirty(kk_chatview *v, double now);
 /* Paints the whole view into cr (width x height of the last resize). */
 void kk_chatview_draw(kk_chatview *v, cairo_t *cr, double now);

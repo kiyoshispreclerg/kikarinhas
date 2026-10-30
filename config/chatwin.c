@@ -13,7 +13,7 @@
 struct chatwin_tab {
     GtkWidget *show, *open, *width, *height, *resizable, *above, *style, *font, *size,
         *text, *name, *badges, *outline, *outline_w, *paid, *member, *background, *bg_color,
-        *bg_image, *bg_mode, *platform, *time, *commands, *hide_users, *fade, *newest,
+        *bg_image, *bg_mode, *platform, *photo, *time, *commands, *hide_users, *fade, *newest,
         *history, *hl_card, *hl_x, *hl_y, *hl_width, *hl_font, *hl_size, *hl_seconds,
         *hl_spot;
     GtkWidget *own_rows[8]; /* the own style's settings, greyed out together */
@@ -254,8 +254,11 @@ GtkWidget *chatwin_page(editor *e, const kk_config *cfg)
     row(t, _("Background picture"), picture, NULL);
 
     w->platform = row(t, _("Show"),
-                      check(_("the platform's letter (Y, T, K, O)"), cfg->chatwin_show_platform),
-                      NULL);
+                      check(_("the platform's icon"), cfg->chatwin_show_platform), NULL);
+    w->photo = row(t, NULL,
+                   check(_("the viewer's profile picture"), cfg->chatwin_show_photo),
+                   _("As on the platform. Twitch, Kick and Odysee need a request for each "
+                     "person; it is kept for a week."));
     w->time = row(t, NULL, check(_("the time of each message"), cfg->chatwin_show_time), NULL);
     w->commands = row(t, _("Hide"), check(_("chat commands (!dance, !hug...)"),
                                           cfg->chatwin_hide_commands),
@@ -366,6 +369,7 @@ void chatwin_collect(editor *e)
     g_free(file);
     put(e, s, "background_mode", active(w->bg_mode) == 1 ? "tile" : "stretch", "stretch");
     put_bool(e, s, "show_platform", w->platform, d.chatwin_show_platform);
+    put_bool(e, s, "show_photo", w->photo, d.chatwin_show_photo);
     put_bool(e, s, "show_time", w->time, d.chatwin_show_time);
     put_bool(e, s, "hide_commands", w->commands, d.chatwin_hide_commands);
     put(e, s, "hide_users", text_of(w->hide_users), NULL);

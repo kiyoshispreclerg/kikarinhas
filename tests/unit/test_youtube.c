@@ -10,7 +10,7 @@
 #define MAX_MSGS 16
 
 typedef struct {
-    char platform[16], user[64], name[64], text[512], amount[32];
+    char platform[16], user[64], name[64], photo[64], text[512], amount[32];
     unsigned badges;
     kk_msg_kind kind;
     int n_emotes;
@@ -30,6 +30,7 @@ static void collect(void *ud, const kk_chat_msg *m)
     snprintf(c->platform, sizeof c->platform, "%s", m->platform);
     snprintf(c->user, sizeof c->user, "%s", m->user_id);
     snprintf(c->name, sizeof c->name, "%s", m->name);
+    snprintf(c->photo, sizeof c->photo, "%s", m->photo ? m->photo : "");
     snprintf(c->text, sizeof c->text, "%s", m->text);
     snprintf(c->amount, sizeof c->amount, "%s", m->amount ? m->amount : "");
     c->badges = m->badges;
@@ -218,6 +219,7 @@ TEST(poll_messages)
     CHECK_STR_EQ(got[0].platform, "youtube");
     CHECK_STR_EQ(got[0].user, "UCaaaaaaaaaaaaaaaaaaaaaa");
     CHECK_STR_EQ(got[0].name, "Fulana");
+    CHECK_STR_EQ(got[0].photo, "https://example.invalid/a64.png"); /* the biggest */
     CHECK_STR_EQ(got[0].text, "oi chat 😂:hand-pink-waving:");
     CHECK_INT_EQ(got[0].kind, KK_MSG_TEXT);
     CHECK_INT_EQ(got[0].badges, 0);

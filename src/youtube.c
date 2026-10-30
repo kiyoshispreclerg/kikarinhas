@@ -377,6 +377,7 @@ static bool emit_item(const cJSON *item, const kk_chat_sink *sink)
         return false;
     /* Handles come as "@name": the @ is noise above an avatar. */
     m.name = name.buf[0] == '@' && name.buf[1] ? name.buf + 1 : name.buf;
+    m.photo = kk_json_str(r, "authorPhoto.thumbnails[-1].url");
     m.text = text.buf;
     m.badges = parse_badges(r);
     m.emotes = emotes.list;

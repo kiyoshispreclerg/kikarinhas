@@ -69,6 +69,11 @@
            "url": "https://example.invalid/a.png",
            "width": 32,
            "height": 32
+          },
+          {
+           "url": "https://example.invalid/a64.png",
+           "width": 64,
+           "height": 64
           }
          ]
         },

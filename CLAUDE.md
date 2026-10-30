@@ -1,7 +1,7 @@
 # Kikarinhas — notas para o Claude
 
 Avatares do chat numa janela ARGB que o OBS captura (tipo Stream Avatars),
-nativo X11, em C11 + Xlib + Cairo + Pango + libcurl + ALSA + libdbus. Leia o `PLANO.md`
+nativo X11, em C11 + Xlib + Cairo + Pango + libcurl + ALSA + libdbus + libwebp. Leia o `PLANO.md`
 antes de começar uma fase: ele tem a arquitetura, o estado de cada fase e as
 lições aprendidas (formato do Stream Avatars, protocolo do YouTube).
 
@@ -101,13 +101,14 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/control.c` | socket unix: bridges (JSON por linha), `reload`, `play`, `set_avatar`... |
 | `src/sample.c`, `src/decode.h` | sons: decodifica (vendor/decoders.c), 48 kHz, mede para nivelar |
 | `src/mpris.c` | música tocando no desktop (MPRIS na sessão D-Bus, sem bloquear) |
-| `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP) e a camada do `action = image` e do cenário fixo (`[scenery.NOME]`, `kk_overlay_pin`) |
+| `src/image.c`, `src/overlay.c` | imagens de arquivo (vendor/images.c: PNG, JPEG, GIF animado, BMP; WebP pela libwebp) e a camada do `action = image` e do cenário fixo (`[scenery.NOME]`, `kk_overlay_pin`) |
 | `src/audio.c` | mixer + saída ALSA sem bloquear (fds no `poll()`) |
 | `src/soundboard.c` | `[sound.NOME]` → mixer, cache dos arquivos decodificados |
 | `src/chat.h` | eventos neutros de todas as plataformas: mensagem, emote, reação, `kk_chat_sink` |
 | `src/emoji.c`, `src/emoji_table.h` | acha emojis Unicode no texto (tabela gerada por `tools/gen_emoji_table.py`) |
 | `src/emotes.c` | imagens dos emotes: emoji pela fonte, PNG/GIF baixado (todos os quadros, `kk_emote_anim` com contagem de referências) + cache em `~/.cache/kikarinhas/emotes` |
 | `src/emotewall.c`, `src/layer.h` | emote wall: regras (mínimo, combo, blacklist), efeitos, camada sobre o palco |
+| `src/photos.c` | fotos de perfil de quem escreve (janela de chat): a URL vem na mensagem (YouTube) ou de uma consulta por pessoa (decapi.me na Twitch, API do canal no Kick, `resolve` no Odysee), guardada uma semana em `~/.cache/kikarinhas/photos`; a imagem fica no cache do `emotes.c` |
 | `src/chatview.c`, `src/chatwin.c` | janela de chat clássico: histórico e desenho (sem X, testável) e a janela em si (filha da principal na mesma conexão X, `kk_window_open_child`) |
 | `src/menu.c` | menu de clique direito numa janela popup própria (o OBS não captura), com o ponteiro preso enquanto aberto |
 | `src/questions.c` | fila de perguntas (`!pergunta`, mensagens com "?"), mostrada só no configurador |

@@ -25,6 +25,7 @@
 #include "danmaku.h"
 #include "demochat.h"
 #include "emotes.h"
+#include "photos.h"
 #include "emotewall.h"
 #include "highlight.h"
 #include "http.h"
@@ -712,6 +713,7 @@ static kk_chatview_config chatview_config(const kk_config *c)
         .bg_image = c->chatwin_bg_image,
         .bg_tile = c->chatwin_bg_tile,
         .show_platform = c->chatwin_show_platform,
+        .show_photo = c->chatwin_show_photo,
         .show_time = c->chatwin_show_time,
         .hide_commands = c->chatwin_hide_commands,
         .hide_users = c->chatwin_hide_users,
@@ -817,6 +819,7 @@ typedef struct {
     chat_sink sink;
     kk_chat_sink chat;    /* what every connector feeds: on_chat, on_reaction */
     kk_emotes *emotes;
+    kk_photos *photos; /* viewers' pictures, for the chat window */
     kk_emotewall *wall;
     kk_danmaku *danmaku;  /* chat flying across, when on */
     kk_chatview *chatview; /* the classic chat: history and drawing */
@@ -1967,7 +1970,11 @@ int main(int argc, char **argv)
     kk_danmaku_config dc = danmaku_config(&a.cfg);
     kk_danmaku_configure(a.danmaku, &dc);
     kk_danmaku_resize(a.danmaku, win.width, win.height);
-    a.chatview = kk_chatview_new(a.emotes);
+    char photo_dir[KK_PATH_MAX];
+    a.photos = kk_photos_new(a.http, a.emotes,
+                             kk_photos_default_dir(photo_dir, sizeof photo_dir) ? photo_dir
+                                                                                 : NULL);
+    a.chatview = kk_chatview_new(a.emotes, a.photos);
     kk_chatwin_handlers handlers = {.click = on_chat_click, .menu = on_chat_menu,
                                     .escape = on_chat_escape, .ud = &a};
     a.chatwin = a.chatview ? kk_chatwin_new(&win, a.chatview, &handlers) : NULL;
@@ -2062,6 +2069,7 @@ int main(int argc, char **argv)
     kk_menu_close(a.menu);
     kk_chatwin_free(a.chatwin);
     kk_chatview_free(a.chatview);
+    kk_photos_free(a.photos);
     kk_highlight_free(a.highlight);
     kk_questions_free(a.questions);
     kk_pointer_free(a.pointer);

@@ -2,6 +2,7 @@
 /* The classic chat (see chatview.h). */
 #include "chatview.h"
 
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +33,7 @@
 
 typedef struct {
     uint64_t id;
-    char *platform, *user_id, *name, *text, *amount;
+    char *platform, *user_id, *name, *photo, *text, *amount;
     kk_emote *emotes; /* strings owned */
     int n_emotes;
     unsigned badges;
@@ -46,6 +47,7 @@ typedef struct {
     int made_for, w, h;
     kk_bubble_emote slots[KK_BUBBLE_MAX_EMOTES];
     int n_slots;
+    bool photo_wait; /* drawn without its picture, which is still loading */
 } entry;
 
 typedef struct {
@@ -55,6 +57,7 @@ typedef struct {
 
 struct kk_chatview {
     kk_emotes *images;
+    kk_photos *photos;
     kk_chatview_config cfg;
     char *font_name, *bubble_font_name, *bg_path, *hide_users;
     PangoContext *pango;
@@ -80,6 +83,7 @@ struct kk_chatview {
     int n_shown;
     bool dirty;
     bool animating; /* emotes moving or loading in the last draw */
+    bool waiting;   /* pictures loading in the last draw */
     double last_draw, next_change;
 };
 
@@ -96,6 +100,7 @@ static void forget_drawing(entry *e)
         cairo_surface_destroy(e->surf);
     e->surf = NULL;
     e->made_for = 0;
+    e->photo_wait = false;
     for (int i = 0; i < e->n_slots; i++) {
         kk_bubble_emote_resolve(&e->slots[i], NULL);
         kk_emote_anim_unref(e->slots[i].anim);
@@ -109,6 +114,7 @@ static void entry_free(entry *e)
     free(e->platform);
     free(e->user_id);
     free(e->name);
+    free(e->photo);
     free(e->text);
     free(e->amount);
     for (int i = 0; i < e->n_emotes; i++) {
@@ -133,10 +139,12 @@ static bool entry_copy(entry *e, const kk_chat_msg *m)
     e->user_id = strdup(m->user_id ? m->user_id : "");
     e->name = strdup(m->name ? m->name : "");
     e->text = strdup(m->text ? m->text : "");
+    e->photo = dup_or_null(m->photo);
     e->amount = dup_or_null(m->amount);
     e->badges = m->badges;
     e->kind = m->kind;
-    bool ok = e->platform && e->user_id && e->name && e->text && (e->amount || !m->amount);
+    bool ok = e->platform && e->user_id && e->name && e->text && (e->amount || !m->amount) &&
+              (e->photo || !m->photo);
     if (ok && m->n_emotes > 0) {
         e->emotes = calloc((size_t)m->n_emotes, sizeof *e->emotes);
         ok = e->emotes != NULL;
@@ -188,19 +196,21 @@ static entry *find(const kk_chatview *v, uint64_t id)
 
 /* ---- setup --------------------------------------------------------------------- */
 
-kk_chatview *kk_chatview_new(kk_emotes *emotes)
+kk_chatview *kk_chatview_new(kk_emotes *emotes, kk_photos *photos)
 {
     kk_chatview *v = calloc(1, sizeof *v);
     if (!v)
         return NULL;
     v->images = emotes;
+    v->photos = photos;
     v->pango = pango_font_map_create_context(pango_cairo_font_map_get_default());
     v->width = v->height = 1;
     v->next_id = 1;
     kk_chatview_config c = {.size = 14, .text_color = 0xffffff, .name_color = 0xffffff,
                             .badge_colors = true, .outline_width = 2,
                             .paid_color = 0xffd24a, .member_color = 0x8ef09c,
-                            .show_platform = true, .hide_commands = true,
+                            .show_platform = true, .show_photo = true,
+                            .hide_commands = true,
                             .history = 200};
     kk_chatview_configure(v, &c);
     if (!v->ring) {
@@ -375,25 +385,6 @@ static rgb name_rgb(const kk_chatview *v, unsigned badges)
     return b ? (rgb){0.36, 0.2, 0.46} : rgb_of(v->cfg.name_color);
 }
 
-static void platform_badge(const char *platform, rgb *color, const char **letter)
-{
-    static const struct {
-        const char *name, *letter;
-        uint32_t color;
-    } known[] = {
-        {"youtube", "Y", 0xff0033}, {"twitch", "T", 0x9146ff}, {"kick", "K", 0x53fc18},
-        {"odysee", "O", 0xef1970},  {"demo", "D", 0x808080},
-    };
-    for (size_t i = 0; i < sizeof known / sizeof known[0]; i++)
-        if (strcmp(platform, known[i].name) == 0) {
-            *color = rgb_of(known[i].color);
-            *letter = known[i].letter;
-            return;
-        }
-    *color = rgb_of(0x606060);
-    *letter = "?";
-}
-
 static void attr_color(PangoAttrList *attrs, size_t from, size_t to, rgb c)
 {
     PangoAttribute *a = pango_attr_foreground_new((guint16)(c.r * 65535), (guint16)(c.g * 65535),
@@ -476,21 +467,99 @@ static void rounded_rect(cairo_t *cr, double x, double y, double w, double h, do
     cairo_close_path(cr);
 }
 
-static void draw_pill(kk_chatview *v, cairo_t *cr, double x, double y, const char *platform)
-{
-    rgb c;
-    const char *letter;
-    platform_badge(platform, &c, &letter);
-    int px = v->line_px * 4 / 5;
-    rounded_rect(cr, x + 0.5, y + 0.5, px - 1, px - 1, px / 4.0);
-    cairo_set_source_rgb(cr, c.r, c.g, c.b);
-    cairo_fill(cr);
+/* ---- platform icons and pictures ---------------------------------------- */
 
+/* The platforms' marks, simplified and drawn as paths so they stay sharp at
+ * any size: each fills a px square at (x, y). */
+
+static void icon_youtube(cairo_t *cr, double x, double y, double px)
+{
+    double h = px * 0.72;
+    rounded_rect(cr, x, y + (px - h) / 2, px, h, h * 0.28);
+    cairo_set_source_rgb(cr, 1.0, 0.0, 0.2);
+    cairo_fill(cr);
+    double cx = x + px / 2, cy = y + px / 2, t = h * 0.42;
+    cairo_move_to(cr, cx - t * 0.42, cy - t / 2);
+    cairo_line_to(cr, cx + t * 0.58, cy);
+    cairo_line_to(cr, cx - t * 0.42, cy + t / 2);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_fill(cr);
+}
+
+/* The glitch: a speech bubble with two eyes, on a 2400 x 2800 grid. */
+static void icon_twitch(cairo_t *cr, double x, double y, double px)
+{
+    double k = px / 2800.0;
+    cairo_save(cr);
+    cairo_translate(cr, x + (px - 2400 * k) / 2, y);
+    cairo_scale(cr, k, k);
+    static const double outer[][2] = {{500, 0},     {0, 500},     {0, 2300},  {600, 2300},
+                                      {600, 2800},  {1100, 2300}, {1500, 2300}, {2400, 1400},
+                                      {2400, 0}};
+    static const double inner[][2] = {{2200, 1300}, {1800, 1700}, {1400, 1700}, {1050, 2050},
+                                      {1050, 1700}, {600, 1700},  {600, 200},   {2200, 200}};
+    for (size_t i = 0; i < sizeof outer / sizeof outer[0]; i++)
+        cairo_line_to(cr, outer[i][0], outer[i][1]);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0x91 / 255.0, 0x46 / 255.0, 1.0);
+    cairo_fill(cr);
+    for (size_t i = 0; i < sizeof inner / sizeof inner[0]; i++)
+        cairo_line_to(cr, inner[i][0], inner[i][1]);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_fill(cr);
+    cairo_rectangle(cr, 1700, 550, 200, 600);
+    cairo_rectangle(cr, 1150, 550, 200, 600);
+    cairo_set_source_rgb(cr, 0x91 / 255.0, 0x46 / 255.0, 1.0);
+    cairo_fill(cr);
+    cairo_restore(cr);
+}
+
+/* A blocky K on green, on a 10 x 10 grid. */
+static void icon_kick(cairo_t *cr, double x, double y, double px)
+{
+    rounded_rect(cr, x, y, px, px, px * 0.2);
+    cairo_set_source_rgb(cr, 0x53 / 255.0, 0xfc / 255.0, 0x18 / 255.0);
+    cairo_fill(cr);
+    static const double blocks[][4] = {
+        {2, 2, 2, 6}, {4, 4, 1.2, 2}, {5, 3, 1.2, 1.6}, {5, 5.4, 1.2, 1.6},
+        {6, 2, 2, 1.6}, {6, 6.4, 2, 1.6},
+    };
+    double u = px / 10;
+    for (size_t i = 0; i < sizeof blocks / sizeof blocks[0]; i++)
+        cairo_rectangle(cr, x + blocks[i][0] * u, y + blocks[i][1] * u, blocks[i][2] * u,
+                        blocks[i][3] * u);
+    cairo_set_source_rgb(cr, 0.04, 0.04, 0.04);
+    cairo_fill(cr);
+}
+
+/* A pink-to-orange disc with a ring. */
+static void icon_odysee(cairo_t *cr, double x, double y, double px)
+{
+    cairo_pattern_t *g = cairo_pattern_create_linear(x, y, x + px, y + px);
+    cairo_pattern_add_color_stop_rgb(g, 0, 0xef / 255.0, 0x19 / 255.0, 0x70 / 255.0);
+    cairo_pattern_add_color_stop_rgb(g, 1, 0xf7 / 255.0, 0x79 / 255.0, 0x37 / 255.0);
+    cairo_new_path(cr);
+    cairo_arc(cr, x + px / 2, y + px / 2, px / 2, 0, 2 * M_PI);
+    cairo_set_source(cr, g);
+    cairo_fill(cr);
+    cairo_pattern_destroy(g);
+    cairo_arc(cr, x + px / 2, y + px / 2, px * 0.2, 0, 2 * M_PI);
+    cairo_set_line_width(cr, px * 0.12);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_stroke(cr);
+}
+
+/* letter (len bytes), in white in the middle of the px square at (x, y). */
+static void centred_letter(kk_chatview *v, cairo_t *cr, double x, double y, double px,
+                           const char *letter, size_t len)
+{
     PangoLayout *layout = pango_layout_new(v->pango);
     PangoFontDescription *f = pango_font_description_from_string("Sans Bold");
     pango_font_description_set_absolute_size(f, px * 0.62 * PANGO_SCALE);
     pango_layout_set_font_description(layout, f);
-    pango_layout_set_text(layout, letter, -1);
+    pango_layout_set_text(layout, letter, (int)len);
     PangoRectangle ink;
     pango_layout_get_pixel_extents(layout, &ink, NULL);
     pango_cairo_update_layout(cr, layout);
@@ -501,6 +570,66 @@ static void draw_pill(kk_chatview *v, cairo_t *cr, double x, double y, const cha
     g_object_unref(layout);
 }
 
+static void draw_icon(kk_chatview *v, cairo_t *cr, double x, double y, double px,
+                      const char *platform)
+{
+    cairo_save(cr);
+    if (strcmp(platform, "youtube") == 0) {
+        icon_youtube(cr, x, y, px);
+    } else if (strcmp(platform, "twitch") == 0) {
+        icon_twitch(cr, x, y, px);
+    } else if (strcmp(platform, "kick") == 0) {
+        icon_kick(cr, x, y, px);
+    } else if (strcmp(platform, "odysee") == 0) {
+        icon_odysee(cr, x, y, px);
+    } else {
+        /* Bridges and the demo: a grey tile with the first letter. */
+        rounded_rect(cr, x + 0.5, y + 0.5, px - 1, px - 1, px / 4.0);
+        cairo_set_source_rgb(cr, 0.45, 0.45, 0.45);
+        cairo_fill(cr);
+        char up[2] = {(char)toupper((unsigned char)platform[0]), '\0'};
+        centred_letter(v, cr, x, y, px, up[0] ? up : "?", 1);
+    }
+    cairo_restore(cr);
+}
+
+/* The picture in a circle; without one, a circle in a colour of the name
+ * with its initial. */
+static void draw_photo(kk_chatview *v, cairo_t *cr, double x, double y, double px,
+                       const entry *e, kk_emote_anim *photo)
+{
+    cairo_save(cr);
+    cairo_new_path(cr);
+    cairo_arc(cr, x + px / 2, y + px / 2, px / 2, 0, 2 * M_PI);
+    if (photo) {
+        cairo_clip(cr);
+        cairo_surface_t *f = photo->frames[0];
+        int w = cairo_image_surface_get_width(f), h = cairo_image_surface_get_height(f);
+        double k = px / (w < h ? w : h);
+        cairo_translate(cr, x + (px - w * k) / 2, y + (px - h * k) / 2);
+        cairo_scale(cr, k, k);
+        cairo_set_source_surface(cr, f, 0, 0);
+        cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+        cairo_paint(cr);
+    } else {
+        static const uint32_t colors[] = {0xd9534f, 0xe67e22, 0xc9a227, 0x4caf50,
+                                          0x1abc9c, 0x3498db, 0x7e57c2, 0xd63384};
+        uint32_t hash = 2166136261u;
+        for (const char *s = e->user_id; *s; s++)
+            hash = (hash ^ (unsigned char)*s) * 16777619u;
+        rgb c = rgb_of(colors[hash % (sizeof colors / sizeof colors[0])]);
+        cairo_set_source_rgb(cr, c.r, c.g, c.b);
+        cairo_fill(cr);
+        const char *name = e->name[0] == '@' && e->name[1] ? e->name + 1 : e->name;
+        gunichar c0 = g_utf8_get_char_validated(name, -1);
+        char up[8];
+        if (name[0] && c0 != (gunichar)-1 && c0 != (gunichar)-2)
+            centred_letter(v, cr, x, y, px, up,
+                           (size_t)g_unichar_to_utf8(g_unichar_toupper(c0), up));
+    }
+    cairo_restore(cr);
+}
+
 /* Renders e at the current width. */
 static bool render(kk_chatview *v, entry *e)
 {
@@ -509,11 +638,17 @@ static bool render(kk_chatview *v, entry *e)
     size_t used = 0;
     text[0] = '\0';
     PangoAttrList *attrs = pango_attr_list_new();
-    int pill = -1;
+    int icon = -1, photo = -1;
+    int icon_px = v->line_px * 4 / 5, photo_px = v->line_px;
     if (v->cfg.show_platform) {
-        pill = (int)used;
+        icon = (int)used;
         append(text, sizeof text, &used, HOLE " ", 4);
-        attr_hole(attrs, (size_t)pill, v->line_px * 4 / 5);
+        attr_hole(attrs, (size_t)icon, icon_px);
+    }
+    if (v->cfg.show_photo) {
+        photo = (int)used;
+        append(text, sizeof text, &used, HOLE " ", 4);
+        attr_hole(attrs, (size_t)photo, photo_px);
     }
     if (v->cfg.show_time) {
         char hhmm[16];
@@ -599,12 +734,22 @@ static bool render(kk_chatview *v, entry *e)
     pango_cairo_show_layout(cr, layout);
 
     PangoRectangle pos;
-    if (pill >= 0) {
-        pango_layout_index_to_pos(layout, pill, &pos);
-        int px = v->line_px * 4 / 5;
-        draw_pill(v, cr, ox + pos.x / PANGO_SCALE,
-                  oy + pos.y / PANGO_SCALE + (pos.height / PANGO_SCALE - px) / 2.0,
-                  e->platform);
+    if (icon >= 0) {
+        pango_layout_index_to_pos(layout, icon, &pos);
+        draw_icon(v, cr, ox + pos.x / PANGO_SCALE,
+                  oy + pos.y / PANGO_SCALE + (pos.height / PANGO_SCALE - icon_px) / 2.0,
+                  icon_px, e->platform);
+    }
+    if (photo >= 0) {
+        kk_emote_anim *pic = NULL;
+        kk_emote_state st = v->photos ? kk_photos_get(v->photos, e->platform, e->user_id,
+                                                      e->name, e->photo, &pic)
+                                      : KK_EMOTE_FAILED;
+        pango_layout_index_to_pos(layout, photo, &pos);
+        draw_photo(v, cr, ox + pos.x / PANGO_SCALE,
+                   oy + pos.y / PANGO_SCALE + (pos.height / PANGO_SCALE - photo_px) / 2.0,
+                   photo_px, e, st == KK_EMOTE_READY ? pic : NULL);
+        e->photo_wait = st == KK_EMOTE_LOADING;
     }
     for (int i = 0; i < e->n_slots; i++) {
         pango_layout_index_to_pos(layout, idx[i], &pos);
@@ -658,8 +803,9 @@ bool kk_chatview_get(const kk_chatview *v, uint64_t id, kk_chat_msg *out)
     if (!e)
         return false;
     *out = (kk_chat_msg){.platform = e->platform, .user_id = e->user_id, .name = e->name,
-                         .text = e->text, .amount = e->amount, .emotes = e->emotes,
-                         .n_emotes = e->n_emotes, .badges = e->badges, .kind = e->kind};
+                         .photo = e->photo, .text = e->text, .amount = e->amount,
+                         .emotes = e->emotes, .n_emotes = e->n_emotes, .badges = e->badges,
+                         .kind = e->kind};
     return true;
 }
 
@@ -752,6 +898,19 @@ static bool resolve_emotes(kk_chatview *v, entry *e)
     return changed;
 }
 
+/* A picture that was loading and now isn't: e is drawn again with it (or
+ * with the initial, if it failed). True if so. */
+static bool resolve_photo(kk_chatview *v, entry *e)
+{
+    kk_emote_anim *pic;
+    if (!e->photo_wait || !v->photos ||
+        kk_photos_get(v->photos, e->platform, e->user_id, e->name, e->photo, &pic) ==
+            KK_EMOTE_LOADING)
+        return false;
+    forget_drawing(e);
+    return true;
+}
+
 bool kk_chatview_dirty(kk_chatview *v, double now)
 {
     if (v->scroll > 0 && now - v->last_scroll > SCROLL_RETURN) {
@@ -760,16 +919,18 @@ bool kk_chatview_dirty(kk_chatview *v, double now)
     }
     if (v->dirty || now >= v->next_change)
         return true;
-    if (!v->animating)
+    if (!v->animating && !v->waiting)
         return false;
     bool changed = false;
     for (int i = 0; i < v->n_shown; i++) {
         entry *e = find(v, v->shown[i].id);
-        if (e)
+        if (e) {
             changed |= resolve_emotes(v, e);
+            changed |= resolve_photo(v, e);
+        }
     }
     /* Moving emotes: about 20 frames a second is plenty for a chat. */
-    return changed || now - v->last_draw >= 0.05;
+    return changed || (v->animating && now - v->last_draw >= 0.05);
 }
 
 static void paint_background(kk_chatview *v, cairo_t *cr)
@@ -846,6 +1007,7 @@ void kk_chatview_draw(kk_chatview *v, cairo_t *cr, double now)
     paint_background(v, cr);
     v->n_shown = 0;
     v->animating = false;
+    v->waiting = false;
     v->dirty = false;
     v->last_draw = now;
     v->next_change = INFINITY;
@@ -885,6 +1047,7 @@ void kk_chatview_draw(kk_chatview *v, cairo_t *cr, double now)
             continue; /* scrolled out on the newest side */
         resolve_emotes(v, e);
         paint_entry(v, cr, e, PAD, ey, alpha, now);
+        v->waiting |= e->photo_wait;
         for (int k = 0; k < e->n_slots; k++)
             v->animating |= !e->slots[k].anim ? e->slots[k].url != NULL
                                               : e->slots[k].anim->n > 1;

@@ -436,6 +436,7 @@ void kk_config_defaults(kk_config *c)
         .chatwin_member_color = 0x8ef09c,
         .chatwin_bg_color = 0x00000080,
         .chatwin_show_platform = true,
+        .chatwin_show_photo = true,
         .chatwin_hide_commands = true,
         .chatwin_history = 200,
         .hl_card = true,
@@ -1140,6 +1141,8 @@ static void apply_chat_window(kk_config *c, const warner *w)
         get_choice(w, &c->chatwin_bg_tile, "stretch", "tile");
     else if (key_is(w, "show_platform"))
         get_bool(w, &c->chatwin_show_platform);
+    else if (key_is(w, "show_photo"))
+        get_bool(w, &c->chatwin_show_photo);
     else if (key_is(w, "show_time"))
         get_bool(w, &c->chatwin_show_time);
     else if (key_is(w, "hide_commands"))

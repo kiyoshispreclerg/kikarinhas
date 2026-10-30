@@ -35,7 +35,7 @@ Dependencies (Debian/Ubuntu):
 ```sh
 sudo apt install build-essential pkg-config libx11-dev libxext-dev \
     libcairo2-dev libpango1.0-dev libcurl4-openssl-dev libasound2-dev \
-    libssl-dev libdbus-1-dev
+    libssl-dev libdbus-1-dev libwebp-dev
 sudo apt install libgtk2.0-dev   # optional: only for kikarinhas-config
 sudo apt install fonts-noto-color-emoji   # colour emoji (emote wall and bubbles)
 ```
@@ -547,7 +547,8 @@ background = transparent   # color (background_color = #rrggbbaa) or image
 background_color = #00000080
 background_image = ~/pictures/chat.png
 background_mode = stretch  # or tile
-show_platform = yes   # Y, T, K, O before the name
+show_platform = yes   # the platform's icon before the name
+show_photo = yes      # the viewer's profile picture, as on the platform
 show_time = no
 hide_commands = yes
 hide_users = Nightbot, StreamElements
@@ -646,7 +647,8 @@ the people of an exported file (`added`, `replaced` and `skipped` in the
 reply).
 
 In `message`: `user_id` is required; `platform` (default `bridge`), `name`,
-`text`, `kind` (`text`, `paid` or `member`), `amount` and `badges` (`owner`,
+`photo` (profile picture, `https` URL, for the chat window), `text`, `kind`
+(`text`, `paid` or `member`), `amount` and `badges` (`owner`,
 `mod`, `member`, `verified`, and also `broadcaster`, `moderator` and
 `subscriber`) are optional. That way a platform kikarinhas does not know can
 become a bridge written in any language.

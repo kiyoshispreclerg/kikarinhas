@@ -51,6 +51,7 @@ kikarinhas-config   (GTK2: edita o .ini e manda "reload" pelo socket)
 | cJSON (embutido) | JSON do SA e das APIs |
 | miniz (embutido, ainda não incluído) | ler os zips do SA/workshop |
 | libdbus-1 | players MPRIS (a música tocando, `!song`) |
+| libwebp (+ demux) | imagens WebP: fotos de perfil do Kick e do Odysee, emotes WebP |
 | GTK2 | só o `kikarinhas-config` |
 | fonte de emoji colorido (Noto Color Emoji) | só ao rodar: emojis do emote wall e dos balões |
 
@@ -455,6 +456,20 @@ data/         avatar padrão original, exemplo de .ini
      e volta para as novas. `fade` some com as velhas (só sem rolar).
    - `src/chatwin.c`: a janela; fechar destrói janela e buffer, chama
      `kk_chatview_release` e `malloc_trim(0)` (≈4 MB devolvidos no teste).
+   - Ícone da plataforma (desenhado em Cairo, sem arquivos) e foto de
+     perfil redonda antes do nome (`show_platform`, `show_photo`). A foto
+     (`src/photos.c`): o YouTube manda a URL em cada mensagem
+     (`authorPhoto`, `kk_chat_msg.photo`; a bridge aceita `"photo"`); nas
+     outras, uma consulta por pessoa, no máximo 4 ao mesmo tempo: Twitch
+     pela decapi.me por id (a Helix pede token), Kick pela API do canal
+     (o slug é o nome em minúsculas, `_` fica), Odysee pelo `resolve`
+     (`@nome#claim`) e o proxy de miniaturas do próprio Odysee em 96 px. A
+     URL fica uma semana em `~/.cache/kikarinhas/photos/PLATAFORMA/` (vazio:
+     sem foto); erro de rede tenta de novo em 10 min. A imagem vai para o
+     cache do `emotes.c`, pela URL. Kick e Odysee servem WebP: `image.c`
+     lê WebP (parado ou animado) pela libwebp. Sem foto (ou carregando): um
+     círculo colorido com a inicial; quando a foto chega, só aquela
+     mensagem é redesenhada.
    - `src/highlight.c`: comentário em destaque (cartão na frente, holofote
      atrás dos avatares, seguindo o avatar pela chave a cada quadro).
    - `src/menu.c`: menu de clique direito numa janela popup, que o OBS não

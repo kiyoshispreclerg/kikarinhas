@@ -69,7 +69,7 @@
  *              background = transparent|color|image,
  *              background_color = #00000080 (RGBA), background_image,
  *              background_mode = stretch|tile, show_platform = yes,
- *              show_time = no, hide_commands = yes,
+ *              show_photo = yes, show_time = no, hide_commands = yes,
  *              hide_users = Nightbot, StreamElements, fade = 0 (s),
  *              newest = bottom|top, history = 200
  *   [highlight] card = yes, x = 50, y = 25 (% of the window), width = 50 (%),
@@ -239,7 +239,7 @@ typedef struct {
     uint32_t chatwin_bg_color; /* 0xRRGGBBAA */
     char *chatwin_bg_image;
     bool chatwin_bg_tile;    /* else stretched */
-    bool chatwin_show_platform, chatwin_show_time, chatwin_hide_commands;
+    bool chatwin_show_platform, chatwin_show_photo, chatwin_show_time, chatwin_hide_commands;
     char *chatwin_hide_users; /* comma-separated names; NULL = none */
     double chatwin_fade;     /* seconds until a message goes; 0 = never */
     bool chatwin_newest_top;

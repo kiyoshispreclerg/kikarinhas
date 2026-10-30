@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 16:27-0300\n"
+"POT-Creation-Date: 2026-10-30 15:49-0300\n"
 "PO-Revision-Date: 2026-10-02 09:37-0300\n"
 "Last-Translator: Kikarinhas contributors\n"
 "Language-Team: \n"
@@ -232,7 +232,7 @@ msgid "Above or below the avatar."
 msgstr "Em cima ou embaixo do avatar."
 
 #: config/main.c:589 config/wall.c:69 config/wall.c:80 config/danmaku.c:86
-#: config/chatwin.c:266 config/chatwin.c:316 config/commands.c:564
+#: config/chatwin.c:269 config/chatwin.c:319 config/commands.c:564
 #: config/points.c:78
 msgid "seconds"
 msgstr "segundos"
@@ -798,7 +798,7 @@ msgid "Every message takes this long, so longer ones go faster."
 msgstr ""
 "Toda mensagem leva esse tempo, então as mais compridas andam mais rápido."
 
-#: config/danmaku.c:95 config/chatwin.c:207 config/chatwin.c:314
+#: config/danmaku.c:95 config/chatwin.c:207 config/chatwin.c:317
 msgid "Font"
 msgstr "Fonte"
 
@@ -1002,67 +1002,79 @@ msgid "Show"
 msgstr "Mostrar"
 
 #: config/chatwin.c:257
-msgid "the platform's letter (Y, T, K, O)"
-msgstr "a letra da plataforma (Y, T, K, O)"
+msgid "the platform's icon"
+msgstr "o ícone da plataforma"
 
 #: config/chatwin.c:259
+msgid "the viewer's profile picture"
+msgstr "a foto de perfil de quem escreveu"
+
+#: config/chatwin.c:260
+msgid ""
+"As on the platform. Twitch, Kick and Odysee need a request for each person; "
+"it is kept for a week."
+msgstr ""
+"Como na plataforma. Twitch, Kick e Odysee pedem uma consulta por pessoa; a "
+"resposta fica guardada por uma semana."
+
+#: config/chatwin.c:262
 msgid "the time of each message"
 msgstr "a hora de cada mensagem"
 
-#: config/chatwin.c:260
+#: config/chatwin.c:263
 msgid "Hide"
 msgstr "Esconder"
 
-#: config/chatwin.c:260
+#: config/chatwin.c:263
 msgid "chat commands (!dance, !hug...)"
 msgstr "os comandos do chat (!dance, !hug...)"
 
-#: config/chatwin.c:263
+#: config/chatwin.c:266
 msgid "Hide people"
 msgstr "Esconder pessoas"
 
-#: config/chatwin.c:264
+#: config/chatwin.c:267
 msgid "Names separated by commas, e.g. bots: Nightbot, StreamElements."
 msgstr ""
 "Nomes separados por vírgula, por exemplo bots: Nightbot, StreamElements."
 
-#: config/chatwin.c:266
+#: config/chatwin.c:269
 msgid "Messages go after"
 msgstr "As mensagens somem depois de"
 
-#: config/chatwin.c:267
+#: config/chatwin.c:270
 msgid "0: they stay. Scrolling back shows them all again."
 msgstr "0: ficam. Rolando para trás, todas aparecem de novo."
 
-#: config/chatwin.c:268
+#: config/chatwin.c:271
 msgid "At the bottom"
 msgstr "Embaixo"
 
-#: config/chatwin.c:268
+#: config/chatwin.c:271
 msgid "At the top"
 msgstr "Em cima"
 
-#: config/chatwin.c:270
+#: config/chatwin.c:273
 msgid "New messages"
 msgstr "Mensagens novas"
 
-#: config/chatwin.c:272
+#: config/chatwin.c:275
 msgid "Keeps"
 msgstr "Guarda"
 
-#: config/chatwin.c:272
+#: config/chatwin.c:275
 msgid "messages"
 msgstr "mensagens"
 
-#: config/chatwin.c:273
+#: config/chatwin.c:276
 msgid "Also while the window is closed, so it opens with the chat so far."
 msgstr "Também com a janela fechada, então ela abre com o chat até ali."
 
-#: config/chatwin.c:279
+#: config/chatwin.c:282
 msgid "Highlighted comment"
 msgstr "Comentário em destaque"
 
-#: config/chatwin.c:285
+#: config/chatwin.c:288
 msgid ""
 "Click a message in the chat window to show it big on the stage, with a "
 "spotlight on its author's avatar (who comes back if they had left); click it "
@@ -1072,37 +1084,37 @@ msgstr ""
 "um holofote no avatar de quem escreveu (que volta se tinha saído); clique de "
 "novo para tirar. Na janela de chat ela só ganha uma marca discreta."
 
-#: config/chatwin.c:293
+#: config/chatwin.c:296
 msgid "Show the comment in a card on the stage"
 msgstr "Mostrar o comentário num cartão no palco"
 
-#: config/chatwin.c:302 config/commands.c:543 config/scenery.c:125
+#: config/chatwin.c:305 config/commands.c:543 config/scenery.c:125
 msgid "Centre at"
 msgstr "Centro em"
 
-#: config/chatwin.c:303
+#: config/chatwin.c:306
 msgid ""
 "Of the stage window: x 50 and y 25 is the middle, a quarter of the way down."
 msgstr "Da janela do palco: x 50 e y 25 é no meio, a um quarto da altura."
 
-#: config/chatwin.c:305
+#: config/chatwin.c:308
 msgid "Up to"
 msgstr "Até"
 
-#: config/chatwin.c:307 config/scenery.c:127
+#: config/chatwin.c:310 config/scenery.c:127
 #, no-c-format
 msgid "% of the window width"
 msgstr "% da largura da janela"
 
-#: config/chatwin.c:316
+#: config/chatwin.c:319
 msgid "Goes after"
 msgstr "Some depois de"
 
-#: config/chatwin.c:317
+#: config/chatwin.c:320
 msgid "0: stays until clicked again."
 msgstr "0: fica até clicar de novo."
 
-#: config/chatwin.c:318
+#: config/chatwin.c:321
 msgid "Spotlight on the author's avatar"
 msgstr "Holofote no avatar de quem escreveu"
 
@@ -1323,6 +1335,7 @@ msgstr[0] "%d pessoa exportada para %s."
 msgstr[1] "%d pessoas exportadas para %s."
 
 #: config/audience.c:594
+#, c-format
 msgid "Could not write %s."
 msgstr "Não consegui gravar %s."
 
@@ -1358,6 +1371,7 @@ msgid "Imported: %d new, %d overwritten, %d skipped."
 msgstr "Importado: %d novas, %d sobrescritas, %d puladas."
 
 #: config/audience.c:684
+#, c-format
 msgid "Could not import %s."
 msgstr "Não consegui importar %s."
 
@@ -2317,6 +2331,9 @@ msgstr ""
 "avatares, uma moldura ou logo na frente deles. Cada uma tem um lugar (o "
 "centro, em % da janela) e um tamanho (% do arquivo). Até 16; as últimas da "
 "lista ficam por cima das primeiras."
+
+#~ msgid "the platform's letter (Y, T, K, O)"
+#~ msgstr "a letra da plataforma (Y, T, K, O)"
 
 #, fuzzy, c-format
 #~ msgid "% of the width"

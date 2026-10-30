@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <webp/decode.h>
+#include <webp/demux.h>
+
 #include "decode.h"
 #include "log.h"
 #include "util.h"
@@ -41,22 +44,91 @@ static cairo_surface_t *to_surface(const unsigned char *rgba, int w, int h)
     return s;
 }
 
+static bool is_webp(const unsigned char *d, size_t len)
+{
+    return len >= 12 && memcmp(d, "RIFF", 4) == 0 && memcmp(d + 8, "WEBP", 4) == 0;
+}
+
+/* WebP (Kick's and Odysee's profile pictures, some emotes), still or
+ * animated, in the same shape kk_decode_image gives: every frame's RGBA one
+ * after the other, and their delays. Free both with free(). */
+static unsigned char *decode_webp(const unsigned char *data, size_t len, int *w, int *h,
+                                  int *frames, int **delays)
+{
+    *frames = 0;
+    *delays = NULL;
+    WebPAnimDecoderOptions opt;
+    if (!WebPAnimDecoderOptionsInit(&opt))
+        return NULL;
+    opt.color_mode = MODE_RGBA;
+    opt.use_threads = 0;
+    WebPData wd = {data, len};
+    WebPAnimDecoder *dec = WebPAnimDecoderNew(&wd, &opt);
+    WebPAnimInfo info;
+    if (!dec || !WebPAnimDecoderGetInfo(dec, &info) || info.frame_count < 1 ||
+        info.canvas_width < 1 || info.canvas_height < 1 ||
+        (long)info.canvas_width * info.canvas_height * info.frame_count > MAX_PIXELS) {
+        WebPAnimDecoderDelete(dec);
+        return NULL;
+    }
+    int n = (int)info.frame_count;
+    size_t frame = (size_t)info.canvas_width * info.canvas_height * 4;
+    unsigned char *px = malloc(frame * (size_t)n);
+    int *d = n > 1 ? malloc((size_t)n * sizeof *d) : NULL;
+    int got = 0, prev_ms = 0;
+    while (px && (n == 1 || d) && got < n && WebPAnimDecoderHasMoreFrames(dec)) {
+        uint8_t *buf;
+        int ts; /* when the frame ends, ms from the start */
+        if (!WebPAnimDecoderGetNext(dec, &buf, &ts))
+            break;
+        memcpy(px + frame * (size_t)got, buf, frame);
+        if (d)
+            d[got] = ts - prev_ms;
+        prev_ms = ts;
+        got++;
+    }
+    WebPAnimDecoderDelete(dec);
+    if (got < 1) {
+        free(px);
+        free(d);
+        return NULL;
+    }
+    *w = (int)info.canvas_width;
+    *h = (int)info.canvas_height;
+    *frames = got;
+    *delays = d;
+    return px;
+}
+
+/* Any picture we read, as kk_decode_image gives it; release with done(). */
+static unsigned char *decode_any(const void *data, size_t len, int *w, int *h, int *n,
+                                 int **delays, void (**done)(void *))
+{
+    if (is_webp(data, len)) {
+        *done = free;
+        return decode_webp(data, len, w, h, n, delays);
+    }
+    *done = kk_decode_image_free;
+    return kk_decode_image(data, len, w, h, n, delays);
+}
+
 /* Frames of a picture in memory into img. what names it in warnings. */
 static bool decode_into(kk_image *img, const void *data, size_t len, const char *what)
 {
     memset(img, 0, sizeof *img);
     int w, h, n, *delays;
-    unsigned char *px = kk_decode_image(data, len, &w, &h, &n, &delays);
+    void (*done)(void *);
+    unsigned char *px = decode_any(data, len, &w, &h, &n, &delays, &done);
     if (!px || n < 1) {
-        kk_log_warn("%s: não é uma imagem PNG, JPEG, GIF ou BMP que eu consiga ler", what);
-        kk_decode_image_free(px);
-        kk_decode_image_free(delays);
+        kk_log_warn("%s: não é uma imagem PNG, JPEG, GIF, BMP ou WebP que eu consiga ler", what);
+        done(px);
+        done(delays);
         return false;
     }
     if ((long)w * h * n > MAX_PIXELS) {
         kk_log_warn("%s: grande demais (%dx%d, %d quadros)", what, w, h, n);
-        kk_decode_image_free(px);
-        kk_decode_image_free(delays);
+        done(px);
+        done(delays);
         return false;
     }
     img->frames = calloc((size_t)n, sizeof *img->frames);
@@ -72,8 +144,8 @@ static bool decode_into(kk_image *img, const void *data, size_t len, const char 
             img->total_ms += img->delay_ms[i];
         }
     }
-    kk_decode_image_free(px);
-    kk_decode_image_free(delays);
+    done(px);
+    done(delays);
     img->w = w;
     img->h = h;
     if (!ok) {
@@ -105,12 +177,13 @@ bool kk_image_decode(kk_image *img, const void *data, size_t len)
 cairo_surface_t *kk_image_decode_still(const void *data, size_t len)
 {
     int w, h, n, *delays;
-    unsigned char *px = kk_decode_image(data, len, &w, &h, &n, &delays);
+    void (*done)(void *);
+    unsigned char *px = decode_any(data, len, &w, &h, &n, &delays, &done);
     cairo_surface_t *s = NULL;
     if (px && n >= 1 && (long)w * h * n <= MAX_PIXELS)
         s = to_surface(px, w, h);
-    kk_decode_image_free(px);
-    kk_decode_image_free(delays);
+    done(px);
+    done(delays);
     return s;
 }
 

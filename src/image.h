@@ -2,9 +2,9 @@
 #ifndef KK_IMAGE_H
 #define KK_IMAGE_H
 
-/* Pictures from files (PNG, JPEG, GIF, BMP) as Cairo surfaces, ready to
- * paint: premultiplied ARGB32, one surface per frame. Animated GIFs keep
- * every frame and its delay. */
+/* Pictures from files (PNG, JPEG, GIF, BMP, WebP) as Cairo surfaces, ready
+ * to paint: premultiplied ARGB32, one surface per frame. Animated GIFs and
+ * WebPs keep every frame and its delay. */
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -26,7 +26,7 @@ bool kk_image_load(kk_image *img, const char *path);
 bool kk_image_decode(kk_image *img, const void *data, size_t len);
 void kk_image_free(kk_image *img);
 
-/* The first frame of a picture in memory (PNG, JPEG, GIF, BMP), or NULL:
+/* The first frame of a picture in memory (PNG, JPEG, GIF, BMP, WebP), or NULL:
  * for image emotes that only come animated (Kick's GIFs). */
 cairo_surface_t *kk_image_decode_still(const void *data, size_t len);
 

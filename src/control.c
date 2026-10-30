@@ -196,6 +196,9 @@ static void handle_message(kk_control *c, const cJSON *req, cJSON *reply)
     m.name = str_or(req, "name", "");
     if (!m.name[0])
         m.name = m.user_id;
+    m.photo = str_or(req, "photo", NULL);
+    if (m.photo && strncmp(m.photo, "https://", 8) != 0)
+        m.photo = NULL;
     const char *kind = str_or(req, "kind", "text");
     if (strcmp(kind, "paid") == 0)
         m.kind = KK_MSG_PAID;

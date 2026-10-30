@@ -29,6 +29,7 @@ TEST(config_chat_window)
     CHECK(!c.chatwin_open && c.chatwin_resizable && !c.chatwin_bubbles);
     CHECK(c.chatwin_width == 400 && c.chatwin_height == 600);
     CHECK(c.chatwin_background == KK_CONFIG_BG_TRANSPARENT && c.chatwin_hide_commands);
+    CHECK(c.chatwin_show_platform && c.chatwin_show_photo);
     warnings = 0;
     kk_ini *ini = kk_ini_parse("[chat_window]\nopen = yes\nsize = 500x700\nresizable = no\n"
                                "style = bubbles\nfont = Serif\nfont_size = 18\n"
@@ -36,7 +37,7 @@ TEST(config_chat_window)
                                "background_mode = tile\nbackground_image = /x.png\n"
                                "hide_users = Nightbot, @Bot\nfade = 30\nnewest = top\n"
                                "history = 50\noutline_width = 0\nstyle = round\n"
-                               "background = video\nwhat = 1\n",
+                               "background = video\nwhat = 1\nshow_photo = no\n",
                                NULL, NULL);
     kk_config_apply(&c, ini, count, NULL);
     kk_ini_free(ini);
@@ -48,7 +49,7 @@ TEST(config_chat_window)
     CHECK_STR_EQ(c.chatwin_font, "Serif");
     CHECK_STR_EQ(c.chatwin_bg_image, "/x.png");
     CHECK(c.chatwin_fade == 30 && c.chatwin_newest_top && c.chatwin_history == 50);
-    CHECK(c.chatwin_outline_width == 0);
+    CHECK(c.chatwin_outline_width == 0 && !c.chatwin_show_photo && c.chatwin_show_platform);
     kk_config copy;
     CHECK(kk_config_copy(&copy, &c));
     CHECK_STR_EQ(copy.chatwin_hide_users, "Nightbot, @Bot");
@@ -93,7 +94,7 @@ static void draw(kk_chatview *v, double now)
 
 TEST(history_and_filters)
 {
-    kk_chatview *v = kk_chatview_new(NULL);
+    kk_chatview *v = kk_chatview_new(NULL, NULL);
     kk_chatview_config c = defaults();
     c.history = 3;
     c.hide_users = "Nightbot";
@@ -142,7 +143,7 @@ TEST(history_and_filters)
 
 TEST(newest_at_the_bottom_and_clicks)
 {
-    kk_chatview *v = kk_chatview_new(NULL);
+    kk_chatview *v = kk_chatview_new(NULL, NULL);
     kk_chatview_config c = defaults();
     kk_chatview_configure(v, &c);
     kk_chatview_resize(v, W, H);
@@ -173,7 +174,7 @@ TEST(newest_at_the_bottom_and_clicks)
 
 TEST(scrolling_back_and_returning)
 {
-    kk_chatview *v = kk_chatview_new(NULL);
+    kk_chatview *v = kk_chatview_new(NULL, NULL);
     kk_chatview_config c = defaults();
     kk_chatview_configure(v, &c);
     kk_chatview_resize(v, W, H);
@@ -212,7 +213,7 @@ TEST(scrolling_back_and_returning)
 
 TEST(fading)
 {
-    kk_chatview *v = kk_chatview_new(NULL);
+    kk_chatview *v = kk_chatview_new(NULL, NULL);
     kk_chatview_config c = defaults();
     c.fade = 10;
     kk_chatview_configure(v, &c);
@@ -235,7 +236,7 @@ TEST(fading)
 
 TEST(styles_and_release)
 {
-    kk_chatview *v = kk_chatview_new(NULL);
+    kk_chatview *v = kk_chatview_new(NULL, NULL);
     kk_chatview_config c = defaults();
     c.bubbles = true;
     c.show_time = true;
@@ -248,6 +249,7 @@ TEST(styles_and_release)
                         .badges = KK_BADGE_MOD};
     kk_chat_msg member = {.platform = "kick", .user_id = "2", .name = "Bia", .text = "",
                           .kind = KK_MSG_MEMBER};
+    c.show_photo = true; /* no pictures module: the initial in a circle */
     CHECK(kk_chatview_add(v, &paid, false, 1));
     CHECK(kk_chatview_add(v, &member, false, 1));
     draw(v, 1);

@@ -13,7 +13,7 @@
  * running kikarinhas, one JSON object per line, each answered by one line.
  *
  *   {"type":"message","platform":"twitch","user_id":"123","name":"Fulano",
- *    "text":"oi Kappa !jump","badges":["member"],"kind":"text","amount":null,
+ *    "photo":"https://...","text":"oi Kappa !jump","badges":["member"],"kind":"text","amount":null,
  *    "emotes":[{"id":"25","name":"Kappa","url":"https://...","start":3,"len":5}]}
  *     → a chat message, as if it came from a built-in connector (bridges).
  *       "emotes" lists the platform's image emotes (https PNGs; start/len
