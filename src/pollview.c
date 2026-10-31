@@ -216,7 +216,7 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
             best = kk_poll_votes(p, i, -1);
 
     PangoLayout *badge[KK_POLL_MAX_OPTIONS], *text[KK_POLL_MAX_OPTIONS],
-        *alt[KK_POLL_MAX_OPTIONS], *count[KK_POLL_MAX_OPTIONS];
+        *count[KK_POLL_MAX_OPTIONS];
     int card_h = 0;
     for (int i = 0; i < n; i++) {
         double lo, hi;
@@ -224,12 +224,10 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
         int inner = (int)(hi - lo) - MARGIN - 2 * PAD;
         char word[64], sc[64];
         kk_poll_words(p, i, word, sizeof word, sc, sizeof sc);
-        badge[i] = text_layout(v, word, 1.0, true, inner, 1);
+        /* One word to type: the option's own command when it has one
+         * (more memorable than a letter), else its letter or number. */
+        badge[i] = text_layout(v, sc[0] ? sc : word, 1.0, true, inner - 12, 1);
         text[i] = text_layout(v, p->options[i].text, 1.0, false, inner, 3);
-        char altw[80] = "";
-        if (sc[0])
-            snprintf(altw, sizeof altw, "ou %s", sc);
-        alt[i] = text_layout(v, altw, 0.75, false, inner, 1);
         int votes = kk_poll_votes(p, i, -1);
         char cnt[64] = "";
         if (p->show_counts)
@@ -237,7 +235,6 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
                      total ? (int)lround(votes * 100.0 / total) : 0);
         count[i] = text_layout(v, cnt, 0.8, true, inner, 1);
         int h = PAD + layout_h(badge[i]) + 4 + layout_h(text[i]) +
-                (sc[0] ? 2 + layout_h(alt[i]) : 0) +
                 (p->show_counts ? 6 + BAR_H + 4 + layout_h(count[i]) : 0) + PAD;
         if (h > card_h)
             card_h = h;
@@ -308,13 +305,6 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
         y += br.height + 4;
         show_outlined(cr, text[i], x + PAD, y, (rgb){1, 1, 1});
         y += layout_h(text[i]);
-        if (pango_layout_get_text(alt[i])[0]) {
-            y += 2;
-            cairo_move_to(cr, x + PAD, y);
-            cairo_set_source_rgba(cr, 1, 1, 1, 0.7);
-            pango_cairo_show_layout(cr, alt[i]);
-            y += layout_h(alt[i]);
-        }
         if (p->show_counts) {
             /* Pinned to the bottom, so the bars line up. */
             y = top + card_h - PAD - layout_h(count[i]) - 4 - BAR_H;
@@ -336,7 +326,6 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
     for (int i = 0; i < n; i++) {
         g_object_unref(badge[i]);
         g_object_unref(text[i]);
-        g_object_unref(alt[i]);
         g_object_unref(count[i]);
     }
     g_object_unref(q);
