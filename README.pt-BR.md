@@ -813,12 +813,6 @@ transparente também na tela.
 No Wayland, o Kikarinhas roda pelo XWayland (é um programa X11) e o OBS o
 captura do mesmo jeito; não há modo Wayland nativo.
 
-## Previsto
-
-- Uma janela opcional de chat clássico, para ler o chat e para o OBS capturar
-  no lugar do chat em browser source, com comentário em destaque no palco.
-- Enquetes que juntam os avatares de quem votou em grupinhos, um por resposta.
-
 ## Licença
 
 GPL-3.0-or-later. Veja [LICENSE](LICENSE). Inclui o

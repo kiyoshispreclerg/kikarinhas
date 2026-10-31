@@ -819,12 +819,6 @@ transparent on screen too.
 On Wayland, Kikarinhas runs through XWayland (it is an X11 program) and OBS
 captures it the same way; there is no native Wayland mode.
 
-## Planned
-
-- An optional classic chat window, to read the chat and to capture in OBS
-  instead of a browser-source chat, with a highlighted comment on the stage.
-- Polls that gather the voters' avatars into groups, one per answer.
-
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE). Includes
