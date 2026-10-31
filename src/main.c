@@ -36,6 +36,8 @@
 #include "overlay.h"
 #include "pointer.h"
 #include "points.h"
+#include "polls.h"
+#include "pollview.h"
 #include "timers.h"
 #include "sa.h"
 #include "soundboard.h"
@@ -87,6 +89,8 @@ static void usage(FILE *out)
             "  -v, --verbose       mostra as mensagens do chat no terminal\n"
             "      --users ARQ     onde guardar o avatar/cor/acessórios de cada\n"
             "                      pessoa (padrão ~/.local/share/kikarinhas/users.tsv)\n"
+            "      --polls ARQ     histórico das enquetes (padrão\n"
+            "                      ~/.local/share/kikarinhas/polls.json)\n"
             "      --import-sa-users\n"
             "                      importa as escolhas do Stream Avatars (feito\n"
             "                      sozinho na primeira vez)\n"
@@ -135,6 +139,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         OPT_MAX,
         OPT_DESPAWN,
         OPT_USERS,
+        OPT_POLLS,
         OPT_IMPORT_SA,
         OPT_SOCKET,
         OPT_RELOAD,
@@ -165,6 +170,7 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
         {"default-avatar", required_argument, NULL, 'd'},
         {"verbose", no_argument, NULL, 'v'},
         {"users", required_argument, NULL, OPT_USERS},
+        {"polls", required_argument, NULL, OPT_POLLS},
         {"import-sa-users", no_argument, NULL, OPT_IMPORT_SA},
         {"config", required_argument, NULL, 'c'},
         {"socket", required_argument, NULL, OPT_SOCKET},
@@ -313,6 +319,9 @@ static int parse_args(int argc, char **argv, kk_config *cfg, cli *x)
             break;
         case OPT_USERS:
             kk_config_set_str(&cfg->users, optarg);
+            break;
+        case OPT_POLLS:
+            kk_config_set_str(&cfg->polls_file, optarg);
             break;
         case OPT_IMPORT_SA:
             x->import_sa = true;
@@ -550,6 +559,7 @@ typedef struct {
     kk_chatview *chatview;
     kk_questions *questions;
     bool questions_auto; /* messages ending in "?" go in the queue too */
+    kk_polls *polls;     /* "!a", "!1"... vote while one is open */
     bool verbose;
 } chat_sink;
 
@@ -564,6 +574,26 @@ static void say_poor(chat_sink *sink, kk_avatar *a, const char *key)
     kk_stage_help_bubble(sink->stage, a, text, 0, 3, 5.0);
 }
 
+/* A vote for the open poll, if m is one. Votes count even for people
+ * without an avatar on screen (the stage full). */
+static bool poll_vote(chat_sink *sink, const kk_chat_msg *m, const char *key)
+{
+    const kk_poll *p = kk_polls_active(sink->polls);
+    if (!p)
+        return false;
+    kk_polls_note_live(sink->polls, m->platform, m->source_url, m->source_title);
+    int opt = kk_poll_match(p, m->text);
+    if (opt < 0)
+        return false;
+    int before = kk_polls_vote(sink->polls, key, opt);
+    if (before == -2)
+        return false;
+    if (sink->verbose && before != opt)
+        kk_log_info("enquete: %s votou em \"%s\"%s", m->name, p->options[opt].text,
+                    before >= 0 ? " (mudou o voto)" : "");
+    return true;
+}
+
 static void on_chat(void *ud, const kk_chat_msg *m)
 {
     chat_sink *sink = ud;
@@ -571,9 +601,12 @@ static void on_chat(void *ud, const kk_chat_msg *m)
     kk_timers_message(sink->timers);
     kk_avatar *a = kk_stage_chatter(sink->stage, m);
     kk_cmd_result r = KK_CMD_NONE;
+    char key[256];
+    snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
+    bool voted = poll_vote(sink, m, key);
+    if (voted && !a)
+        r = KK_CMD_RAN;
     if (a) {
-        char key[256];
-        snprintf(key, sizeof key, "%s:%s", m->platform, m->user_id);
         /* The level the badges give now; trust is kept apart, by hand. The
          * fake chat is not remembered (see kk_stage_chatter). */
         kk_users *users = sink->stage->cfg.users;
@@ -585,7 +618,7 @@ static void on_chat(void *ud, const kk_chat_msg *m)
         if (!demo)
             kk_points_message(sink->actions->points, key, m, now_seconds());
         sink->actions->self = a;
-        r = kk_commands_handle(sink->commands, m, key, now_seconds());
+        r = voted ? KK_CMD_RAN : kk_commands_handle(sink->commands, m, key, now_seconds());
         if (r == KK_CMD_NONE)
             kk_stage_say(sink->stage, a, m);
         else if (r == KK_CMD_POOR)
@@ -730,6 +763,12 @@ static kk_highlight_config highlight_config(const kk_config *c)
                                  .seconds = c->hl_seconds, .spotlight = c->hl_spotlight};
 }
 
+static kk_pollview_config pollview_config(const kk_config *c)
+{
+    return (kk_pollview_config){.font = c->poll_font, .size = c->poll_size,
+                                .results_seconds = c->poll_results};
+}
+
 static kk_chatwin_config chatwin_config(const kk_config *c)
 {
     return (kk_chatwin_config){.width = c->chatwin_width, .height = c->chatwin_height,
@@ -827,6 +866,9 @@ typedef struct {
     kk_highlight *highlight; /* the comment picked there, on the stage */
     kk_questions *questions; /* !pergunta, for the streamer to pick */
     uint64_t hl_question;  /* the question highlighted now (0: none) */
+    kk_polls *polls;       /* every poll, the open one included */
+    char polls_path[KK_PATH_MAX];
+    kk_pollview *pollview; /* the open one on the stage */
     kk_menu *menu;         /* its right-click menu, while open */
     uint64_t menu_id;      /* the message it was opened on (0: none) */
     kk_overlay *overlay;  /* pictures shown by commands, scenery in front */
@@ -1066,6 +1108,7 @@ static bool reload(app *a, cJSON *warnings)
         {str_differs(old->sa_dir, cfg.sa_dir), "sa_dir"},
         {str_differs(old->avatar_paths, cfg.avatar_paths), "paths"},
         {str_differs(old->users, cfg.users), "users"},
+        {str_differs(old->polls_file, cfg.polls_file), "polls/file"},
         {str_differs(old->socket, cfg.socket), "socket"},
         {str_differs(old->name_font, cfg.name_font) ||
              old->name_size != cfg.name_size,
@@ -1097,6 +1140,7 @@ static bool reload(app *a, cJSON *warnings)
     KEEP(sa_dir);
     KEEP(avatar_paths);
     KEEP(users);
+    KEEP(polls_file);
     KEEP(socket);
     KEEP(name_font);
     KEEP(name_size);
@@ -1142,6 +1186,8 @@ static bool reload(app *a, cJSON *warnings)
     kk_highlight_configure(a->highlight, &hc);
     kk_questions_set_max(a->questions, cfg.questions_max);
     a->sink.questions_auto = cfg.questions_auto;
+    kk_pollview_config pc = pollview_config(&cfg);
+    kk_pollview_configure(a->pollview, &pc);
     if (cfg.chatwin_open && !old->chatwin_open)
         kk_chatwin_open(a->chatwin);
     if (cfg.fps != old->fps)
@@ -1365,6 +1411,108 @@ static void question_request(app *a, const cJSON *req, cJSON *reply)
                             kk_highlight_active(a->highlight) ? (double)a->hl_question : 0);
 }
 
+/* "!word" already means something: a command, or an avatar picked with
+ * "!pikachu". Gear and colours depend on each person's avatar and are
+ * left out. */
+static bool poll_word_taken(void *ud, const char *word)
+{
+    app *a = ud;
+    return kk_commands_has(a->sink.commands, word) ||
+           (a->cfg.shortcuts && kk_sa_find(a->lib, word));
+}
+
+static void save_polls(app *a)
+{
+    if (kk_polls_save(a->polls) < 0)
+        kk_log_warn("o histórico de enquetes não foi gravado; tento de novo em seguida");
+}
+
+static void close_poll(app *a, const char *why)
+{
+    const kk_poll *p = kk_polls_active(a->polls);
+    if (!p)
+        return;
+    uint64_t id = p->id;
+    kk_polls_close(a->polls, (long long)time(NULL));
+    p = kk_polls_find(a->polls, id);
+    kk_log_info("enquete %llu encerrada (%s): %d votos", (unsigned long long)id, why,
+                p ? kk_poll_total(p, -1) : 0);
+    save_polls(a);
+}
+
+/* {"type":"poll","action":...}:
+ *   "start" with the poll ({"question","options":[{"text","command"}],
+ *           "duration","show_counts"}) → {"id":N}; refused if one is open
+ *           or a command conflicts ("error" says which)
+ *   "check" the same, without starting
+ *   "close" ends the open one now
+ *   "remove","id":N forgets a closed one
+ *   "state" → {"poll": the open one or null, "file": the history's path} */
+static void poll_request(app *a, const cJSON *req, cJSON *reply)
+{
+    const char *act = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(req, "action"));
+    const cJSON *idj = cJSON_GetObjectItemCaseSensitive(req, "id");
+    if (!act || strcmp(act, "state") == 0) {
+        const kk_poll *p = kk_polls_active(a->polls);
+        cJSON_AddItemToObject(reply, "poll", p ? kk_poll_to_json(p, false) : cJSON_CreateNull());
+        cJSON_AddStringToObject(reply, "file", a->polls_path);
+    } else if (strcmp(act, "start") == 0 || strcmp(act, "check") == 0) {
+        char err[256];
+        kk_poll *p = kk_poll_from_request(req, poll_word_taken, a, err, sizeof err);
+        if (!p) {
+            refuse(reply, err);
+            return;
+        }
+        if (kk_polls_active(a->polls)) {
+            kk_poll_free(p);
+            refuse(reply, "já há uma enquete aberta: encerre-a antes");
+            return;
+        }
+        cJSON_AddBoolToObject(reply, "letters", p->letters);
+        cJSON_AddBoolToObject(reply, "numbers", p->numbers);
+        if (strcmp(act, "check") == 0) {
+            kk_poll_free(p);
+            return;
+        }
+        static const char *const names[N_PLATFORMS] = {"youtube", "twitch", "kick", "odysee"};
+        char lines[KK_MAX_SOURCES + 1][560];
+        const char *channels[KK_MAX_SOURCES + 1];
+        int n = 0;
+        for (int i = 0; i < a->n_sources; i++) {
+            snprintf(lines[n], sizeof lines[n], "%s %s", names[a->sources[i].pf],
+                     a->sources[i].target);
+            channels[n] = lines[n];
+            n++;
+        }
+        if (a->demo_on)
+            channels[n++] = "demo";
+        const kk_poll *started = kk_polls_start(a->polls, p, (long long)time(NULL), channels, n);
+        if (!started) {
+            refuse(reply, "sem memória");
+            return;
+        }
+        kk_log_info("enquete %llu aberta: %s", (unsigned long long)started->id,
+                    started->question);
+        cJSON_AddNumberToObject(reply, "id", (double)started->id);
+        save_polls(a);
+    } else if (strcmp(act, "close") == 0) {
+        if (!kk_polls_active(a->polls))
+            refuse(reply, "nenhuma enquete aberta");
+        else
+            close_poll(a, "pelo configurador");
+    } else if (strcmp(act, "remove") == 0) {
+        uint64_t id = cJSON_IsNumber(idj) && idj->valuedouble >= 1 ? (uint64_t)idj->valuedouble
+                                                                   : 0;
+        if (!kk_polls_remove(a->polls, id))
+            refuse(reply, kk_polls_find(a->polls, id) ? "encerre a enquete antes de apagar"
+                                                       : "enquete desconhecida");
+        else
+            save_polls(a);
+    } else {
+        refuse(reply, "\"action\" deve ser start, check, close, remove ou state");
+    }
+}
+
 static void on_chat_click(void *ud, uint64_t id)
 {
     highlight(ud, id);
@@ -1520,6 +1668,8 @@ static void on_request(void *ud, const char *type, const cJSON *req, cJSON *repl
         list_questions(a, reply);
     } else if (strcmp(type, "question") == 0) {
         question_request(a, req, reply);
+    } else if (strcmp(type, "poll") == 0) {
+        poll_request(a, req, reply);
     } else if (strcmp(type, "chat_window") == 0) {
         /* {"type":"chat_window","action":"show"|"hide"|"toggle"|"state"};
          * the reply says whether it is open. */
@@ -1614,6 +1764,7 @@ static void run(app *a)
     double last = now_seconds();
     double next_save = last + 30.0;
     double next_watch = last + 1.0;
+    double next_poll_save = last + 2.0;
 
     while (!a->quit) {
         kk_window_events ev = {0};
@@ -1708,6 +1859,15 @@ static void run(app *a)
             kk_users_save(a->users);
             next_save = t + 30.0;
         }
+        if (kk_polls_due(a->polls, (long long)time(NULL)))
+            close_poll(a, "acabou o tempo");
+        if (t >= next_poll_save) {
+            /* Votes go to disk every couple of seconds: the configurator
+             * reads the counts from there. */
+            if (kk_polls_dirty(a->polls))
+                save_polls(a);
+            next_poll_save = t + 2.0;
+        }
 
         bool tick = false;
         if (fds[FD_TIMER].revents & POLLIN) {
@@ -1715,6 +1875,10 @@ static void run(app *a)
             if (read(a->timer_fd, &expirations, sizeof expirations) > 0) {
                 double dt = t - last;
                 last = t;
+                struct timespec wall;
+                clock_gettime(CLOCK_REALTIME, &wall);
+                kk_pollview_update(a->pollview, a->polls,
+                                   (double)wall.tv_sec + (double)wall.tv_nsec / 1e9);
                 /* After a stall, don't teleport everyone forward. */
                 kk_stage_update(a->stage, dt > 0.1 ? 0.1 : dt);
                 kk_props_update(a->props, dt > 0.1 ? 0.1 : dt);
@@ -1997,10 +2161,27 @@ int main(int argc, char **argv)
         return 1;
     }
     kk_questions_set_max(a.questions, a.cfg.questions_max);
-    /* Under the avatars the scenery and the highlight's spotlight; over
-     * them pictures, bombs and stars, the danmaku, the emote wall and the
-     * highlighted comment over all. */
+    if (a.cfg.polls_file)
+        snprintf(a.polls_path, sizeof a.polls_path, "%s", a.cfg.polls_file);
+    else if (!kk_polls_default_path(a.polls_path, sizeof a.polls_path))
+        a.polls_path[0] = '\0';
+    a.polls = kk_polls_open(a.polls_path[0] ? a.polls_path : NULL);
+    a.pollview = kk_pollview_new(&stage);
+    if (!a.polls || !a.pollview) {
+        kk_log_error("sem memória");
+        return 1;
+    }
+    kk_pollview_config pc = pollview_config(&a.cfg);
+    kk_pollview_configure(a.pollview, &pc);
+    if (kk_polls_active(a.polls))
+        kk_log_info("enquete %llu continua aberta: %s",
+                    (unsigned long long)kk_polls_active(a.polls)->id,
+                    kk_polls_active(a.polls)->question);
+    /* Under the avatars the scenery, the open poll's parts and the
+     * highlight's spotlight; over them pictures, bombs and stars, the
+     * danmaku, the emote wall and the highlighted comment over all. */
     kk_stage_add_back_layer(&stage, kk_overlay_layer(a.backdrop));
+    kk_stage_add_back_layer(&stage, kk_pollview_layer(a.pollview));
     kk_stage_add_back_layer(&stage, kk_highlight_spot_layer(a.highlight));
     kk_stage_add_layer(&stage, kk_overlay_layer(a.overlay));
     kk_stage_add_layer(&stage, kk_props_layer(a.props));
@@ -2029,6 +2210,7 @@ int main(int argc, char **argv)
         .chatview = a.chatview,
         .questions = a.questions,
         .questions_auto = a.cfg.questions_auto,
+        .polls = a.polls,
         .verbose = a.cfg.verbose,
         .timers = a.timers,
         .commands = build_commands(&a, &a.cfg, &warn),
@@ -2072,6 +2254,9 @@ int main(int argc, char **argv)
     kk_photos_free(a.photos);
     kk_highlight_free(a.highlight);
     kk_questions_free(a.questions);
+    kk_pollview_free(a.pollview);
+    save_polls(&a);
+    kk_polls_free(a.polls);
     kk_pointer_free(a.pointer);
     kk_mpris_free(a.mpris);
     /* A roulette round still open: the bets go back. */

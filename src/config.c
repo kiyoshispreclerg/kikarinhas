@@ -367,6 +367,8 @@ void kk_config_free(kk_config *c)
     free(c->chatwin_bg_image);
     free(c->chatwin_hide_users);
     free(c->hl_font);
+    free(c->polls_file);
+    free(c->poll_font);
     free(c->points_name);
     for (int i = 0; i < c->n_timers; i++)
         timer_free(&c->timers[i]);
@@ -446,6 +448,8 @@ void kk_config_defaults(kk_config *c)
         .hl_size = 18,
         .hl_spotlight = true,
         .questions_max = 50,
+        .poll_size = 16,
+        .poll_results = 15,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -484,6 +488,7 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     dst->danmaku_font = NULL;
     dst->chatwin_font = dst->chatwin_bg_image = dst->chatwin_hide_users = NULL;
     dst->hl_font = NULL;
+    dst->polls_file = dst->poll_font = NULL;
     dst->points_name = NULL;
     dst->timers = NULL;
     dst->n_timers = 0;
@@ -510,6 +515,8 @@ bool kk_config_copy(kk_config *dst, const kk_config *src)
     ok = kk_config_set_str(&dst->chatwin_bg_image, src->chatwin_bg_image) && ok;
     ok = kk_config_set_str(&dst->chatwin_hide_users, src->chatwin_hide_users) && ok;
     ok = kk_config_set_str(&dst->hl_font, src->hl_font) && ok;
+    ok = kk_config_set_str(&dst->polls_file, src->polls_file) && ok;
+    ok = kk_config_set_str(&dst->poll_font, src->poll_font) && ok;
     ok = kk_config_set_str(&dst->points_name, src->points_name) && ok;
     for (int i = 0; i < src->n_timers && ok; i++) {
         kk_config_timer *t = add_timer(dst, src->timers[i].name);
@@ -1191,6 +1198,20 @@ static void apply_questions(kk_config *c, const warner *w)
         unknown_key(w);
 }
 
+static void apply_polls(kk_config *c, const warner *w)
+{
+    if (key_is(w, "file"))
+        get_path(w, &c->polls_file);
+    else if (key_is(w, "font"))
+        get_str(w, &c->poll_font);
+    else if (key_is(w, "font_size"))
+        get_double(w, &c->poll_size, 4, 200);
+    else if (key_is(w, "results_seconds"))
+        get_double(w, &c->poll_results, 0, 3600);
+    else
+        unknown_key(w);
+}
+
 static void apply_sound(kk_config *c, const warner *w, const char *name)
 {
     kk_config_sound *s = find_sound_by_name(c, name);
@@ -1384,6 +1405,8 @@ void kk_config_apply(kk_config *c, const kk_ini *ini, kk_config_warn_fn warn,
             apply_highlight(c, &w);
         } else if (strcasecmp(s, "questions") == 0) {
             apply_questions(c, &w);
+        } else if (strcasecmp(s, "polls") == 0) {
+            apply_polls(c, &w);
         } else if (strcasecmp(s, "points") == 0) {
             apply_points(c, &w);
         } else if (strncasecmp(s, SOUND_PREFIX, strlen(SOUND_PREFIX)) == 0) {

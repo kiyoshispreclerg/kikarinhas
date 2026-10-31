@@ -76,6 +76,8 @@
  *              font = Sans, font_size = 18, seconds = 0 (until cleared),
  *              spotlight = yes
  *   [questions] auto = no (messages ending in "?" go in too), max = 50
+ *   [polls]    file = PATH (the history), font = Sans, font_size = 16,
+ *              results_seconds = 15 (the final result on the stage)
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
  * or, with action, makes a new one: "action = sound" + "data = buzina"
@@ -255,6 +257,11 @@ typedef struct {
     /* [questions]: the queue of !pergunta (questions.h) */
     bool questions_auto;     /* messages ending in "?" go in too */
     int questions_max;
+    /* [polls]: polls on the stage (polls.h, pollview.h) */
+    char *polls_file;        /* NULL = default path */
+    char *poll_font;         /* NULL = "Sans" */
+    double poll_size;        /* points */
+    double poll_results;     /* seconds the final result stays */
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;

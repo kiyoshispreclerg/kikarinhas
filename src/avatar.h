@@ -111,6 +111,9 @@ typedef struct {
     double size;   /* 1 = the stage's scale; see kk_avatar_set_size */
     bool left;     /* facing left (sheets face right) */
     bool frozen;   /* stays where it is: no wandering, no walking */
+    /* Wanders only in [zone_lo, zone_hi) when zone_hi > zone_lo (its
+     * option's part of the window during a poll); see kk_avatar_set_zone. */
+    double zone_lo, zone_hi;
     unsigned id;   /* set by the stage, unique while it lives */
 
     kk_state state;
@@ -166,6 +169,10 @@ bool kk_avatar_hit(const kk_avatar *a, const kk_view *v, int x, int y);
 /* Walks to x (kept inside [0, width)). False if it can't now: frozen, in
  * the air, or already there. */
 bool kk_avatar_walk_to(kk_avatar *a, double x, int width);
+/* Keeps the avatar in [lo, hi) from now on (lo >= hi: the whole window
+ * again). Outside it, it walks in as soon as it is free to; walks and
+ * wanders stay inside. */
+void kk_avatar_set_zone(kk_avatar *a, double lo, double hi);
 /* Gets up if sitting; false otherwise. */
 bool kk_avatar_stand(kk_avatar *a);
 /* Bigger or smaller, from KK_AVATAR_MIN_SIZE to KK_AVATAR_MAX_SIZE. */

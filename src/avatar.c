@@ -132,13 +132,46 @@ static void enter_idle(kk_avatar *a, kk_rng *rng)
     play(a, row, row == KK_ANIM_IDLE ? 0 : 1, 0.0);
 }
 
-static void enter_walk(kk_avatar *a, int width, kk_rng *rng)
+/* Where the avatar's centre may go: the window, or its zone inside it.
+ * False if there is no room to walk at all. */
+static bool walk_range(const kk_avatar *a, int width, double *lo, double *hi)
 {
     double margin = cell_w(a) / 2.0;
-    double lo = margin, hi = width - margin;
-    if (hi <= lo) {
+    *lo = margin;
+    *hi = width - margin;
+    if (a->zone_hi > a->zone_lo) {
+        double zl = fmax(*lo, a->zone_lo + margin), zh = fmin(*hi, a->zone_hi - margin);
+        if (zh <= zl) /* narrower than the avatar: its middle */
+            zl = zh = fmax(*lo, fmin(*hi, (a->zone_lo + a->zone_hi) / 2.0));
+        *lo = zl;
+        *hi = zh;
+        return true;
+    }
+    return *hi > *lo;
+}
+
+/* Out of its zone (by more than a step's slack). */
+static bool out_of_zone(const kk_avatar *a, int width)
+{
+    double lo, hi;
+    if (a->zone_hi <= a->zone_lo || !walk_range(a, width, &lo, &hi))
+        return false;
+    return a->x < lo - 1.0 || a->x > hi + 1.0;
+}
+
+static void enter_walk(kk_avatar *a, int width, kk_rng *rng)
+{
+    double lo, hi;
+    if (!walk_range(a, width, &lo, &hi)) {
         enter_idle(a, rng);
         return;
+    }
+    if (hi <= lo) {
+        if (fabs(lo - a->x) < 1.0) {
+            enter_idle(a, rng);
+            return;
+        }
+        hi = lo + 1e-9;
     }
     /* Pick a destination at least a body length away when possible. */
     for (int tries = 0; tries < 4; tries++) {
@@ -377,8 +410,10 @@ bool kk_avatar_walk_to(kk_avatar *a, double x, int width)
     if (a->frozen || a->state == KK_ST_JUMP || a->state == KK_ST_FLY ||
         a->state == KK_ST_HELD)
         return false;
-    double half = cell_w(a) / 2.0;
-    x = fmax(half, fmin(width - half, x));
+    double lo, hi;
+    if (!walk_range(a, width, &lo, &hi))
+        return false;
+    x = fmax(lo, fmin(hi, x));
     if (fabs(x - a->x) < 1.0)
         return false;
     drop_goal(a);
@@ -388,6 +423,14 @@ bool kk_avatar_walk_to(kk_avatar *a, double x, int width)
     a->state = KK_ST_WALK;
     play(a, walk_row(a), 0, 0.0);
     return true;
+}
+
+void kk_avatar_set_zone(kk_avatar *a, double lo, double hi)
+{
+    if (hi <= lo)
+        lo = hi = 0.0;
+    a->zone_lo = lo;
+    a->zone_hi = hi;
 }
 
 bool kk_avatar_stand(kk_avatar *a)
@@ -418,7 +461,7 @@ static void pick_next(kk_avatar *a, int width, kk_rng *rng)
         enter_idle(a, rng);
         return;
     }
-    if (r < 0.55) {
+    if (r < 0.55 || (!a->frozen && out_of_zone(a, width))) {
         enter_walk(a, width, rng);
     } else if (r < 0.70 && has_row(a, KK_ANIM_SIT)) {
         a->state = KK_ST_SIT;
@@ -538,11 +581,20 @@ void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
     switch (a->state) {
     case KK_ST_IDLE:
         a->timer -= dt;
-        if (a->timer <= 0.0)
+        if (a->timer <= 0.0 || (!a->frozen && out_of_zone(a, width)))
             pick_next(a, width, rng);
         break;
     case KK_ST_WALK: {
         double step = a->speed * a->size * dt;
+        /* The zone changed under it: head for the new one. */
+        if (a->zone_hi > a->zone_lo) {
+            double lo, hi;
+            walk_range(a, width, &lo, &hi);
+            if (a->target < lo - 1.0 || a->target > hi + 1.0) {
+                enter_walk(a, width, rng);
+                break;
+            }
+        }
         if (fabs(a->target - a->x) <= step) {
             a->x = a->target;
             enter_idle(a, rng);
@@ -559,7 +611,7 @@ void kk_avatar_update(kk_avatar *a, double dt, const kk_view *v, kk_rng *rng)
         break;
     case KK_ST_SITTING:
         a->timer -= dt;
-        if (a->timer <= 0.0) {
+        if (a->timer <= 0.0 || out_of_zone(a, width)) {
             if (has_row(a, KK_ANIM_STAND)) {
                 a->state = KK_ST_STAND;
                 play(a, KK_ANIM_STAND, 1, 0.0);

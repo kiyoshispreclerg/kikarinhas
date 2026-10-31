@@ -111,6 +111,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `src/photos.c` | fotos de perfil de quem escreve (janela de chat): a URL vem na mensagem (YouTube) ou de uma consulta por pessoa (decapi.me na Twitch, API do canal no Kick, `resolve` no Odysee), guardada uma semana em `~/.cache/kikarinhas/photos`; a imagem fica no cache do `emotes.c` |
 | `src/chatview.c`, `src/chatwin.c` | janela de chat clássico: histórico e desenho (sem X, testável) e a janela em si (filha da principal na mesma conexão X, `kk_window_open_child`) |
 | `src/menu.c` | menu de clique direito numa janela popup própria (o OBS não captura), com o ponteiro preso enquanto aberto |
+| `src/polls.c`, `src/pollview.c` | enquetes: histórico em `polls.json` (votos por plataforma, horários, lives; quem votou só enquanto aberta), `!a`/`!1`/atalho de cada opção com checagem de conflito; no palco, a largura dividida por opção e os avatares de quem votou presos na sua parte (`kk_avatar_set_zone`) |
 | `src/questions.c` | fila de perguntas (`!pergunta`, mensagens com "?"), mostrada só no configurador |
 | `src/highlight.c` | comentário em destaque: cartão no palco (camada da frente) e holofote no avatar de quem escreveu (camada de trás) |
 | `src/danmaku.c` | danmaku: mensagens atravessando a tela no lugar dos balões, faixas sorteadas desviando dos avatares |
