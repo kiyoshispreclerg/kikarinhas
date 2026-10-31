@@ -766,7 +766,8 @@ static kk_highlight_config highlight_config(const kk_config *c)
 static kk_pollview_config pollview_config(const kk_config *c)
 {
     return (kk_pollview_config){.font = c->poll_font, .size = c->poll_size,
-                                .results_seconds = c->poll_results};
+                                .results_seconds = c->poll_results, .panel = c->poll_panel,
+                                .align = c->poll_align, .y = c->poll_y};
 }
 
 static kk_chatwin_config chatwin_config(const kk_config *c)

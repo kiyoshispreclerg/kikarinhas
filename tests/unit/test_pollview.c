@@ -42,14 +42,16 @@ TEST(config_polls)
     kk_config c;
     kk_config_defaults(&c);
     CHECK(!c.polls_file && !c.poll_font && c.poll_size == 16 && c.poll_results == 15);
+    CHECK(c.poll_panel && c.poll_align == KK_CONFIG_ALIGN_CENTER && c.poll_y == 0);
     kk_ini *ini = kk_ini_parse("[polls]\nfile = /tmp/p.json\nfont = Serif\nfont_size = 20\n"
-                               "results_seconds = 0\n",
+                               "results_seconds = 0\npanel = no\nalign = right\ny = 30\n",
                                NULL, NULL);
     kk_config_apply(&c, ini, NULL, NULL);
     kk_ini_free(ini);
     CHECK_STR_EQ(c.polls_file, "/tmp/p.json");
     CHECK_STR_EQ(c.poll_font, "Serif");
     CHECK(c.poll_size == 20 && c.poll_results == 0);
+    CHECK(!c.poll_panel && c.poll_align == KK_CONFIG_ALIGN_RIGHT && c.poll_y == 30);
     kk_config copy;
     CHECK(kk_config_copy(&copy, &c));
     CHECK_STR_EQ(copy.polls_file, "/tmp/p.json");
@@ -74,7 +76,8 @@ TEST(voters_gather)
     setup();
     kk_polls *ps = kk_polls_open(NULL);
     kk_pollview *v = kk_pollview_new(&stage);
-    kk_pollview_configure(v, &(kk_pollview_config){.size = 12, .results_seconds = 5});
+    kk_pollview_configure(v, &(kk_pollview_config){.size = 12, .results_seconds = 5,
+                                                   .panel = true});
     cJSON *req = cJSON_Parse("{\"question\":\"Qual?\",\"options\":[{\"text\":\"Um\"},"
                              "{\"text\":\"Dois\"},{\"text\":\"Três\"}]}");
     char err[200];
@@ -86,6 +89,17 @@ TEST(voters_gather)
     CHECK(kk_pollview_shown(v) == 1);
     kk_rect panel = kk_pollview_panel_rect(v);
     CHECK(panel.w == W && panel.h > 40 && panel.h < H / 2);
+
+    /* Lower down, on the left: the same cards. Without them, nothing at
+     * the top (the floor and the zones stay). */
+    kk_pollview_configure(v, &(kk_pollview_config){.size = 12, .results_seconds = 5,
+                                                   .panel = true, .align = 1, .y = 20});
+    run(v, ps, &now, 0.1);
+    kk_rect lower = kk_pollview_panel_rect(v);
+    CHECK(lower.y == H / 5 && lower.h == panel.h);
+    kk_pollview_configure(v, &(kk_pollview_config){.size = 12, .results_seconds = 5});
+    run(v, ps, &now, 0.1);
+    CHECK(kk_rect_empty(kk_pollview_panel_rect(v)) && kk_pollview_shown(v) == 1);
 
     /* Ana (far right) votes for the first part, Bia (far left) for the last;
      * Caio doesn't vote. */

@@ -450,6 +450,7 @@ void kk_config_defaults(kk_config *c)
         .questions_max = 50,
         .poll_size = 16,
         .poll_results = 15,
+        .poll_panel = true,
         .points_enabled = true,
         .points_message = 1,
         .points_message_cd = 30,
@@ -1208,6 +1209,20 @@ static void apply_polls(kk_config *c, const warner *w)
         get_double(w, &c->poll_size, 4, 200);
     else if (key_is(w, "results_seconds"))
         get_double(w, &c->poll_results, 0, 3600);
+    else if (key_is(w, "panel"))
+        get_bool(w, &c->poll_panel);
+    else if (key_is(w, "y"))
+        get_double(w, &c->poll_y, 0, 90);
+    else if (key_is(w, "align")) {
+        if (strcasecmp(w->value, "center") == 0)
+            c->poll_align = KK_CONFIG_ALIGN_CENTER;
+        else if (strcasecmp(w->value, "left") == 0)
+            c->poll_align = KK_CONFIG_ALIGN_LEFT;
+        else if (strcasecmp(w->value, "right") == 0)
+            c->poll_align = KK_CONFIG_ALIGN_RIGHT;
+        else
+            bad_value(w, "center, left ou right");
+    }
     else
         unknown_key(w);
 }

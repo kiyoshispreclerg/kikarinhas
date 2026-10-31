@@ -3,8 +3,10 @@
 #define KK_POLLVIEW_H
 
 /* The open poll on the stage: the window's width split in one part per
- * option, each with its card on top (what to type, the option, and the
- * votes when the poll shows them) and a line between parts. Whoever votes
+ * option, each with a coloured floor and, unless turned off, its card at
+ * the top (what to type, the option, and the votes when the poll shows
+ * them) under the question, and a line between parts. Where the cards go
+ * (how far down, the question in the middle or on a side) is set. Whoever votes
  * has their avatar walk to their option's part and wander only there until
  * the poll closes. Once closed, the final result (the winner marked) stays
  * a few seconds and goes.
@@ -22,6 +24,10 @@ typedef struct {
     const char *font; /* Pango family and style; NULL: "Sans". Copied */
     double size;      /* points */
     double results_seconds; /* the final result stays this long; 0: goes at once */
+    bool panel;  /* question and option cards; false: only the coloured floor
+                  * of each part (and the avatars in it) */
+    int align;   /* the question: 0 centre, 1 left, 2 right */
+    double y;    /* top of the cards, % of the window height */
 } kk_pollview_config;
 
 typedef struct kk_pollview kk_pollview;

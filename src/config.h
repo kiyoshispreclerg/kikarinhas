@@ -76,7 +76,10 @@
  *              font = Sans, font_size = 18, seconds = 0 (until cleared),
  *              spotlight = yes
  *   [questions] auto = no (messages ending in "?" go in too), max = 50
- *   [polls]    file = PATH (the history), font = Sans, font_size = 16,
+ *   [polls]    file = PATH (the history), panel = yes (question, options
+ *              and results on the stage; no: only the coloured floor),
+ *              align = center|left|right, y = 0 (% of the window height),
+ *              font = Sans, font_size = 16,
  *              results_seconds = 15 (the final result on the stage)
  *
  * A [command.NAME] section changes a built-in command (only the keys given)
@@ -86,6 +89,8 @@
  * their own lines: values may contain "#" (links). */
 
 #define KK_CONFIG_MAX_SHOW 64
+
+enum { KK_CONFIG_ALIGN_CENTER, KK_CONFIG_ALIGN_LEFT, KK_CONFIG_ALIGN_RIGHT };
 #define KK_CONFIG_MAX_ALIASES 8
 
 typedef struct {
@@ -262,6 +267,9 @@ typedef struct {
     char *poll_font;         /* NULL = "Sans" */
     double poll_size;        /* points */
     double poll_results;     /* seconds the final result stays */
+    bool poll_panel;         /* question and option cards on the stage */
+    int poll_align;          /* KK_CONFIG_ALIGN_* of the question */
+    double poll_y;           /* top of the cards, % of the window height */
     /* [timer.NAME] */
     kk_config_timer *timers;
     int n_timers;

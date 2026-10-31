@@ -20,6 +20,9 @@ struct kk_pollview {
     kk_stage *stage;
     char *font_name;
     double size, results_seconds;
+    bool show_panel;
+    int align;
+    double y_pct;
     PangoContext *pango;
 
     uint64_t id;       /* shown (0: none) */
@@ -32,7 +35,7 @@ struct kk_pollview {
     int pw, ph;
     unsigned serial;
     long left;         /* seconds left as shown; -1 none */
-    int width;         /* stage width it was made for */
+    int width, height; /* stage size it was made for */
     int n_parts;       /* options of the poll shown (0: none) */
 
     /* What is on screen. */
@@ -54,6 +57,7 @@ kk_pollview *kk_pollview_new(kk_stage *stage)
     v->stage = stage;
     v->size = 16;
     v->results_seconds = 15;
+    v->show_panel = true;
     v->left = -1;
     v->pango = pango_font_map_create_context(pango_cairo_font_map_get_default());
     v->layer = (kk_layer){layer_damage, layer_draw, layer_painted, v};
@@ -84,7 +88,11 @@ void kk_pollview_configure(kk_pollview *v, const kk_pollview_config *cfg)
     v->font_name = cfg->font && cfg->font[0] ? strdup(cfg->font) : NULL;
     v->size = cfg->size > 0 ? cfg->size : 16;
     v->results_seconds = cfg->results_seconds >= 0 ? cfg->results_seconds : 0;
+    v->show_panel = cfg->panel;
+    v->align = cfg->align;
+    v->y_pct = cfg->y < 0 ? 0 : cfg->y > 90 ? 90 : cfg->y;
     v->serial = ~0u; /* render again */
+    v->relayout = true;
 }
 
 void kk_pollview_zone(int width, int n, int i, double *lo, double *hi)
@@ -189,14 +197,17 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
 {
     drop_panel(v);
     int W = v->stage->width, n = p->n_options;
-    if (W <= 2 * MARGIN || n < 1)
+    if (!v->show_panel || W <= 2 * MARGIN || n < 1)
         return;
+    PangoAlignment palign = v->align == 1   ? PANGO_ALIGN_LEFT
+                            : v->align == 2 ? PANGO_ALIGN_RIGHT
+                                            : PANGO_ALIGN_CENTER;
     char status[160];
     status_text(v, p, status, sizeof status);
     PangoLayout *q = text_layout(v, p->question, 1.25, true, W - 4 * MARGIN, 2);
     PangoLayout *st = text_layout(v, status, 0.8, false, W - 4 * MARGIN, 1);
-    pango_layout_set_alignment(q, PANGO_ALIGN_CENTER);
-    pango_layout_set_alignment(st, PANGO_ALIGN_CENTER);
+    pango_layout_set_alignment(q, palign);
+    pango_layout_set_alignment(st, palign);
     int head_h = layout_h(q) + 4 + layout_h(st);
 
     int total = kk_poll_total(p, -1), best = 0;
@@ -237,21 +248,28 @@ static void render_panel(kk_pollview *v, const kk_poll *p)
     v->panel = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, v->pw, v->ph);
     cairo_t *cr = cairo_create(v->panel);
 
-    /* The question, in a dark band. */
+    /* The question, in a dark band: in the middle or on one side. Both
+     * texts are laid out as wide as the window less the margins, aligned
+     * the same way; tx is where that box goes. */
     int qw = layout_w(q) > layout_w(st) ? layout_w(q) : layout_w(st);
-    double bx = (W - qw) / 2.0 - 2 * PAD, bw = qw + 4 * PAD;
-    if (bx < MARGIN) {
+    double bw = fmin(qw + 4 * PAD, W - 2 * MARGIN), bx, tx;
+    if (v->align == 1) {
         bx = MARGIN;
-        bw = W - 2 * MARGIN;
+        tx = bx + 2 * PAD;
+    } else if (v->align == 2) {
+        bx = W - MARGIN - bw;
+        tx = bx + bw - 2 * PAD - (W - 4 * MARGIN);
+    } else {
+        bx = (W - bw) / 2.0;
+        tx = 2 * MARGIN;
     }
     rounded_rect(cr, bx, MARGIN - 4, bw, head_h + 8, RADIUS);
     cairo_set_source_rgba(cr, 0.08, 0.07, 0.12, 0.78);
     cairo_fill(cr);
-    /* Both centred in a layout as wide as the window less the margins. */
-    cairo_move_to(cr, 2 * MARGIN, MARGIN);
+    cairo_move_to(cr, tx, MARGIN);
     cairo_set_source_rgb(cr, 1, 1, 1);
     pango_cairo_show_layout(cr, q);
-    cairo_move_to(cr, 2 * MARGIN, MARGIN + layout_h(q) + 4);
+    cairo_move_to(cr, tx, MARGIN + layout_h(q) + 4);
     cairo_set_source_rgba(cr, 1, 1, 1, 0.8);
     pango_cairo_show_layout(cr, st);
 
@@ -379,6 +397,10 @@ void kk_pollview_update(kk_pollview *v, const kk_polls *ps, double now)
         if (left < 0)
             left = 0;
     }
+    if (v->height != v->stage->height) {
+        v->height = v->stage->height;
+        v->relayout = true;
+    }
     if (kk_polls_serial(ps) != v->serial || left != v->left || v->width != v->stage->width) {
         if (v->width != v->stage->width)
             v->relayout = true;
@@ -412,9 +434,18 @@ void kk_pollview_update(kk_pollview *v, const kk_polls *ps, double now)
 
 /* ---- the layer ------------------------------------------------------------ */
 
+/* The cards' top: y_pct of the window, but never past the bottom. */
+static int panel_y(const kk_pollview *v)
+{
+    int y = (int)lround(v->stage->height * v->y_pct / 100.0);
+    if (y + v->ph > v->stage->height)
+        y = v->stage->height - v->ph;
+    return y < 0 ? 0 : y;
+}
+
 static kk_rect panel_rect(const kk_pollview *v)
 {
-    return v->panel ? (kk_rect){0, 0, v->pw, v->ph} : (kk_rect){0, 0, 0, 0};
+    return v->panel ? (kk_rect){0, panel_y(v), v->pw, v->ph} : (kk_rect){0, 0, 0, 0};
 }
 
 static void layer_damage(void *ud, kk_damage_fn add, void *to)
@@ -436,20 +467,21 @@ static void layer_draw(void *ud, cairo_t *cr, kk_rect clip)
 {
     kk_pollview *v = ud;
     const kk_rect pr = panel_rect(v);
-    if (!v->panel)
-        return;
-    if (kk_rect_intersects(pr, clip)) {
-        cairo_set_source_surface(cr, v->panel, 0, 0);
+    if (v->panel && kk_rect_intersects(pr, clip)) {
+        cairo_set_source_surface(cr, v->panel, 0, pr.y);
         cairo_paint(cr);
     }
     /* The parts: a line between each two, and a coloured floor. */
     kk_view view = kk_stage_view(v->stage);
     int W = v->stage->width, n = v->n_parts;
-    double y0 = v->ph, y1 = view.ground_y;
+    if (n < 1)
+        return;
+    /* Lines only under the cards: without them, only the floor. */
+    double y0 = pr.y + pr.h, y1 = view.ground_y;
     cairo_save(cr);
     cairo_set_line_width(cr, 2);
     double dash[] = {8, 6};
-    for (int i = 1; i < n && y1 > y0; i++) {
+    for (int i = 1; v->panel && i < n && y1 > y0; i++) {
         double lo, hi;
         kk_pollview_zone(W, n, i, &lo, &hi);
         double x = floor(lo) + 0.5;
