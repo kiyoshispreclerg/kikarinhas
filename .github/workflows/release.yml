@@ -1,6 +1,6 @@
 name: Release
 
-# Source zip + .deb for Ubuntu 22.04 and 24.04, Devuan daedalus (Debian 12
+# Source zip, an AppImage and .deb for Ubuntu 22.04, 24.04 and 26.04, Devuan daedalus (Debian 12
 # "bookworm" base) and Devuan excalibur+ (Debian 13 "trixie" base) on every
 # v* tag, or on demand from the Actions tab. Each .deb is then installed on
 # a clean system of its own target and the program is run before anything
@@ -46,6 +46,9 @@ jobs:
             runner: ubuntu-22.04
           - name: ubuntu24.04
             runner: ubuntu-24.04
+          - name: ubuntu26.04
+            runner: ubuntu-latest
+            image: ubuntu:26.04
           - name: devuan-daedalus
             runner: ubuntu-latest
             image: debian:bookworm   # Devuan daedalus is bookworm without systemd
@@ -78,6 +81,61 @@ jobs:
           name: deb-${{ matrix.name }}
           path: dist/*.deb
 
+  # One AppImage with kikarinhas and kikarinhas-config (run the second with
+  # `--config`). Built on the oldest Ubuntu, like the .deb.
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates git build-essential pkg-config gettext libx11-dev \
+            libxext-dev libcairo2-dev libpango1.0-dev libcurl4-openssl-dev \
+            libasound2-dev libssl-dev libgtk2.0-dev libdbus-1-dev libwebp-dev \
+            curl file
+      - uses: actions/checkout@v4
+      - run: tools/build-appimage.sh dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*.AppImage
+
+  # Runs the AppImage extracted (no FUSE) on bare systems, the oldest and the
+  # newest: only the libraries the AppImage leaves to the host are installed.
+  smoke-appimage:
+    name: smoke (appimage on ${{ matrix.image }})
+    needs: appimage
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:22.04', 'ubuntu:26.04']
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: dist
+      - name: Install what the host provides
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends xvfb xauth fonts-dejavu-core \
+            libx11-6 libxext6 libfontconfig1 libfreetype6 libxrender1 libxcb1 libglib2.0-0
+      - name: Run it
+        run: |
+          cd dist && chmod +x ./*.AppImage && ./*.AppImage --appimage-extract > /dev/null
+          app=$PWD/squashfs-root
+          cd ..
+          mkdir bin
+          printf '#!/bin/sh\nexec %s/AppRun "$@"\n' "$app" > bin/kikarinhas
+          printf '#!/bin/sh\nexec %s/AppRun --config "$@"\n' "$app" > bin/kikarinhas-config
+          chmod +x bin/*
+          PATH=$PWD/bin:$PATH SMOKE_APPDIR=$app sh tools/smoke-test.sh
+
   # Installs each .deb on a bare image of the system it was built for (so
   # only its Depends come along: a missing one fails here, not on a
   # user's machine), then runs tools/smoke-test.sh: versions, libraries,
@@ -94,6 +152,8 @@ jobs:
             image: ubuntu:22.04
           - name: ubuntu24.04
             image: ubuntu:24.04
+          - name: ubuntu26.04
+            image: ubuntu:26.04
           - name: devuan-daedalus
             image: debian:bookworm
           - name: devuan-excalibur
@@ -133,7 +193,7 @@ jobs:
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [source, deb, smoke]
+    needs: [source, deb, smoke, appimage, smoke-appimage]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4

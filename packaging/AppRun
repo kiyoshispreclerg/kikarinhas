@@ -1,0 +1,28 @@
+#!/bin/sh
+# AppImage entry point: runs kikarinhas, or kikarinhas-config when called
+# with --config as the first argument (or through a symlink with that name).
+here=$(dirname "$(readlink -f "$0")")
+APPDIR=${APPDIR:-$here}
+export APPDIR
+export LD_LIBRARY_PATH="$APPDIR/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export XDG_DATA_DIRS="$APPDIR/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
+# gdk-pixbuf wants a loaders.cache with absolute paths; ours was written
+# with a placeholder because the mount point changes on every run.
+pixbuf=$APPDIR/usr/lib/gdk-pixbuf-2.0/2.10.0
+if [ -f "$pixbuf/loaders.cache.in" ]; then
+	cache=${XDG_RUNTIME_DIR:-}
+	[ -d "$cache" ] && [ -w "$cache" ] || cache=$(mktemp -d)
+	cache=$cache/kikarinhas-pixbuf-loaders.cache
+	sed "s|@APPDIR@|$APPDIR|g" "$pixbuf/loaders.cache.in" > "$cache" &&
+		export GDK_PIXBUF_MODULE_FILE=$cache
+fi
+
+case "$(basename "${ARGV0:-$0}")" in
+kikarinhas-config*) exec "$APPDIR/usr/bin/kikarinhas-config" "$@" ;;
+esac
+if [ "${1:-}" = "--config" ]; then
+	shift
+	exec "$APPDIR/usr/bin/kikarinhas-config" "$@"
+fi
+exec "$APPDIR/usr/bin/kikarinhas" "$@"

@@ -69,7 +69,7 @@ compilado, com GTK2). O `tools/build-deb.sh` gera um `.deb` a partir da árvore.
 
 O jeito mais fácil é o pacote `.deb` da
 [página de releases](https://github.com/kiyoshispreclerg/kikarinhas/releases).
-Cada release tem um para Ubuntu 22.04, Ubuntu 24.04, Devuan 5 "daedalus"
+Cada release tem um para Ubuntu 22.04, 24.04 e 26.04, Devuan 5 "daedalus"
 (serve também no Debian 12) e Devuan 6 "excalibur" (serve também no Debian
 13); escolha o do seu sistema. Os nomes são
 `kikarinhas_VERSÃO-1_SISTEMA_ARQ.deb`, e cada um foi instalado e executado num
@@ -79,6 +79,11 @@ sistema limpo do mesmo tipo antes de ser publicado.
 sudo apt install ./kikarinhas_0.4.0-1_ubuntu24.04_amd64.deb   # use o arquivo que você baixou
 sudo apt remove kikarinhas
 ```
+
+Há também um AppImage (`kikarinhas-VERSÃO-x86_64.AppImage`) que roda sem
+instalar nada: dê `chmod +x` e execute, ou execute com `--config` para abrir
+o configurador. Ele ainda precisa das bibliotecas de X11 e fontconfig do
+sistema.
 
 O `apt` traz as bibliotecas necessárias. O pacote instala `kikarinhas` e
 `kikarinhas-config`, o `.ini` de exemplo em `share/doc/kikarinhas/`, o pacote

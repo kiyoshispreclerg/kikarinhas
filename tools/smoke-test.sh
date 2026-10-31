@@ -7,6 +7,10 @@
 # the system-wide avatars (share/kikarinhas/avatars).
 # Optionally runs the program under valgrind too.
 #
+# With SMOKE_APPDIR=<squashfs-root> it checks an extracted AppImage instead:
+# kikarinhas and kikarinhas-config must be on PATH as wrappers that run its
+# AppRun (the second with --config), and the files are looked up in the AppDir.
+#
 # Usage: tools/smoke-test.sh [--valgrind]      (from the repository root)
 # Needs xvfb-run and fonts; --valgrind needs valgrind. Touches nothing of
 # the user's: HOME and the sockets live in a temporary folder.
@@ -39,12 +43,20 @@ done
 
 echo "== libraries"
 for b in kikarinhas kikarinhas-config; do
-	missing=$(ldd "$(command -v $b)" | grep "not found" || true)
+	if [ -n "${SMOKE_APPDIR:-}" ]; then
+		missing=$(LD_LIBRARY_PATH=$SMOKE_APPDIR/usr/lib ldd "$SMOKE_APPDIR/usr/bin/$b" | grep "not found" || true)
+	else
+		missing=$(ldd "$(command -v $b)" | grep "not found" || true)
+	fi
 	[ -z "$missing" ] || fail "$b: $missing"
 done
 
 echo "== installed files"
-prefix=$(dirname "$(dirname "$(command -v kikarinhas)")")
+if [ -n "${SMOKE_APPDIR:-}" ]; then
+	prefix=$SMOKE_APPDIR/usr
+else
+	prefix=$(dirname "$(dirname "$(command -v kikarinhas)")")
+fi
 for f in "$prefix/share/doc/kikarinhas/kikarinhas.ini" \
 	"$prefix/share/applications/kikarinhas.desktop" \
 	"$prefix/share/applications/kikarinhas-config.desktop" \

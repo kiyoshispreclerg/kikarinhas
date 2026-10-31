@@ -67,7 +67,7 @@ was built, i.e. with GTK2). `tools/build-deb.sh` builds a `.deb` from the tree.
 
 The easiest way is the `.deb` package from the
 [releases page](https://github.com/kiyoshispreclerg/kikarinhas/releases).
-Each release has one for Ubuntu 22.04, Ubuntu 24.04, Devuan 5 "daedalus" (also
+Each release has one for Ubuntu 22.04, 24.04 and 26.04, Devuan 5 "daedalus" (also
 fits Debian 12) and Devuan 6 "excalibur" (also fits Debian 13); pick the one
 that matches your system. They are named
 `kikarinhas_VERSION-1_SYSTEM_ARCH.deb`, and each one was installed and run on
@@ -77,6 +77,11 @@ a clean system of its own kind before being published.
 sudo apt install ./kikarinhas_0.4.0-1_ubuntu24.04_amd64.deb   # use the file you downloaded
 sudo apt remove kikarinhas
 ```
+
+There is also an AppImage (`kikarinhas-VERSION-x86_64.AppImage`) that runs
+without installing anything: `chmod +x` it and run it, or run it with
+`--config` for the settings window. It still needs the system's X11 and
+fontconfig libraries.
 
 `apt` pulls in the libraries it needs. The package installs `kikarinhas` and
 `kikarinhas-config`, the example `.ini` in `share/doc/kikarinhas/`, the default

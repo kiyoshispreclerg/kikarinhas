@@ -760,8 +760,9 @@ static void build(editor *e, const kk_config *cfg)
     gtk_box_pack_start(GTK_BOX(vbox), buttons, FALSE, FALSE, 0);
 }
 
-/* Translations: ../locale next to the executable (a build tree), else the
- * installed ones. */
+/* Translations: locale/ next to the executable (a build tree) or
+ * ../share/locale (a relocated install, the AppImage), else the installed
+ * ones. */
 static void setup_gettext(void)
 {
     char dir[KK_PATH_MAX], self[KK_PATH_MAX];
@@ -773,6 +774,9 @@ static void setup_gettext(void)
         if (slash) {
             *slash = '\0';
             if (kk_pathf(dir, sizeof dir, "%s/locale", self) && g_file_test(dir, G_FILE_TEST_IS_DIR))
+                localedir = dir;
+            else if (kk_pathf(dir, sizeof dir, "%s/../share/locale", self) &&
+                     g_file_test(dir, G_FILE_TEST_IS_DIR))
                 localedir = dir;
         }
     }
