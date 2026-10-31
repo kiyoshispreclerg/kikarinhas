@@ -21,6 +21,7 @@ typedef struct wall_tab wall_tab;
 typedef struct danmaku_tab danmaku_tab;
 typedef struct chatwin_tab chatwin_tab;
 typedef struct questions_tab questions_tab;
+typedef struct polls_tab polls_tab;
 typedef struct sources_tab sources_tab;
 typedef struct avatars_tab avatars_tab;
 typedef struct points_tab points_tab;
@@ -56,6 +57,7 @@ typedef struct {
     danmaku_tab *danmaku;
     chatwin_tab *chatwin;
     questions_tab *questions;
+    polls_tab *polls;
     sources_tab *sources;
     avatars_tab *avatars;
     points_tab *points;
@@ -162,6 +164,12 @@ void chatwin_free(editor *e);
 GtkWidget *questions_page(editor *e, const kk_config *cfg);
 void questions_collect(editor *e);
 void questions_free(editor *e);
+
+/* The "Polls" tab (polls.c): the history of polls with their results, new
+ * polls opened in the running kikarinhas, and [polls]. */
+GtkWidget *polls_page(editor *e, const kk_config *cfg);
+void polls_collect(editor *e);
+void polls_free(editor *e);
 
 /* Avatar folders (avatars.c): the list in the Avatares tab, and every
  * avatar of every folder as the widgets say, loaded once on demand (NULL if

@@ -480,6 +480,23 @@ data/         avatar padrão original, exemplo de .ini
      `WM_DELETE_WINDOW`; `xdotool windowclose` destrói por fora, e a janela
      não é destruída de novo).
 7. **Extras**. Feitos:
+   - **Enquetes**: `src/polls.c` guarda todas em `polls.json` (JSON pelo
+     cJSON, gravado como o `users.tsv`: temporário + fsync + rename, com
+     `.backup`); votos por plataforma, horários, lives lidas ao abrir e
+     links das lives de onde vieram votos. Quem votou fica numa tabela de
+     hash só enquanto está aberta (reiniciar não deixa votar duas vezes) e
+     sai do arquivo ao encerrar. Os votos (`!a`, `!1`, atalho da opção)
+     são vistos no `on_chat` antes da tabela de comandos, que é refeita a
+     cada reload; letras e números só valem se nenhum deles for comando
+     ao abrir, e o atalho é recusado se for comando, avatar (`!pikachu`)
+     ou letra/número da própria enquete. `src/pollview.c` é uma camada de
+     trás: painel em cache (refeito quando o `serial` dos votos ou o
+     segundo do relógio mudam), linhas e o chão colorido de cada parte; a
+     cada quadro põe a zona (`kk_avatar_set_zone`) nos avatares de quem
+     votou. A aba Enquetes lê o arquivo (relido quando muda; o kikarinhas
+     grava os votos a cada 2 s) e só fala pelo socket para abrir,
+     encerrar e apagar (apagar mexe no arquivo direto se o kikarinhas não
+     estiver rodando).
    - **Mesa de som**: `src/sample.c` decodifica wav/ogg/mp3 inteiros na
      memória (dr_wav, dr_mp3 e stb_vorbis embutidos em `vendor/`, atrás de
      `src/decode.h`), já em 16 bits estéreo a 48 kHz (reamostragem linear),
@@ -869,8 +886,6 @@ data/         avatar padrão original, exemplo de .ini
 
 Ideias e pendências pequenas, sem fase:
 
-- **Enquetes**: o chat vota e os avatares de quem votou se juntam em
-  grupinhos, um por resposta, dando para ver de longe qual ganhou.
 - **Ler em voz alta** (TTS) as mensagens destacadas ou pagas, num processo
   externo (espeak, piper) para não travar o laço.
 - **Duelo e minijogos grandes**: battle royale, basquete, boss.

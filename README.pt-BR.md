@@ -598,6 +598,46 @@ Pelo socket: `{"type":"questions"}` lista, e
 `{"type":"question","action":"highlight"|"remove","id":N}` ou
 `{"type":"question","action":"clear"}` cuidam delas.
 
+#### Enquetes
+
+Pergunte algo ao chat pela aba **Enquetes** do `kikarinhas-config`: uma
+pergunta, de 2 a 10 opções e, se quiser, um tempo limite (senão fica aberta
+até você clicar em **Encerrar agora**). O chat vota com `!a`, `!b`... ou
+`!1`, `!2`... (os que não forem outro comando) e com o comando próprio da
+opção, se você der um (`!pizza`); o kikarinhas rodando não começa uma
+enquete cujos comandos próprios batam com um comando ou com o nome de um
+avatar, e o diálogo diz qual. Cada pessoa tem um voto; votar de novo troca.
+
+No palco a largura da janela se divide em uma parte por opção, cada uma com
+seu chão colorido: o avatar de quem vota anda até a parte da sua opção e só
+passeia ali até a enquete encerrar. No topo ficam a pergunta e um cartão por
+opção (o que digitar, os votos e uma barra), que dá para desligar, descer ou
+pôr a pergunta num dos lados. Ao encerrar, o resultado final fica alguns
+segundos, com a vencedora marcada com ★.
+
+Só uma enquete fica aberta por vez. Todas ficam no histórico
+(`~/.local/share/kikarinhas/polls.json`) com os votos no total e por
+plataforma, quando abriu e encerrou e quais lives estavam sendo lidas; a aba
+lista, mostra os resultados (parciais enquanto aberta) e pode começar uma
+nova a partir de uma antiga ou apagá-la.
+
+```ini
+[polls]
+file = ~/.local/share/kikarinhas/polls.json
+panel = yes          # pergunta e cartões no palco; no: só o chão
+align = center       # a pergunta: center, left ou right
+y = 0                # onde começam os cartões, % da altura da janela
+font = Sans
+font_size = 16
+results_seconds = 15 # o resultado final no palco
+```
+
+Pelo socket: `{"type":"poll","action":"start","question":"...",
+"options":[{"text":"Pizza","command":"pizza"},{"text":"Coxinha"}],
+"duration":60,"show_counts":true}`, `{"type":"poll","action":"close"}`,
+`{"type":"poll","action":"remove","id":N}` e
+`{"type":"poll","action":"state"}` (a aberta e o caminho do histórico).
+
 ### Cenário
 
 Imagens que ficam o tempo todo na janela: um chão ou fundo atrás dos

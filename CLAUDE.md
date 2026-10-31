@@ -121,6 +121,7 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 | `po/` | traduções do configurador: `kikarinhas.pot`, `LINGUAS`, `POTFILES.in`, um `.po` por idioma |
 | `config/main.c` | configurador GTK2 (opcional no build): janela e abas gerais |
 | `config/sounds.c`, `config/wall.c`, `config/danmaku.c`, `config/audience.c` | abas Sons, Emote wall, Danmaku e Espectadores |
+| `config/polls.c` | aba Enquetes: histórico lido do `polls.json`, resultados por plataforma, diálogo de nova enquete (aberta pelo socket, que checa os conflitos), `[polls]` |
 | `config/questions.c` | aba Perguntas: a fila do kikarinhas rodando, pedida pelo socket a cada 2 s enquanto visível |
 | `config/chatwin.c` | aba Janela de chat: `[chat_window]` e o botão que mostra/esconde a janela pelo socket |
 | `config/points.c` | aba Pontos: tudo o que dá e tira pontos, custos de comandos e sons |
@@ -147,8 +148,8 @@ build/kikarinhas -c /tmp/x.ini --socket $XDG_RUNTIME_DIR/kk-teste.sock
 6. Janela de chat clássico (opcional): para ler e para o OBS capturar;
    comentário em destaque no palco, fila de perguntas.
 7. Extras feitos: mesa de som, espectadores, emote wall, bomba, estilingue,
-   estrelas, jogos de sorte, emotes animados e cenário fixo.
+   estrelas, jogos de sorte, emotes animados, cenário fixo e enquetes.
    Decidido não fazer: camadas HTML (WPE), plugin de OBS por memória
    compartilhada, Wayland nativo (roda pelo XWayland) e fundos/zips do SA.
-   Para o futuro (seção no PLANO.md): enquetes com grupinhos de avatares,
-   ler em voz alta, duelo e minijogos grandes, pendências pequenas.
+   Para o futuro (seção no PLANO.md): ler em voz alta, duelo e minijogos
+   grandes, pendências pequenas.

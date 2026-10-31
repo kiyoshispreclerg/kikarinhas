@@ -600,6 +600,47 @@ Over the socket: `{"type":"questions"}` lists them, and
 `{"type":"question","action":"highlight"|"remove","id":N}` or
 `{"type":"question","action":"clear"}` handle them.
 
+#### Polls
+
+Ask the chat something from the **Polls** tab of `kikarinhas-config`: a
+question, 2 to 10 options and, if you want, a time limit (otherwise it stays
+open until you click **End now**). The chat votes with `!a`, `!b`... or
+`!1`, `!2`... (the ones that are not already another command) and with an
+option's own command, if you give it one (`!pizza`); the running kikarinhas
+refuses to start a poll whose own commands clash with a command or an avatar
+name, and the dialog says which. Each person has one vote; voting again
+changes it.
+
+On the stage the window's width splits into one part per option, each with
+its coloured floor: the avatar of whoever votes walks to their option's part
+and wanders only there until the poll ends. On top go the question and a
+card per option (what to type, the votes and a bar), which can be turned
+off, moved down or have the question on one side. Once it ends the final
+result stays a few seconds, the winner marked with ★.
+
+Only one poll is open at a time. Every poll stays in the history
+(`~/.local/share/kikarinhas/polls.json`) with its votes in total and per
+platform, when it opened and closed and which lives were being read; the tab
+lists them, shows the results (partial while open) and can start a new poll
+from an old one or delete it.
+
+```ini
+[polls]
+file = ~/.local/share/kikarinhas/polls.json
+panel = yes          # question and cards on the stage; no: only the floor
+align = center       # the question: center, left or right
+y = 0                # where the cards start, % of the window height
+font = Sans
+font_size = 16
+results_seconds = 15 # the final result on the stage
+```
+
+Over the socket: `{"type":"poll","action":"start","question":"...",
+"options":[{"text":"Pizza","command":"pizza"},{"text":"Coxinha"}],
+"duration":60,"show_counts":true}`, `{"type":"poll","action":"close"}`,
+`{"type":"poll","action":"remove","id":N}` and
+`{"type":"poll","action":"state"}` (the open one and the history's path).
+
 ### Scenery
 
 Pictures kept on the window all the time: a ground or backdrop behind the

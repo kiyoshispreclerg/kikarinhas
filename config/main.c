@@ -434,6 +434,7 @@ static void collect(editor *e)
     danmaku_collect(e);
     chatwin_collect(e);
     questions_collect(e);
+    polls_collect(e);
     points_collect(e);
     timers_collect(e);
     scenery_collect(e);
@@ -719,6 +720,8 @@ static void build(editor *e, const kk_config *cfg)
                              gtk_label_new(_("Chat window")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(questions_page(e, cfg)),
                              gtk_label_new(_("Questions")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(polls_page(e, cfg)),
+                             gtk_label_new(_("Polls")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(points_page(e, cfg)),
                              gtk_label_new(_("Points")));
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), scrolled(timers_page(e, cfg)),
@@ -843,6 +846,7 @@ int main(int argc, char **argv)
     danmaku_free(&e);
     chatwin_free(&e);
     questions_free(&e);
+    polls_free(&e);
     points_free(&e);
     timers_free(&e);
     scenery_free(&e);

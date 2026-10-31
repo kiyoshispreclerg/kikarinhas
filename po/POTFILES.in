@@ -4,6 +4,7 @@ config/wall.c
 config/danmaku.c
 config/chatwin.c
 config/questions.c
+config/polls.c
 config/audience.c
 config/sources.c
 config/avatars.c

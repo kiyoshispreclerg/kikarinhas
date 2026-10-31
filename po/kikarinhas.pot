@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kikarinhas\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 15:49-0300\n"
+"POT-Creation-Date: 2026-10-31 10:30-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,178 +18,178 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: config/main.c:47
+#: config/main.c:48
 msgid "anyone"
 msgstr ""
 
-#: config/main.c:47
+#: config/main.c:48
 msgid "members"
 msgstr ""
 
-#: config/main.c:47
+#: config/main.c:48
 msgid "trusted"
 msgstr ""
 
-#: config/main.c:47
+#: config/main.c:48
 msgid "moderators"
 msgstr ""
 
-#: config/main.c:47 config/audience.c:47
+#: config/main.c:48 config/audience.c:47
 msgid "owner"
 msgstr ""
 
-#: config/main.c:191 config/commands.c:559
+#: config/main.c:259 config/commands.c:559
 msgid "automatic"
 msgstr ""
 
-#: config/main.c:381
+#: config/main.c:450
 #, c-format
 msgid "line %d: "
 msgstr ""
 
-#: config/main.c:400
+#: config/main.c:469
 #, c-format
 msgid "Could not write %s: %s"
 msgstr ""
 
-#: config/main.c:405
+#: config/main.c:474
 #, c-format
 msgid "Saved to %s, but with a problem: %s"
 msgstr ""
 
-#: config/main.c:407
+#: config/main.c:476
 #, c-format
 msgid "Saved to %s."
 msgstr ""
 
-#: config/main.c:441
+#: config/main.c:510
 #, c-format
 msgid "kikarinhas: not running"
 msgstr ""
 
-#: config/main.c:447
+#: config/main.c:516
 #, c-format
 msgid "kikarinhas running: v%s"
 msgstr ""
 
-#: config/main.c:449
+#: config/main.c:518
 #, c-format
 msgid "kikarinhas running"
 msgstr ""
 
-#: config/main.c:475
+#: config/main.c:544
 msgid "Saved. The socket is off: restart kikarinhas to apply."
 msgstr ""
 
-#: config/main.c:479
+#: config/main.c:548
 #, c-format
 msgid "Saved. kikarinhas is not running (%s); it takes effect when it starts."
 msgstr ""
 
-#: config/main.c:488
+#: config/main.c:557
 #, c-format
 msgid "Saved, but kikarinhas did not apply it: %s"
 msgstr ""
 
-#: config/main.c:491
+#: config/main.c:560
 #, c-format
 msgid "Applied, with %d warning(s): %s"
 msgstr ""
 
-#: config/main.c:494
+#: config/main.c:563
 msgid "Saved and applied."
 msgstr ""
 
-#: config/main.c:517
+#: config/main.c:586
 #, c-format
 msgid "Kikarinhas v%s — settings"
 msgstr ""
 
-#: config/main.c:532
+#: config/main.c:601
 msgid "Window"
 msgstr ""
 
-#: config/main.c:537
+#: config/main.c:606
 msgid "Mode"
 msgstr ""
 
-#: config/main.c:538
+#: config/main.c:607
 msgid ""
 "obs: ordinary window for OBS's Window Capture (Xcomposite). desktop: over "
 "the desktop, clicks go through."
 msgstr ""
 
-#: config/main.c:548 config/wall.c:71 config/chatwin.c:188 config/scenery.c:135
+#: config/main.c:617 config/wall.c:71 config/chatwin.c:188 config/scenery.c:135
 msgid "Size"
 msgstr ""
 
-#: config/main.c:548
+#: config/main.c:617
 msgid "Only in obs mode."
 msgstr ""
 
-#: config/main.c:549
+#: config/main.c:618
 msgid "Frames per second"
 msgstr ""
 
-#: config/main.c:552
+#: config/main.c:621
 msgid "Avatars"
 msgstr ""
 
-#: config/main.c:553
+#: config/main.c:622
 msgid "Scale"
 msgstr ""
 
-#: config/main.c:555
+#: config/main.c:624
 msgid "Ground"
 msgstr ""
 
-#: config/main.c:556
+#: config/main.c:625
 msgid ""
 "Pixels between the feet and the bottom edge; automatic leaves room for the "
 "name."
 msgstr ""
 
-#: config/main.c:557
+#: config/main.c:626
 msgid "Random"
 msgstr ""
 
-#: config/main.c:558
+#: config/main.c:627
 msgid ""
 "Avatars that walk around without belonging to anyone in the chat; automatic: "
 "6 without chat, 0 with chat."
 msgstr ""
 
-#: config/main.c:559
+#: config/main.c:628
 msgid "Always on screen"
 msgstr ""
 
-#: config/main.c:560
+#: config/main.c:629
 msgid "Avatar names separated by commas."
 msgstr ""
 
-#: config/main.c:564
+#: config/main.c:633
 msgid "Everyone's avatar"
 msgstr ""
 
-#: config/main.c:565
+#: config/main.c:634
 msgid "Empty: a random one per person, always the same."
 msgstr ""
 
-#: config/main.c:566
+#: config/main.c:635
 msgid "Stream Avatars folder"
 msgstr ""
 
-#: config/main.c:568
+#: config/main.c:637
 msgid ""
 "The \"data\" folder; empty: searches the Steam libraries; off: don't use "
 "Stream Avatars."
 msgstr ""
 
-#: config/main.c:570
+#: config/main.c:639
 msgid "More avatar folders"
 msgstr ""
 
-#: config/main.c:571
+#: config/main.c:640
 msgid ""
 "Each one may hold a data folder (streamavatars_json.txt), a pack (data.txt) "
 "or folders of those. Your own folder is read first, then these, then Stream "
@@ -199,200 +199,204 @@ msgid ""
 "kikarinhas restarts."
 msgstr ""
 
-#: config/main.c:579
+#: config/main.c:648
 msgid "below"
 msgstr ""
 
-#: config/main.c:580
+#: config/main.c:649
 msgid "above"
 msgstr ""
 
-#: config/main.c:582
+#: config/main.c:651
 msgid "Avatar name"
 msgstr ""
 
-#: config/main.c:583
+#: config/main.c:652
 msgid "Show names"
 msgstr ""
 
-#: config/main.c:584
+#: config/main.c:653
 msgid "Above or below the avatar."
 msgstr ""
 
-#: config/main.c:589 config/wall.c:69 config/wall.c:80 config/danmaku.c:86
-#: config/chatwin.c:269 config/chatwin.c:319 config/commands.c:564
-#: config/points.c:78
+#: config/main.c:658 config/wall.c:69 config/wall.c:80 config/danmaku.c:86
+#: config/chatwin.c:269 config/chatwin.c:319 config/polls.c:803
+#: config/commands.c:564 config/points.c:78
 msgid "seconds"
 msgstr ""
 
-#: config/main.c:591
+#: config/main.c:660
 msgid "Hide the name after inactivity of"
 msgstr ""
 
-#: config/main.c:593
+#: config/main.c:662
 msgid ""
 "The name shows on arrival, on a message or command and while a bubble is up; "
 "after this quiet time only the drawing stays. Independent of the time until "
 "the avatar leaves."
 msgstr ""
 
-#: config/main.c:596 config/timers.c:331
+#: config/main.c:665 config/timers.c:331
 msgid "Messages"
 msgstr ""
 
-#: config/main.c:597
+#: config/main.c:666
 msgid "Show a speech bubble with the message"
 msgstr ""
 
-#: config/main.c:598
+#: config/main.c:667
 msgid "With danmaku on (its own tab), messages fly across instead."
 msgstr ""
 
-#: config/main.c:600
+#: config/main.c:669
 msgid "Message bubble stays"
 msgstr ""
 
-#: config/main.c:603
+#: config/main.c:672
 msgid "Seconds on screen; automatic: 4 to 12 s, by the length of the text."
 msgstr ""
 
-#: config/main.c:608
+#: config/main.c:677
 msgid "Name font"
 msgstr ""
 
-#: config/main.c:609
+#: config/main.c:678
 msgid ""
 "Pango family and style (e.g. Sans Bold) and size in points; empty: Sans "
 "Bold. Only changes when kikarinhas restarts."
 msgstr ""
 
-#: config/main.c:614
+#: config/main.c:683
 msgid "Bubble font"
 msgstr ""
 
-#: config/main.c:615
+#: config/main.c:684
 msgid "Empty: Sans. Applies to the next bubbles."
 msgstr ""
 
-#: config/main.c:617
+#: config/main.c:686
 msgid "Chat"
 msgstr ""
 
-#: config/main.c:618
+#: config/main.c:687 config/polls.c:732
 msgid "Lives"
 msgstr ""
 
-#: config/main.c:619
+#: config/main.c:688
 msgid ""
 "Every live in the list is read at the same time, YouTube and Twitch "
 "together. Double-click a link to edit it."
 msgstr ""
 
-#: config/main.c:622
+#: config/main.c:691
 msgid "BTTV, FFZ and 7TV emotes on Twitch, 7TV on Kick"
 msgstr ""
 
-#: config/main.c:623
+#: config/main.c:692
 msgid ""
 "Downloads the global lists and the channel's, so those emotes also fly on "
 "the emote wall."
 msgstr ""
 
-#: config/main.c:625
+#: config/main.c:694
 msgid "Fake chat (to test without a stream)"
 msgstr ""
 
-#: config/main.c:626
+#: config/main.c:695
 msgid "Avatars at the same time"
 msgstr ""
 
-#: config/main.c:628
+#: config/main.c:697
 msgid "Leaves after"
 msgstr ""
 
-#: config/main.c:629
+#: config/main.c:698
 msgid "Seconds of silence until the avatar leaves."
 msgstr ""
 
-#: config/main.c:631
+#: config/main.c:700
 msgid "Print the messages in the terminal"
 msgstr ""
 
-#: config/main.c:632
+#: config/main.c:701
 msgid "People file"
 msgstr ""
 
-#: config/main.c:633
+#: config/main.c:702
 msgid ""
 "Avatar, color and accessories of each person; empty: ~/.local/share/"
 "kikarinhas/users.tsv."
 msgstr ""
 
-#: config/main.c:635
+#: config/main.c:704
 msgid "Control socket"
 msgstr ""
 
-#: config/main.c:637
+#: config/main.c:706
 msgid "For bridges and the Apply button; empty: the default; off: disabled."
 msgstr ""
 
-#: config/main.c:641
+#: config/main.c:710
 msgid "Installed avatars"
 msgstr ""
 
-#: config/main.c:643 config/points.c:114
+#: config/main.c:712 config/points.c:114
 msgid "Commands"
 msgstr ""
 
-#: config/main.c:645 config/points.c:116
+#: config/main.c:714 config/points.c:116
 msgid "Sounds"
 msgstr ""
 
-#: config/main.c:647
+#: config/main.c:716
 msgid "Emote wall"
 msgstr ""
 
-#: config/main.c:649
+#: config/main.c:718
 msgid "Danmaku"
 msgstr ""
 
-#: config/main.c:651
+#: config/main.c:720
 msgid "Chat window"
 msgstr ""
 
-#: config/main.c:653
+#: config/main.c:722
 msgid "Questions"
 msgstr ""
 
-#: config/main.c:655 config/audience.c:778
+#: config/main.c:724
+msgid "Polls"
+msgstr ""
+
+#: config/main.c:726 config/audience.c:778
 msgid "Points"
 msgstr ""
 
-#: config/main.c:657
+#: config/main.c:728
 msgid "Timers"
 msgstr ""
 
-#: config/main.c:659
+#: config/main.c:730
 msgid "Scenery"
 msgstr ""
 
-#: config/main.c:661
+#: config/main.c:732
 msgid "Viewers"
 msgstr ""
 
-#: config/main.c:680
+#: config/main.c:751
 msgid "_Close"
 msgstr ""
 
-#: config/main.c:681
+#: config/main.c:752
 msgid "_Save"
 msgstr ""
 
-#: config/main.c:682
+#: config/main.c:753
 msgid "Save and _apply"
 msgstr ""
 
-#: config/main.c:727
+#: config/main.c:798
 #, c-format
 msgid ""
 "Usage: kikarinhas-config [FILE]\n"
@@ -400,23 +404,23 @@ msgid ""
 "Edits ~/.config/kikarinhas/kikarinhas.ini (or FILE).\n"
 msgstr ""
 
-#: config/main.c:735
+#: config/main.c:806
 #, c-format
 msgid "kikarinhas-config: no $HOME\n"
 msgstr ""
 
-#: config/main.c:742
+#: config/main.c:813
 #, c-format
 msgid "kikarinhas-config: could not read %s: %s\n"
 msgstr ""
 
-#: config/main.c:747
+#: config/main.c:818
 msgid ""
 "# Kikarinhas: generated by kikarinhas-config. You may edit it by hand;\n"
 "# comments are kept.\n"
 msgstr ""
 
-#: config/main.c:756
+#: config/main.c:827
 #, c-format
 msgid "kikarinhas-config: out of memory\n"
 msgstr ""
@@ -476,9 +480,9 @@ msgstr ""
 msgid "Add sounds"
 msgstr ""
 
-#: config/sounds.c:432 config/sources.c:118 config/avatars.c:85
-#: config/avatars.c:655 config/commands.c:434 config/timers.c:103
-#: config/scenery.c:96
+#: config/sounds.c:432 config/polls.c:377 config/polls.c:513
+#: config/sources.c:118 config/avatars.c:85 config/avatars.c:655
+#: config/commands.c:434 config/timers.c:103 config/scenery.c:96
 msgid "_Cancel"
 msgstr ""
 
@@ -1080,7 +1084,8 @@ msgstr ""
 msgid "Who"
 msgstr ""
 
-#: config/questions.c:200
+#: config/questions.c:200 config/polls.c:521 config/polls.c:728
+#: config/polls.c:781
 msgid "Question"
 msgstr ""
 
@@ -1112,6 +1117,292 @@ msgstr ""
 
 #: config/questions.c:239
 msgid "Keeps up to"
+msgstr ""
+
+#: config/polls.c:87
+#, c-format
+msgid "%lld s"
+msgstr ""
+
+#: config/polls.c:89
+#, c-format
+msgid "%lld min %02lld s"
+msgstr ""
+
+#: config/polls.c:91
+#, c-format
+msgid "%lld h %02lld min"
+msgstr ""
+
+#: config/polls.c:142 config/polls.c:526
+msgid "Option"
+msgstr ""
+
+#: config/polls.c:142 config/polls.c:731
+msgid "Votes"
+msgstr ""
+
+#: config/polls.c:165
+msgid "Total"
+msgstr ""
+
+#: config/polls.c:199
+msgid "Select a poll to see its results."
+msgstr ""
+
+#: config/polls.c:200
+msgid "No polls yet: \"New poll\" opens one in kikarinhas."
+msgstr ""
+
+#: config/polls.c:211
+#, c-format
+msgid "Closed. From %s to %s (%s)."
+msgstr ""
+
+#: config/polls.c:216
+#, c-format
+msgid "Open since %s; ends at %s (%s left). Partial results."
+msgstr ""
+
+#: config/polls.c:220
+#, c-format
+msgid "Open since %s, until you end it. Partial results."
+msgstr ""
+
+#: config/polls.c:231
+#, c-format
+msgid ""
+"\n"
+"Lives read: %s"
+msgstr ""
+
+#: config/polls.c:244
+msgid "The votes were not shown on the stream."
+msgstr ""
+
+#: config/polls.c:268
+msgid "open"
+msgstr ""
+
+#: config/polls.c:311
+#, c-format
+msgid "%d poll."
+msgid_plural "%d polls."
+msgstr[0] ""
+msgstr[1] ""
+
+#: config/polls.c:349
+msgid "kikarinhas is not running: start it first, polls open there."
+msgstr ""
+
+#: config/polls.c:356
+msgid "kikarinhas refused it."
+msgstr ""
+
+#: config/polls.c:391
+msgid "End the poll now?"
+msgstr ""
+
+#: config/polls.c:391
+msgid "Votes stop counting and the result shows on the stage."
+msgstr ""
+
+#: config/polls.c:392
+msgid "_End"
+msgstr ""
+
+#: config/polls.c:396
+msgid "Poll ended."
+msgstr ""
+
+#: config/polls.c:409
+msgid "Delete this poll from the history?"
+msgstr ""
+
+#: config/polls.c:409
+msgid "Its results are lost."
+msgstr ""
+
+#: config/polls.c:410 config/polls.c:741
+msgid "_Delete"
+msgstr ""
+
+#: config/polls.c:418 config/polls.c:423
+msgid "Poll deleted."
+msgstr ""
+
+#: config/polls.c:425 config/audience.c:594
+#, c-format
+msgid "Could not write %s."
+msgstr ""
+
+#: config/polls.c:510
+msgid "New poll"
+msgstr ""
+
+#: config/polls.c:514
+msgid "_Start the poll"
+msgstr ""
+
+#: config/polls.c:526
+msgid "Own command (optional)"
+msgstr ""
+
+#: config/polls.c:549
+msgid "Remove this option"
+msgstr ""
+
+#: config/polls.c:560
+msgid "Add an _option"
+msgstr ""
+
+#: config/polls.c:565
+msgid "Options"
+msgstr ""
+
+#: config/polls.c:566
+msgid ""
+"The chat votes with !a, !b... or !1, !2... (those that are not another "
+"command) and with an option's own command, if you give it one. Each person "
+"has one vote; voting again changes it. kikarinhas refuses to start if an own "
+"command is already a command or an avatar name."
+msgstr ""
+
+#: config/polls.c:573
+msgid "Ends by itself after"
+msgstr ""
+
+#: config/polls.c:578
+msgid "min"
+msgstr ""
+
+#: config/polls.c:580
+msgid "s"
+msgstr ""
+
+#: config/polls.c:583
+msgid "Time"
+msgstr ""
+
+#: config/polls.c:584
+msgid "Without a time limit it stays open until you click \"End now\" here."
+msgstr ""
+
+#: config/polls.c:586
+msgid "Show the votes on the stream"
+msgstr ""
+
+#: config/polls.c:587
+msgid "Otherwise the stage shows only the options; the results stay here."
+msgstr ""
+
+#: config/polls.c:608
+msgid "Write the question."
+msgstr ""
+
+#: config/polls.c:622
+msgid "Every option needs a text (or remove the empty ones)."
+msgstr ""
+
+#: config/polls.c:638
+msgid "A time limit of at least 5 seconds, or no limit."
+msgstr ""
+
+#: config/polls.c:662
+msgid "Poll started: it is on the stage."
+msgstr ""
+
+#: config/polls.c:716
+msgid ""
+"The chat votes with !a, !b... (or !1, !2...) and the window's width splits "
+"into one part per option: each voter's avatar walks to their option's part "
+"and stays there until the poll ends. One poll open at a time; every poll "
+"stays in the history with its results, per platform. ● open now."
+msgstr ""
+
+#: config/polls.c:729
+msgid "Opened"
+msgstr ""
+
+#: config/polls.c:730
+msgid "Lasted"
+msgstr ""
+
+#: config/polls.c:738
+msgid "_New poll"
+msgstr ""
+
+#: config/polls.c:739
+msgid "New _from this one"
+msgstr ""
+
+#: config/polls.c:740
+msgid "_End now"
+msgstr ""
+
+#: config/polls.c:768
+msgid "History file"
+msgstr ""
+
+#: config/polls.c:769
+msgid ""
+"Empty: ~/.local/share/kikarinhas/polls.json. Only changes when kikarinhas "
+"restarts."
+msgstr ""
+
+#: config/polls.c:771
+msgid "On the stage"
+msgstr ""
+
+#: config/polls.c:772
+msgid "Show the question and the options with their results"
+msgstr ""
+
+#: config/polls.c:774
+msgid ""
+"Off: only the coloured floor of each option's part, and the voters' avatars "
+"walking inside it."
+msgstr ""
+
+#: config/polls.c:777
+msgid "centred"
+msgstr ""
+
+#: config/polls.c:778
+msgid "on the left"
+msgstr ""
+
+#: config/polls.c:779
+msgid "on the right"
+msgstr ""
+
+#: config/polls.c:787
+msgid "of the window height, from the top"
+msgstr ""
+
+#: config/polls.c:789
+msgid "Cards start at"
+msgstr ""
+
+#: config/polls.c:790
+msgid "Where the question and the options go: 0 at the very top."
+msgstr ""
+
+#: config/polls.c:798
+msgid "Font on the stage"
+msgstr ""
+
+#: config/polls.c:798
+msgid "Empty: Sans."
+msgstr ""
+
+#: config/polls.c:804
+msgid "Final result stays"
+msgstr ""
+
+#: config/polls.c:805
+msgid ""
+"On the stage after the poll ends, the winner marked; 0: it goes at once."
 msgstr ""
 
 #: config/audience.c:47
@@ -1249,11 +1540,6 @@ msgid "%d person exported to %s."
 msgid_plural "%d people exported to %s."
 msgstr[0] ""
 msgstr[1] ""
-
-#: config/audience.c:594
-#, c-format
-msgid "Could not write %s."
-msgstr ""
 
 #: config/audience.c:610
 msgid "Import people"
