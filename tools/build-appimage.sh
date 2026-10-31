@@ -3,8 +3,9 @@
 # on the oldest distro you want it to run on (the bundled libraries come from
 # here, and glibc is taken from the host at run time). Bundles kikarinhas and
 # kikarinhas-config with their libraries, plus the gdk-pixbuf loaders GTK2
-# needs to show images. X11, fontconfig, freetype and the other libraries on
-# the AppImage exclude list come from the host.
+# needs to show images. X11, ALSA, fontconfig, freetype and the other libraries
+# on the AppImage exclude list come from the host, and so does libsystemd
+# (a build-time one would not fit newer hosts).
 # Usage: tools/build-appimage.sh [OUTDIR]   (needs the -dev packages from the
 # README, gettext, libgtk2.0-dev, curl and file; downloads linuxdeploy.)
 set -eu
@@ -52,6 +53,7 @@ export LINUXDEPLOY_OUTPUT_VERSION=$version
 	--executable "$appdir/usr/bin/kikarinhas" \
 	--executable "$appdir/usr/bin/kikarinhas-config" \
 	$libs \
+	--exclude-library 'libsystemd*' \
 	--desktop-file "$root/data/kikarinhas.desktop" \
 	--icon-file "$root/data/kikarinhas.svg" \
 	--custom-apprun "$root/packaging/AppRun" \

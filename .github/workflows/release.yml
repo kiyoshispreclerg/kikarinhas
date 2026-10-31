@@ -124,7 +124,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends xvfb xauth fonts-dejavu-core \
-            libx11-6 libxext6 libfontconfig1 libfreetype6 libxrender1 libxcb1 libglib2.0-0
+            libasound2 libdbus-1-3 libx11-6 libxext6 libfontconfig1 libfreetype6 libxrender1 libxcb1 libglib2.0-0
       - name: Run it
         run: |
           cd dist && chmod +x ./*.AppImage && ./*.AppImage --appimage-extract > /dev/null

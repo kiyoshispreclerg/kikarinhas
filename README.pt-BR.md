@@ -82,8 +82,8 @@ sudo apt remove kikarinhas
 
 Há também um AppImage (`kikarinhas-VERSÃO-x86_64.AppImage`) que roda sem
 instalar nada: dê `chmod +x` e execute, ou execute com `--config` para abrir
-o configurador. Ele ainda precisa das bibliotecas de X11 e fontconfig do
-sistema.
+o configurador. Ele ainda precisa das bibliotecas de X11, ALSA, D-Bus e fontconfig
+do sistema.
 
 O `apt` traz as bibliotecas necessárias. O pacote instala `kikarinhas` e
 `kikarinhas-config`, o `.ini` de exemplo em `share/doc/kikarinhas/`, o pacote

@@ -80,7 +80,7 @@ sudo apt remove kikarinhas
 
 There is also an AppImage (`kikarinhas-VERSION-x86_64.AppImage`) that runs
 without installing anything: `chmod +x` it and run it, or run it with
-`--config` for the settings window. It still needs the system's X11 and
+`--config` for the settings window. It still needs the system's X11, ALSA, D-Bus and
 fontconfig libraries.
 
 `apt` pulls in the libraries it needs. The package installs `kikarinhas` and
